@@ -40,7 +40,7 @@ Visual Studio 2022
 
 ### Installation
 
-**Instructions:** /Docs/agience-preview-connect.pdf
+**Instructions:** /Build/Docs/agience-preview-connect.pdf
 
 git clone https://github.com/ikailo/Agience.git
 
@@ -54,4 +54,24 @@ git clone https://github.com/ikailo/Agience.git
 
 ### Running in Docker
 
-More Coming Soon
+Coming Soon.
+
+# AGI Addressing RFC Proposal
+
+This repository hosts the draft of an IETF proposal for the `agi://` protocol, which enables the resolution of agent, host, person, and topic addresses by rerouting to existing protocols such as HTTPS, validated using DKIM and JWT.
+
+## Purpose
+
+The goal of this proposal is to provide a standardized method for resolving `agi://` addresses while integrating with existing email and web-based protocols.
+
+## Current Draft
+
+The current draft can be found in the `/drafts` folder:  
+- [Draft Version 1](drafts/draft-agi-addressing-rfc-v1.md)
+
+## How to Contribute
+
+We welcome feedback from the community! Please feel free to:
+
+- **Submit Issues**: For suggestions, bugs, or questions.
+- **Create Pull Requests**: For proposed changes or improvements to the RFC or associated documentation.

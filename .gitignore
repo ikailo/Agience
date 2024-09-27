@@ -396,10 +396,3 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-
-# Agience
-**/keys/
-*.crt
-*.key
-*.pfx
-.env.*
