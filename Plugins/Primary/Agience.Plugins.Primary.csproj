@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Configurations>Local;Preview;Release;Development</Configurations>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove=".git" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Binance.Net" Version="9.11.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+    <PackageReference Include="Google.Apis.Gmail.v1" Version="1.68.0.3427" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SDK\Agience.SDK.csproj" />
+  </ItemGroup>
+
+</Project>
