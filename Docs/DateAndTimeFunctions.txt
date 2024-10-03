@@ -1,0 +1,87 @@
+Name: CalculateCurrentTime
+Description: Get the current time for a specified timezone.
+Prompt: 
+
+Current UTC time: {{msTime.UtcNow}}
+
+{{DateAndTime.TimeZoneOffset}}
+
+Calculate the time by adding or subtracting the correct timezone offset to the current UTC time. Respond with the calculated time.
+
+=============
+
+Name: TimeZoneCalculation
+Description: Get the current time for a specified location.
+Prompt:
+
+Current UTC time: {{msTime.UtcNow}}
+
+{{DateAndTime.IsItDaylightSavingsTime}}
+
+{{DateAndTime.TimeZoneOffset}}
+
+REQUEST:
+
+Select the correct timezone offset for the specified location and calculate the current time for it using the current UTC time.
+
+Respond with the current time in the specified location.
+
+==============
+
+Name: TimeZoneOffset
+Description: Get the timezone offset.
+Prompt:
+
+Respond verbatim with the following:
+
+Timezone offsets during daylight savings time: 
+Prague: UTC +2
+Toronto: UTC -4
+Frisco: UTC -5
+Regina: UTC -6
+Vancouver: UTC -7
+
+Timezone offsets outside of daylight savings time:
+Prague: UTC +1
+Toronto: UTC -5
+Frisco: UTC -6
+Regina: UTC -6
+Vancouver: UTC -8
+
+==============
+
+Name: KindOfDay
+Description: Get information on the kind of day and time it currently is.
+Prompt:
+
+INFORMATION:
+
+{{DateAndTime.CalculateCurrentTime}}
+
+{{DateAndTime.TimeZoneCalculation}}
+
+{{LocalWeather.WhatIsTheWeatherLike}}
+
+REQUEST:
+
+Respond using a single sentence with the answer to the following questions:
+
+What is the current time in the specified location?
+Is it morning, afternoon, evening, or night?
+Is it weekend or a weekday? 
+What is the current weather?
+
+==============
+
+Name: IsItDaylightSavingsTime
+Description: Get whether daylight savings time is currently being observed.
+Prompt:
+
+Respond verbatim with the following:
+
+Daylight Savings Status:
+Prague: Daylight Savings Time
+Toronto: Daylight Savings Time
+Frisco: Daylight Savings Time
+Regina: Standard Time
+Vancouver: Daylight Savings Time
