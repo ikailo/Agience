@@ -40,7 +40,7 @@ Visual Studio 2022
 
 ### Installation
 
-**Instructions:** /Build/Docs/agience-preview-connect.pdf
+**Instructions:** [Docs/agience-preview-connect.pdf](Docs/agience-preview-connect.pdf)
 
 git clone https://github.com/ikailo/Agience.git
 
@@ -67,9 +67,9 @@ The goal of this proposal is to provide a standardized method for resolving `agi
 ## Current Draft
 
 The current draft can be found in the `/drafts` folder:  
-- [Draft Version 1](drafts/draft-agi-addressing-rfc-v1.md)
+- [Drafts/draft-agi-addressing-rfc-v1.md](Drafts/draft-agi-addressing-rfc-v1.md)
 
-## How to Contribute
+# How to Contribute
 
 We welcome feedback from the community! Please feel free to:
 

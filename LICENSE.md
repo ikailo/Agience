@@ -46,7 +46,7 @@ A full copy of the CC BY 4.0 license can be found in the `LICENSE-CC-BY-4.0.txt`
 
 ## RFC Proposal License
 
-The IETF RFC proposal drafts in **a `/ietf-drafts` directory** are subject to the **IETF Trust's Legal Provisions Relating to IETF Documents**. The documents are submitted as Internet-Drafts and are part of the IETF's contribution process. You may freely copy and redistribute the draft for review and comment, but they are provided "as-is" without warranties.
+The IETF RFC proposal drafts in **a `/drafts` directory** are subject to the **IETF Trust's Legal Provisions Relating to IETF Documents**. The documents are submitted as Internet-Drafts and are part of the IETF's contribution process. You may freely copy and redistribute the draft for review and comment, but they are provided "as-is" without warranties.
 
 For further details, refer to the [IETF Trust Legal Provisions](https://trustee.ietf.org/license-info/).
 
