@@ -144,24 +144,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
 
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/chat-hub")
-            .build();
 
-        connection.on("ReceiveLog", (entityId, message) => {
-            console.log("ReceiveLog: " + entityId + " " + message);
+        function initializeChat() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chat-hub")
+                .withAutomaticReconnect()
+                .build();
 
-            const activeAgencyId = document.getElementById('activeAgencyId').value;
-            const activeAgentId = document.getElementById('activeAgentId').value;
-        });
+            connection.onclose((error) => {
+                if (error) {
+                    console.error("Connection closed due to error:", error);
+                } else {
+                    console.log("Connection closed gracefully.");
+                }
+            });
 
-        connection.start()
-            .then(() => console.log("SignalR Connected", connection.connectionId))
-            .catch(err => console.error("SignalR Connection Error: ", err));
-    </script>
 
+            connection.on("ReceiveLog", (entityId, message) => {
+                console.log("ReceiveLog: " + entityId + " " + message);
 
-    <script>
+                const activeAgencyId = document.getElementById('activeAgencyId').value;
+                const activeAgentId = document.getElementById('activeAgentId').value;
+            });
+
+            connection.start()
+                .then(() => console.log("SignalR Connected", connection.connectionId))
+                .catch(err => console.error("SignalR Connection Error: ", err));
+        }
 
         function initializeChatInput() {
             const chatInput = document.getElementById('chat-input');
@@ -278,6 +287,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function () {
+            initializeChat();
             initializeChatInput();
 
             if (document.getElementById('activeTab').value == "logs") {

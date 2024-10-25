@@ -10,6 +10,7 @@ mkdir certs
 
 call generate-certs-internal.bat
 call generate-certs-localhost.bat
+REM call generate-certs-local.agience.ai.bat
 
 echo Creating configurations...
 
