@@ -67,7 +67,7 @@ The goal of this proposal is to provide a standardized method for resolving `agi
 ## Current Draft
 
 The current draft can be found in the `/drafts` folder:  
-- [Drafts/draft-agi-addressing-rfc-v1.md](Drafts/draft-agi-addressing-rfc-v1.md)
+- [drafts/draft-agi-addressing-rfc-v1.md](Drafts/draft-agi-addressing-rfc-v1.md)
 
 # How to Contribute
 
