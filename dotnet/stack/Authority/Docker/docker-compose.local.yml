@@ -1,0 +1,66 @@
+volumes:  
+    
+  agience_data:
+  icecast_logs:  
+    
+services:
+    
+  identity:
+    restart: on-failure
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Identity/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: local
+    environment:
+      - AGIENCE_INITIALIZE=${AGIENCE_INITIALIZE:-false}
+    env_file:
+      - ../Identity/.env.local
+
+  manage:
+    restart: always
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Manage/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local    
+    env_file:
+      - ../Manage/.env.local
+      
+  database:  
+    restart: always  
+    build:
+      context: ..
+      dockerfile: Database/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: local     
+    env_file:
+      - ../Database/.env.local
+    volumes:
+        - agience_data:/var/lib/postgresql/data
+
+  broker:
+    restart: always  
+    build:
+      context: ..
+      dockerfile: Broker/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local
+
+  proxy:
+    restart: always  
+    build:
+      context: ..
+      dockerfile: Proxy/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local    
+
+  stream:
+    restart: always  
+    build:      
+      context: ..
+      dockerfile: Stream/Dockerfile      
+      args:
+        BUILD_ENVIRONMENT: local
+    volumes:
+      - icecast_logs:/var/log/icecast  

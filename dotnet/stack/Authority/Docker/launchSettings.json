@@ -1,0 +1,60 @@
+{
+  "profiles": {
+    "Start Identity | Debug Identity": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "identity": "StartDebugging",
+        "manage": "DoNotStart",
+        "broker": "StartWithoutDebugging",
+        "proxy": "StartWithoutDebugging"
+      }
+    },
+    "Start Both | Debug Both": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "manage",
+      "composeLaunchUrl": "https://localhost:5002",
+      "serviceActions": {
+        "identity": "StartDebugging",
+        "manage": "StartDebugging",
+        "broker": "StartWithoutDebugging",
+        "proxy": "StartWithoutDebugging"
+      }
+    },
+    "Start Identity | No Debug": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "identity": "StartWithoutDebugging",
+        "manage": "DoNotStart",
+        "broker": "StartWithoutDebugging",
+        "proxy": "StartWithoutDebugging"
+      }
+    },
+    "Start Both | No Debug": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "identity": "StartWithoutDebugging",
+        "manage": "StartWithoutDebugging",
+        "broker": "StartWithoutDebugging",
+        "proxy": "StartWithoutDebugging"
+      }
+    },
+    "Start Both | Debug Web": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "manage",
+      "composeLaunchUrl": "https://localhost:5002",
+      "serviceActions": {
+        "identity": "StartWithoutDebugging",
+        "manage": "StartDebugging",
+        "broker": "StartWithoutDebugging",
+        "proxy": "StartWithoutDebugging"
+      }
+    }
+  }
+}

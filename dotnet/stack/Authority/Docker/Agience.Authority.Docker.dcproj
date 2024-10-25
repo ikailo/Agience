@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" Sdk="Microsoft.Docker.Sdk">
+  <PropertyGroup Label="Globals">
+    <ProjectVersion>2.1</ProjectVersion>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerPublishLocally>False</DockerPublishLocally>
+    <ProjectGuid>1a78e214-56f6-4f21-aafd-7973c6cdc913</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
+    <None Include="docker-compose.local.yml">
+      <DependentUpon>docker-compose.yml</DependentUpon>
+    </None>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Local|AnyCPU'">
+    <DockerComposeProjectName>agience-local</DockerComposeProjectName>
+    <AdditionalComposeFilePaths>docker-compose.local.yml</AdditionalComposeFilePaths>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|AnyCPU'">
+    <DockerComposeProjectName>agience-local</DockerComposeProjectName>
+    <AdditionalComposeFilePaths>docker-compose.local.yml</AdditionalComposeFilePaths>
+    <DockerTargetOS>Linux</DockerTargetOS>
+    <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
+  </PropertyGroup>
+</Project>

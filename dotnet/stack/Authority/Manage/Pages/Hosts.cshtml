@@ -1,0 +1,387 @@
+﻿@page
+@using System.Text.Json
+
+@model Agience.Authority.Manage.Web.Pages.HostsModel
+@{
+    ViewBag.Title = "Agience - My Hosts";
+
+    string? hostCredentials = TempData["HostCredentials"] as string;
+
+    if (hostCredentials != null)
+    {
+        var credentials = JsonSerializer.Deserialize<Dictionary<string, string>>(hostCredentials);
+
+        //prepare modal body
+        var credentialsModalBody = @"
+                                    <b>.env file</b><br />" +
+                                    "HostId=" + @credentials?["host_id"] + "<br />" +
+                                    "HostSecret=" + @credentials?["host_secret"] + "<br /><br />" +
+                                    @"<div class=""alert alert-warning"" role=""alert"">
+                                    <strong>Warning!</strong> Please copy the credentials and store them in a safe place. You will not be able to see the secret again.
+                                    </div>";
+
+        //prepare modal footer content
+        var credentialsModalFooterContent = @"<button type=""button"" class=""btn btn-primary"" onclick=""acknowledgeCredentials()"">Acknowledge</button>";
+
+        @await Html.PartialAsync("../Shared/_ModalPopup", new Agience.Authority.Manage.Web.Models.ModalPopupViewModel()
+        {
+            TilleId = "credentialsModal",
+            Title = "Host Credentials",
+            ModalId = "credentialsModal",
+            BodyContent = credentialsModalBody,
+            FooterContent = credentialsModalFooterContent
+        })
+    }
+}
+
+@{
+    var addPluginModalBody = @"
+     <div class=""row border border-secondary w-auto rounded-pill mb-3"">
+         <div class=""col-10 p-0"">
+             <input type=""text"" id=""searchTerm"" class=""form-control mb-0 rounded-pill bg-transparent border-0 shadow-none height-30 w-100"" placeholder=""Enter search term""/>
+         </div>
+         <div class=""col-2 p-1"">
+             <button class=""btn btn-primary bg-transparent border-0 shadow-none p-0 ms-2 mt-2"" onclick=""findPlugins()"" ><i class=""fa-solid fa-magnifying-glass fa-xl text-muted"" ></i></button>
+         </div>
+     </div>
+     <div class=""form-check"">
+         <input type=""checkbox"" id=""includePublic"" class=""form-check-input"" />
+         <label class=""form-check-label"" for=""includePublic"">Include Public Plugins</label>
+     </div>
+     <div id=""findPluginResults"" class=""mt-3"">
+ ";
+    foreach (var plugin in Model.FindPluginResults)
+    {
+        addPluginModalBody = addPluginModalBody + @"
+        <div class=""d-flex justify-content-between align-items-center"">" +
+            "<span>" + @plugin.Name + "</span>" +
+            @"<button class=""btn btn-primary"" onclick=""addPlugin('" + @plugin.Id + @"');"">Add</button>
+        </div>";
+    }
+}
+
+@await Html.PartialAsync("../Shared/_ModalPopup", new Agience.Authority.Manage.Web.Models.ModalPopupViewModel()
+{
+    TilleId = "addPluginModalLabel",
+    Title = "Add Plugin",
+    ModalId = "addPluginModal",
+    BodyContent = addPluginModalBody
+})
+
+
+
+@{
+    var hostsJson = JsonSerializer.Serialize(Model.Hosts);
+    var findPluginResultsJson = JsonSerializer.Serialize(Model.FindPluginResults);
+}
+
+<form method="post">
+    <input type="hidden" name="hostsJson" id="hostsJson" value='@hostsJson' />
+    <input type="hidden" name="findPluginResultsJson" id="findPluginResultsJson" value='@findPluginResultsJson' />
+    <input type="hidden" name="activeTab" id="activeTab" value="@TempData["ActiveTab"]" />
+    <input type="hidden" name="activePage" id="activePage" value="@TempData["ActivePage"]" />
+    <div class="tab-container">
+        <div class="tab-container-header w-100">
+            <div class="tab-container-name">Hosts</div>
+            <div class="tab-header-item" id="tab-header-item-details"><button>Details</button></div>
+            <div class="tab-header-item" id="tab-header-item-keys"><button>Keys</button></div>
+            <div class="tab-header-item" id="tab-header-item-plugins"><button>Plugins</button></div>
+        </div>
+        <div class="tab-container-content w-100">
+            <div class="left-column">
+                <ul>
+                    @for (int i = 0; i < Model.Hosts.Count; i++)
+                    {
+                        <li class="tab-page-item" id="tab-page-item-@Model.Hosts[i].Id">
+                            <button>@(Model.Hosts[i].Id == "new" ? '+' : Model.Hosts[i].Name)</button>
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="right-column">
+                @foreach (var host in Model.Hosts)
+                {
+                    @if (TempData["ActivePage"]?.ToString() == host.Id)
+                    {
+                        <div class="tab-page" id="tab-page-@host.Id">
+                            @if (TempData["ActiveTab"]?.ToString() == "details")
+                            {
+                                <input type="hidden" asp-for="@host.Id" />
+                                <div class="tab-content" id="tab-content-details">
+                                    <div class="tab-page-content">
+                                        <div class="col-12 col-md-6 col-lg-4 mx-auto">
+                                            <div class="container-fluid">
+                                                <div class="card m-auto">
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                Name:
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <input asp-for="@host.Name" class="form-control" placeholder="@(host.Id == "new" ? "New Host Name" : null)" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                Redirect URIs:
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <input asp-for="@host.RedirectUris " class="form-control" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                Post Logout URIs:
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <input asp-for="@host.PostLogoutUris" class="form-control" />
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                Scopes:
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <select asp-for="@host.Scopes" class="form-select mb-3" multiple size="5">
+                                                                    <option value="openid">openid</option>
+                                                                    <option value="profile">profile</option>
+                                                                    <option value="email">email</option>
+                                                                    <option value="manage">manage</option>
+                                                                    <option value="connect">connect</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                Visibility:
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-12">
+                                                                <select asp-for="@host.Visibility" class="form-select mb-3">
+                                                                    <option value="private">Private</option>
+                                                                    <option value="public">Public</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row text-center">
+                                                            <div class="col-12">
+                                                                <button type="submit" class="btn btn-primary" asp-page-handler="HostSave"><i class="bi bi-floppy-fill"></i> Save</button>
+                                                                <button type="submit" class="btn btn-primary border-0 bg-danger text-white" asp-page-handler="HostDelete" disabled="@(host.Id == "new")"><i class="fa-solid fa-trash"></i></button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @if (TempData["ActiveTab"]?.ToString() == "keys")
+                            {
+                                <div class="tab-content" id="tab-content-keys">
+                                    <div class="tab-page-content">
+                                        <div class="tab-page-content-header">
+                                            <div class="tab-page-content-header-cell">Name</div>
+                                            <div class="tab-page-content-header-cell">Created</div>
+                                            <div class="tab-page-content-header-cell">Active</div>
+                                            <div class="tab-page-content-header-cell-action">&nbsp;</div>
+                                        </div>
+                                        <ul class="tab-page-content-list">
+                                            @for (int i = 0; i < host.Keys.Count; i++)
+                                            {
+                                                <input type="hidden" asp-for="@host.Id" />
+                                                <input type="hidden" asp-for="@host.Keys[i].Id" />
+                                                <li class="tab-page-content-list-item">
+                                                    <div class="tab-page-content-list-item-cell">
+                                                        <input asp-for="@host.Keys[i].Name" class="form-control" placeholder="@(host.Keys[i].Id == "new" ? "New Key Name" : null)" />
+                                                    </div>
+                                                    <div class="tab-page-content-list-item-cell">
+                                                        <input asp-for="@host.Keys[i].CreatedDate" class="form-control" disabled />
+                                                    </div>
+                                                    <div class="tab-page-content-list-item-cell">
+                                                        <select asp-for="@host.Keys[i].IsActive" class="form-control" disabled="@(host.Keys[i].Id == "new")">
+                                                            <option value="true">True</option>
+                                                            <option value="false">False</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="tab-page-content-list-item-action">
+                                                        <button class="btn btn-primary" asp-page-handler="KeySave" asp-route-idx="@i">Save</button>
+                                                        <button class="btn btn-primary" asp-page-handler="KeyDelete" asp-route-idx="@i" disabled="@(host.Keys[i].Id == "new")">Delete</button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            }
+                            @if (TempData["ActiveTab"]?.ToString() == "plugins")
+                            {
+                                <div class="tab-content" id="tab-content-plugins">
+                                    <div class="tab-page-content">
+                                        <div class="tab-page-content-header">
+                                            <div class="tab-page-content-header-cell">Name</div>
+                                            <div class="tab-page-content-header-cell">Description</div>
+                                            <div class="tab-page-content-header-cell-action">&nbsp;</div>
+                                        </div>
+                                        <ul class="tab-page-content-list">
+                                            @for (int i = 0; i < host.Plugins.Count; i++)
+                                            {
+                                                <li class="tab-page-content-list-item">
+                                                    <div class="tab-page-content-list-item-cell">
+                                                        <input asp-for="@host.Plugins[i].Name" class="form-control" disabled />
+                                                    </div>
+                                                    <div class="tab-page-content-list-item-cell">
+                                                        <input asp-for="@host.Plugins[i].Description" class="form-control" disabled />
+                                                    </div>
+                                                    <div class="tab-page-content-list-item-action">
+                                                        <button class="btn btn-primary" asp-page-handler="RemovePlugin" asp-route-hostId="@host.Id" asp-route-pluginId="@host.Plugins[i].Id">Remove</button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                        <button class="btn btn-primary" onclick="$('#addPluginModal').modal('show');return false;">Add Plugin</button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</form>
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            var pageItems = @Html.Raw(Json.Serialize(Model.Hosts));
+
+            pageItems.forEach(function (pageItem) {
+                var itemButton = document.querySelector('#tab-page-item-' + pageItem.id + ' button');
+                if (itemButton) {
+                    itemButton.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        document.getElementById('activePage').value = pageItem.id;
+                        makePageActive(pageItem.id);
+                        DoPostback();
+                    });
+                }
+            });
+
+            let tabItems = ["details", "keys", "plugins"];
+
+            tabItems.forEach(function (itemName) {
+                document.querySelector('#tab-header-item-' + itemName + ' button').addEventListener('click', function (event) {
+                    event.preventDefault();
+                    document.getElementById('activeTab').value = itemName;
+                    makeTabActive(itemName);
+                    DoPostback();
+                });
+            });
+
+            makeTabActive(document.getElementById('activeTab').value);
+            makePageActive(document.getElementById('activePage').value);
+
+            if ('@hostCredentials' != null) {
+                $("#credentialsModal").modal('show');
+            }
+        });
+
+        function acknowledgeCredentials() {
+            $("#credentialsModal").modal('hide');
+            TempData["HostCredentials"] = null;
+        }
+
+        function makeActive(selector, id) {
+            document.querySelectorAll(selector).forEach(function (item) {
+                if (item.id === id) {
+                    item.classList.add("active");
+                }
+                else {
+                    item.classList.remove("active");
+                }
+            });
+        }
+
+        function makePageActive(pageId) {
+            makeActive(".tab-page-item", "tab-page-item-" + pageId);
+        }
+
+        function makeTabActive(itemName) {
+            makeActive(".tab-header-item", "tab-header-item-" + itemName);
+        }
+
+        function DoPostback() {
+            const form = document.forms[0];
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.text()).then(html => {
+                document.querySelector('.right-column').innerHTML =
+                    new DOMParser().parseFromString(html, 'text/html')
+                        .querySelector('.right-column').innerHTML;
+            }).catch(error => console.error('Error:', error));
+        }
+
+
+        function findPlugins() {
+            const searchTerm = document.getElementById('searchTerm').value;
+            const includePublic = document.getElementById('includePublic').checked;
+
+            const form = document.forms[0];
+            const formData = new FormData(form);
+            formData.append('searchTerm', searchTerm);
+            formData.append('includePublic', includePublic);
+
+            fetch(form.action + "?handler=FindPlugins", {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.text()).then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                document.getElementById('findPluginResults').innerHTML = newDoc.getElementById('findPluginResults').innerHTML;
+                document.getElementById('findPluginResultsJson').value = newDoc.querySelector('#findPluginResultsJson').value;
+            }).catch(error => console.error('Error:', error));
+        }
+
+        function addPlugin(pluginId) {
+            const hostId = document.getElementById('activePage').value;
+
+            const form = document.forms[0];
+            const formData = new FormData(form);
+            formData.append('pluginId', pluginId);
+            formData.append('hostId', hostId);
+
+            fetch(form.action + "?handler=AddPlugin", {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.text()).then(html => {
+                const parser = new DOMParser();
+                const newDoc = parser.parseFromString(html, 'text/html');
+                document.querySelector('.right-column').innerHTML =
+                    newDoc.querySelector('.right-column').innerHTML;
+                const newHostsJson = newDoc.querySelector('#hostsJson').value;
+                document.querySelector('#hostsJson').value = newHostsJson;
+            }).catch(error => console.error('Error:', error));
+        }
+    </script>
+}

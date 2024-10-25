@@ -1,0 +1,22 @@
+{
+  "profiles": {
+    "Local": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "https://web.local.agience.ai",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "local"
+      },
+      "dotnetRunMessages": true
+    },  
+    "Development": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "https://web.local.agience.ai:5002",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "development"
+      },
+      "dotnetRunMessages": true
+    }
+  }
+}

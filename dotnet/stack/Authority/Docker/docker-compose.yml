@@ -1,0 +1,64 @@
+networks:
+    
+  agience-net:
+    name: agience-net
+    driver: bridge
+ 
+services:
+    
+  identity:  
+    image: identity:latest
+    container_name: identity-cont    
+    networks:
+      - agience-net
+    depends_on:
+      - "broker"
+      - "database"
+
+  manage:
+    image: manage:latest  
+    container_name: manage-cont
+    networks:
+      - agience-net
+    depends_on:
+      - "identity"
+      
+  database:
+    image: database:latest
+    container_name: database-cont
+    networks:
+      - agience-net
+
+  broker:
+    image: broker:latest  
+    container_name: broker-cont
+    networks:
+      - agience-net
+    depends_on:
+      - "database"
+
+  proxy:
+    image: proxy:latest
+    container_name: proxy-cont
+    networks:
+      - agience-net
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:1884:1884"
+      - "0.0.0.0:5001:5001"
+      - "0.0.0.0:5002:5002"
+      #- "0.0.0.0:5432:5432"
+      - "0.0.0.0:8000:8000"
+    depends_on:      
+      - "identity"
+      - "manage"
+      - "broker"
+   
+  stream:          
+    image: stream:latest
+    container_name: stream-cont
+    networks:
+      - agience-net
+    depends_on:
+      - "database"
