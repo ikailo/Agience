@@ -1,8 +1,8 @@
 # Agience: Intelligent Agents for Everyone
 
-**Agience** is an **open-source** intelligent **agent framework** and **platform** that intuitively and seamlessly **connects devices**, **systems**, and **data** to achieve new levels of **automation** and **efficiency**.
+**Agience** is an **open-source** intelligent **platform** that intuitively and seamlessly **connects devices**, **systems**, and **data** to achieve new levels of **automation** and **efficiency**.
 
-This open-source project enables anyone to create and deploy intelligent agents capable of automating tasks, processing complex information, and facilitating communication between devices and systems with scalability and reliability.
+This **open-source** platform enables anyone to easily **build**, **deploy**, and **manage** intelligent agents capable of automating tasks, processing complex information, and facilitating communication between devices and systems with scalability and reliability.
 
 ## Highlights
 
@@ -40,7 +40,7 @@ Visual Studio 2022
 
 ### Installation
 
-**Instructions:** [Docs/agience-preview-connect.pdf](Docs/agience-preview-connect.pdf)
+**Instructions:** [docs/agience-preview-connect.pdf](docs/agience-preview-connect.pdf)
 
 git clone https://github.com/ikailo/Agience.git
 

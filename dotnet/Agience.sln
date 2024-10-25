@@ -5,53 +5,66 @@ VisualStudioVersion = 17.9.34902.65
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Hosts", "Hosts", "{C0642FFB-6731-49CC-A921-DF9931CB6130}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BEE4786B-6E4B-4A67-BD21-87134B3CD389}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A6C497C8-5E31-4360-B580-9945D9CD25D8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{6D2D0C98-94F4-48C4-AEAF-71C1F9091452}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{BEE4786B-6E4B-4A67-BD21-87134B3CD389}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Console", "samples\Hosts\Console\Agience.Hosts.Console.csproj", "{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{6D2D0C98-94F4-48C4-AEAF-71C1F9091452}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		..\.gitignore = ..\.gitignore
+		..\FUNDING.yml = ..\FUNDING.yml
+		..\LICENSE.md = ..\LICENSE.md
+		..\README.md = ..\README.md
+	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Service", "samples\Hosts\Service\Agience.Hosts.Service.csproj", "{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Console", "stack\Hosts\Console\Agience.Hosts.Console.csproj", "{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Service", "stack\Hosts\Service\Agience.Hosts.Service.csproj", "{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authority", "Authority", "{CA1C732F-4ABA-4390-A035-6FF04CC0A208}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{981EEB57-FE0B-49B1-BBB7-68684144EB45}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Build\agience-init-local.bat = samples\Authority\Build\agience-init-local.bat
-		samples\Authority\Build\agience-remove-local.bat = samples\Authority\Build\agience-remove-local.bat
-		samples\Authority\Build\configure-manage-host.bat = samples\Authority\Build\configure-manage-host.bat
-		samples\Authority\Build\docker-down-local.bat = samples\Authority\Build\docker-down-local.bat
-		samples\Authority\Build\docker-up-local.bat = samples\Authority\Build\docker-up-local.bat
-		samples\Authority\Build\ef-migrate.bat = samples\Authority\Build\ef-migrate.bat
-		samples\Authority\Build\generate-certs-internal.bat = samples\Authority\Build\generate-certs-internal.bat
-		samples\Authority\Build\generate-certs-localhost.bat = samples\Authority\Build\generate-certs-localhost.bat
-		samples\Authority\Build\generate-db-password.bat = samples\Authority\Build\generate-db-password.bat
+		stack\Authority\Build\agience-init-local.bat = stack\Authority\Build\agience-init-local.bat
+		stack\Authority\Build\agience-remove-local.bat = stack\Authority\Build\agience-remove-local.bat
+		stack\Authority\Build\configure-manage-host.bat = stack\Authority\Build\configure-manage-host.bat
+		stack\Authority\Build\docker-down-local.bat = stack\Authority\Build\docker-down-local.bat
+		stack\Authority\Build\docker-up-local.bat = stack\Authority\Build\docker-up-local.bat
+		stack\Authority\Build\ef-migrate.bat = stack\Authority\Build\ef-migrate.bat
+		stack\Authority\Build\generate-certs-internal.bat = stack\Authority\Build\generate-certs-internal.bat
+		stack\Authority\Build\generate-certs-localhost.bat = stack\Authority\Build\generate-certs-localhost.bat
+		stack\Authority\Build\generate-db-password.bat = stack\Authority\Build\generate-db-password.bat
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Broker", "Broker", "{5C66C479-A789-484C-AB3C-4F9CBD6B0E34}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Broker\Dockerfile = samples\Authority\Broker\Dockerfile
-		samples\Authority\Broker\mosquitto.local.conf = samples\Authority\Broker\mosquitto.local.conf
+		stack\Authority\Broker\Dockerfile = stack\Authority\Broker\Dockerfile
+		stack\Authority\Broker\mosquitto.local.conf = stack\Authority\Broker\mosquitto.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{FC9598DC-D390-4A2A-872A-0AF61867F5F0}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Database\.env.local = samples\Authority\Database\.env.local
-		samples\Authority\Database\.env.sample = samples\Authority\Database\.env.sample
-		samples\Authority\Database\Dockerfile = samples\Authority\Database\Dockerfile
-		samples\Authority\Database\pg_hba.local.conf = samples\Authority\Database\pg_hba.local.conf
-		samples\Authority\Database\postgresql.local.conf = samples\Authority\Database\postgresql.local.conf
+		stack\Authority\Database\.env.local = stack\Authority\Database\.env.local
+		stack\Authority\Database\.env.sample = stack\Authority\Database\.env.sample
+		stack\Authority\Database\Dockerfile = stack\Authority\Database\Dockerfile
+		stack\Authority\Database\pg_hba.local.conf = stack\Authority\Database\pg_hba.local.conf
+		stack\Authority\Database\postgresql.local.conf = stack\Authority\Database\postgresql.local.conf
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Identity", "samples\Authority\Identity\Agience.Authority.Identity.csproj", "{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Identity", "stack\Authority\Identity\Agience.Authority.Identity.csproj", "{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Manage", "samples\Authority\Manage\Agience.Authority.Manage.csproj", "{2F694B9E-DE5E-496E-BC63-00A5707A4C58}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Manage", "stack\Authority\Manage\Agience.Authority.Manage.csproj", "{2F694B9E-DE5E-496E-BC63-00A5707A4C58}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Core", "src\Core\Agience.Core.csproj", "{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Plugins.Core", "src\Plugins\Core\Agience.Plugins.Core.csproj", "{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "Agience.Authority.Docker", "samples\Authority\Docker\Agience.Authority.Docker.dcproj", "{1A78E214-56F6-4F21-AAFD-7973C6CDC913}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Core.Tests", "src\Tests\Core\Agience.Core.Tests.csproj", "{266B7B41-7356-42B0-A54B-20D13139B2C8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Plugins.Core.Tests", "src\Tests\Plugins\Core\Agience.Plugins.Core.Tests.csproj", "{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "Agience.Authority.Docker", "stack\Authority\Docker\Agience.Authority.Docker.dcproj", "{1A78E214-56F6-4F21-AAFD-7973C6CDC913}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{18A3C4F5-0AE7-4390-B45E-16889CEF61AE}"
 EndProject
@@ -61,31 +74,38 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Manage", "Manage", "{B4CF64
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Models", "Models", "{C5720790-37E0-4F60-831A-3D9EA1FA2455}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Models", "samples\Authority\Models\Agience.Authority.Models.csproj", "{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Models", "stack\Authority\Models\Agience.Authority.Models.csproj", "{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "conf", "conf", "{93AD863B-0F2C-4FBE-BB4D-5C003D99E59C}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Build\conf\agience-net.conf = samples\Authority\Build\conf\agience-net.conf
+		stack\Authority\Build\conf\agience-net.conf = stack\Authority\Build\conf\agience-net.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proxy", "Proxy", "{093A0A8B-A879-4EF8-80CF-F4142F7503B4}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Proxy\Dockerfile = samples\Authority\Proxy\Dockerfile
-		samples\Authority\Proxy\nginx.local.conf = samples\Authority\Proxy\nginx.local.conf
+		stack\Authority\Proxy\Dockerfile = stack\Authority\Proxy\Dockerfile
+		stack\Authority\Proxy\nginx.local.conf = stack\Authority\Proxy\nginx.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stream", "Stream", "{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79}"
 	ProjectSection(SolutionItems) = preProject
-		samples\Authority\Stream\Dockerfile = samples\Authority\Stream\Dockerfile
-		samples\Authority\Stream\icecast.local.xml = samples\Authority\Stream\icecast.local.xml
-		samples\Authority\Stream\icecast.sample.xml = samples\Authority\Stream\icecast.sample.xml
+		stack\Authority\Stream\Dockerfile = stack\Authority\Stream\Dockerfile
+		stack\Authority\Stream\icecast.local.xml = stack\Authority\Stream\icecast.local.xml
+		stack\Authority\Stream\icecast.sample.xml = stack\Authority\Stream\icecast.sample.xml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3A0FD5C7-04C9-41D1-9789-A9BC0BB6C46E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocol", "Protocol", "{5E921773-1639-4124-BF14-D7F94FD40850}"
+	ProjectSection(SolutionItems) = preProject
+		..\protocol\draft-agi-addressing-rfc-v1.md = ..\protocol\draft-agi-addressing-rfc-v1.md
+	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Core.Tests", "src\Tests\Core\Agience.Core.Tests.csproj", "{7F5336E9-C4A4-4A63-91DE-C0331F389851}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Plugins.Core.Tests", "src\Tests\Plugins\Core\Agience.Plugins.Core.Tests.csproj", "{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FEF2AC80-11B9-4E17-BE20-17341336A977}"
+	ProjectSection(SolutionItems) = preProject
+		..\licenses\LICENSE-AGPL-3.0.txt = ..\licenses\LICENSE-AGPL-3.0.txt
+		..\licenses\LICENSE-AGPL-HEADER.txt = ..\licenses\LICENSE-AGPL-HEADER.txt
+		..\licenses\LICENSE-CC-BY-4.0.txt = ..\licenses\LICENSE-CC-BY-4.0.txt
+		..\licenses\LICENSE-MIT.txt = ..\licenses\LICENSE-MIT.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -169,6 +189,30 @@ Global
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Staging|Any CPU.ActiveCfg = Local|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Staging|Any CPU.Build.0 = Local|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Debug|Any CPU.ActiveCfg = Development|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Debug|Any CPU.Build.0 = Development|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Development|Any CPU.ActiveCfg = Development|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Development|Any CPU.Build.0 = Development|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Local|Any CPU.ActiveCfg = Local|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Local|Any CPU.Build.0 = Local|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Preview|Any CPU.Build.0 = Preview|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Staging|Any CPU.ActiveCfg = Local|Any CPU
+		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Staging|Any CPU.Build.0 = Local|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Debug|Any CPU.ActiveCfg = Development|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Debug|Any CPU.Build.0 = Development|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Development|Any CPU.ActiveCfg = Development|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Development|Any CPU.Build.0 = Development|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Local|Any CPU.ActiveCfg = Local|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Local|Any CPU.Build.0 = Local|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Preview|Any CPU.Build.0 = Preview|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Staging|Any CPU.ActiveCfg = Local|Any CPU
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -193,39 +237,14 @@ Global
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Staging|Any CPU.ActiveCfg = Local|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Staging|Any CPU.Build.0 = Local|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Debug|Any CPU.Build.0 = Development|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Development|Any CPU.ActiveCfg = Development|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Development|Any CPU.Build.0 = Development|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Local|Any CPU.ActiveCfg = Local|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Local|Any CPU.Build.0 = Local|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Preview|Any CPU.Build.0 = Preview|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851}.Staging|Any CPU.Build.0 = Local|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Debug|Any CPU.Build.0 = Development|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Development|Any CPU.ActiveCfg = Development|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Development|Any CPU.Build.0 = Development|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Local|Any CPU.ActiveCfg = Local|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Local|Any CPU.Build.0 = Local|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Preview|Any CPU.Build.0 = Preview|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8}.Staging|Any CPU.Build.0 = Local|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{C0642FFB-6731-49CC-A921-DF9931CB6130} = {6D2D0C98-94F4-48C4-AEAF-71C1F9091452}
+		{A6C497C8-5E31-4360-B580-9945D9CD25D8} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F} = {C0642FFB-6731-49CC-A921-DF9931CB6130}
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3} = {C0642FFB-6731-49CC-A921-DF9931CB6130}
-		{CA1C732F-4ABA-4390-A035-6FF04CC0A208} = {6D2D0C98-94F4-48C4-AEAF-71C1F9091452}
 		{981EEB57-FE0B-49B1-BBB7-68684144EB45} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{5C66C479-A789-484C-AB3C-4F9CBD6B0E34} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{FC9598DC-D390-4A2A-872A-0AF61867F5F0} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
@@ -233,6 +252,8 @@ Global
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58} = {B4CF6467-D6E0-4EC6-AD84-B0DE948BF157}
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
+		{266B7B41-7356-42B0-A54B-20D13139B2C8} = {A6C497C8-5E31-4360-B580-9945D9CD25D8}
+		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1} = {A6C497C8-5E31-4360-B580-9945D9CD25D8}
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913} = {18A3C4F5-0AE7-4390-B45E-16889CEF61AE}
 		{18A3C4F5-0AE7-4390-B45E-16889CEF61AE} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{91315078-C92C-404C-88F7-0C748B5CF26F} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
@@ -242,9 +263,7 @@ Global
 		{93AD863B-0F2C-4FBE-BB4D-5C003D99E59C} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 		{093A0A8B-A879-4EF8-80CF-F4142F7503B4} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
-		{3A0FD5C7-04C9-41D1-9789-A9BC0BB6C46E} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
-		{7F5336E9-C4A4-4A63-91DE-C0331F389851} = {3A0FD5C7-04C9-41D1-9789-A9BC0BB6C46E}
-		{5B3D72F3-B875-4863-8E56-FFC85F3D3AD8} = {3A0FD5C7-04C9-41D1-9789-A9BC0BB6C46E}
+		{FEF2AC80-11B9-4E17-BE20-17341336A977} = {6D2D0C98-94F4-48C4-AEAF-71C1F9091452}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C09AE27D-1AEB-4531-98D7-2DA42A029299}
