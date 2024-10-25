@@ -51,19 +51,19 @@ internal class Program
 
                 try
                 {
-                    var dbContext = services.GetRequiredService<AgienceDbContext>();          
+                    var dbContext = services.GetRequiredService<AgienceDbContext>();
 
                     dbContext.Database.Migrate();
 
                     var seedArgs = new Dictionary<string,string>();
 
                     // TODO: Use a Model. Get from Configuration.
-                    //seedArgs["web_domain"] = "web.local.agience.ai";                                        
-                    //seedArgs["web_port"] = string.Empty;
-                    //seedArgs["host_name"] = $"public.web.local.agience.ai";
-                    seedArgs["web_domain"] = "localhost";
-                    seedArgs["web_port"] = ":5002";
-                    seedArgs["host_name"] = $"public.web.localhost";
+                    seedArgs["web_domain"] = "web.local.agience.ai";                                        
+                    seedArgs["web_port"] = string.Empty;
+                    seedArgs["host_name"] = $"public.web.local.agience.ai";
+                    //seedArgs["web_domain"] = "localhost";
+                    //seedArgs["web_port"] = "5002";
+                    //seedArgs["host_name"] = $"public.web.localhost";
                     seedArgs["first_name"] = "Test";
                     seedArgs["last_name"] = "User";
                     seedArgs["email"] = $"agience.test.user@{seedArgs["web_domain"]}";
@@ -72,7 +72,7 @@ internal class Program
 
                     logger?.LogInformation("Seeding database");
 
-                    dbContext.SeedDatabase(services.GetRequiredService<AgienceIdProvider>(), environmentName);                    
+                    dbContext.SeedDatabase(services.GetRequiredService<AgienceIdProvider>(), seedArgs);
                 }
                 catch (Exception ex)
                 {
