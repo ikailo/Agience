@@ -4,10 +4,9 @@ This repository contains various types of content, each covered by different lic
 ## Core Software (Dual License: AGPL-3.0 and Commercial)
 
 #### AGPL-3.0 License
-The core software, found in the `/src` directory (e.g., `/dotnet/src`, `/python/src`), is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Under this license:
+The core software, found in the `/src` directories (e.g., `/dotnet/src`, `/python/src`), is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Under this license, if you use, modify, or distribute the software, you **must** contribute any modifications back to the community by making the source code publicly available under the same AGPL-3.0 license.
 
-- **Open-Source Contribution**: If you use, modify, or distribute the software, you **must** contribute any modifications back to the community by making the source code publicly available under the same AGPL-3.0 license.
-- **Encouraged Donations**: If you derive value or proceeds from the use of the software, you are encouraged to [donate](https://github.com/sponsors/ikailo) 10% of it back to the project.
+If you derive value or proceeds from the use of the software, you are encouraged to [donate](https://github.com/sponsors/ikailo) 10% of it back to the project.
 
 A full copy of the AGPL-3.0 license can be found in the `LICENSE-AGPL-3.0.txt` file.
 
@@ -18,26 +17,26 @@ A full copy of the AGPL-3.0 license can be found in the `LICENSE-AGPL-3.0.txt` f
 #### Commercial License
 A commercial license is required if any of the following conditions apply:
 
-- **For-Profit Use**: If you use the software to generate revenue in any capacity.
-- **Closed-Source Modifications**: If you modify the software without contributing those modifications back under AGPL-3.0.
-- **Redistribution**: If you redistribute the software or a modified version as part of a proprietary service or product.
+- If you use the software to generate revenue in any capacity.
+- If you modify the software without contributing those modifications back under AGPL-3.0.
+- If you redistribute the software or a modified version as part of a proprietary service or product.
 
 The terms of the commercial license will be based on a sliding scale, considering factors such as the size of your organization, the extent of software usage, and the importance of the software to your business operations.
 
 To obtain a commercial license, or if you have any questions, please contact **sales@agience.ai**.
 
-**Community License**:  
-Organizations that meet any of the following criteria qualify for a free Community License:
+#### Community Commercial License 
+Organizations that meet any of the following criteria qualify for a free Community Commercial License:
 
-- **Non-Profit**: Registered non-profit organizations.
-- **Educational Use**: Accredited educational institutions or students.
-- **Revenue Threshold**: Organizations generating less than $1 million USD in annual revenue. 
+- Registered non-profit organizations.
+- Accredited educational institutions or students.
+- Organizations generating less than $1 million USD in annual revenue. 
 
-The Community License allows you to use the software for non-commercial purposes. However, it does not permit closed-source modifications or redistribution without a separate agreement. 
+The Community Commercial License allows you to use the software for non-commercial purposes. However, it does not permit closed-source modifications or redistribution without a separate agreement. 
 
 If your organization derives value or proceeds from the use of the software, you are encouraged to [donate](https://github.com/sponsors/ikailo) 10% of it back to the project.
 
-To obtain a community license, or if you have any questions, please contact **sales@agience.ai**.
+To obtain a Community Commercial License, or if you have any questions, please contact **sales@agience.ai**.
 
 ---
 

@@ -1,6 +1,6 @@
 # Agience: Intelligent Agents for Everyone
 
-**Agience** is an **open-source** intelligent **platform** that intuitively and seamlessly **connects devices**, **systems**, and **data** to achieve new levels of **automation** and **efficiency**.
+**Agience** is an **open-source** intelligent agent **platform** that intuitively and seamlessly **connects devices**, **systems**, and **data** to achieve new levels of **automation** and **efficiency**.
 
 This **open-source** platform enables anyone to easily **build**, **deploy**, and **manage** intelligent agents capable of automating tasks, processing complex information, and facilitating communication between devices and systems with scalability and reliability.
 
