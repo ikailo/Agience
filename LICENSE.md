@@ -17,9 +17,9 @@ A full copy of the AGPL-3.0 license can be found in the `LICENSE-AGPL-3.0.txt` f
 #### Commercial License
 A commercial license is required if any of the following conditions apply:
 
-- If you use the software to generate revenue in any capacity.
-- If you modify the software without contributing those modifications back under AGPL-3.0.
-- If you redistribute the software or a modified version as part of a proprietary service or product.
+- **For Profit**: If you use the software to generate revenue in any capacity.
+- **Closed-Source**: If you modify the software without contributing those modifications back under AGPL-3.0.
+- **Redistribution**: If you redistribute the software or a modified version as part of a proprietary service or product.
 
 The terms of the commercial license will be based on a sliding scale, considering factors such as the size of your organization, the extent of software usage, and the importance of the software to your business operations.
 
