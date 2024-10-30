@@ -25,17 +25,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authority", "Authority", "{CA1C732F-4ABA-4390-A035-6FF04CC0A208}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{981EEB57-FE0B-49B1-BBB7-68684144EB45}"
-	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\agience-init-local.bat = stack\Authority\Build\agience-init-local.bat
-		stack\Authority\Build\agience-remove-local.bat = stack\Authority\Build\agience-remove-local.bat
-		stack\Authority\Build\configure-manage-host.bat = stack\Authority\Build\configure-manage-host.bat
-		stack\Authority\Build\docker-down-local.bat = stack\Authority\Build\docker-down-local.bat
-		stack\Authority\Build\docker-up-local.bat = stack\Authority\Build\docker-up-local.bat
-		stack\Authority\Build\ef-migrate.bat = stack\Authority\Build\ef-migrate.bat
-		stack\Authority\Build\generate-certs-internal.bat = stack\Authority\Build\generate-certs-internal.bat
-		stack\Authority\Build\generate-certs-localhost.bat = stack\Authority\Build\generate-certs-localhost.bat
-		stack\Authority\Build\generate-db-password.bat = stack\Authority\Build\generate-db-password.bat
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Broker", "Broker", "{5C66C479-A789-484C-AB3C-4F9CBD6B0E34}"
 	ProjectSection(SolutionItems) = preProject
@@ -105,6 +94,31 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FE
 		..\licenses\LICENSE-AGPL-HEADER.txt = ..\licenses\LICENSE-AGPL-HEADER.txt
 		..\licenses\LICENSE-CC-BY-4.0.txt = ..\licenses\LICENSE-CC-BY-4.0.txt
 		..\licenses\LICENSE-MIT.txt = ..\licenses\LICENSE-MIT.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "internal", "internal", "{DD8BA9D1-2DF7-4BAB-BC51-A969763ADB7C}"
+	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\internal\generate-certs-internal.bat = stack\Authority\Build\internal\generate-certs-internal.bat
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local", "local", "{918D292F-7D76-4138-A596-49BA3ED7E02B}"
+	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\local\agience-init-local.bat = stack\Authority\Build\local\agience-init-local.bat
+		stack\Authority\Build\local\agience-remove-local.bat = stack\Authority\Build\local\agience-remove-local.bat
+		stack\Authority\Build\local\configure-manage-host.bat = stack\Authority\Build\local\configure-manage-host.bat
+		stack\Authority\Build\local\docker-down-local.bat = stack\Authority\Build\local\docker-down-local.bat
+		stack\Authority\Build\local\docker-up-local.bat = stack\Authority\Build\local\docker-up-local.bat
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{763F9332-8AAA-4643-B0FF-BA7217F9E817}"
+	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\common\ef-migrate.bat = stack\Authority\Build\common\ef-migrate.bat
+		stack\Authority\Build\common\generate-db-password.bat = stack\Authority\Build\common\generate-db-password.bat
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development", "development", "{6AD7AA92-3DBD-4881-827C-EB7E4395AC40}"
+	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\development\generate-certs-localhost.bat = stack\Authority\Build\development\generate-certs-localhost.bat
 	EndProjectSection
 EndProject
 Global
@@ -264,6 +278,10 @@ Global
 		{093A0A8B-A879-4EF8-80CF-F4142F7503B4} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{FEF2AC80-11B9-4E17-BE20-17341336A977} = {6D2D0C98-94F4-48C4-AEAF-71C1F9091452}
+		{DD8BA9D1-2DF7-4BAB-BC51-A969763ADB7C} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
+		{918D292F-7D76-4138-A596-49BA3ED7E02B} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
+		{763F9332-8AAA-4643-B0FF-BA7217F9E817} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
+		{6AD7AA92-3DBD-4881-827C-EB7E4395AC40} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C09AE27D-1AEB-4531-98D7-2DA42A029299}
