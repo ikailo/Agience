@@ -18,6 +18,12 @@ COPY src/Core/Agience.Core.csproj Core/
 # Restore dependencies for the Identity project (including Core and Models)
 RUN dotnet restore "Identity/Agience.Authority.Identity.csproj"
 
+# Install EF tools globally
+RUN dotnet tool install --global dotnet-ef
+
+# Ensure the global tools path is in the PATH environment variable
+ENV PATH="$PATH:/root/.dotnet/tools"
+
 # Copy the rest of the source code for Identity and Core
 COPY stack/Authority/Identity/ Identity/
 COPY stack/Authority/Models/ Models/

@@ -1,5 +1,7 @@
 @echo off
 
+SET ENVIRONMENT=%1
+
 setlocal enabledelayedexpansion
 
 :: Define the character set (alphanumeric + special characters)
@@ -19,8 +21,8 @@ SET "NEW_LINE_IDENTITY=AuthorityDbPassword=!randomString!"
 SET "NEW_LINE_DB=POSTGRES_PASSWORD=!randomString!"
 
 :: File paths
-SET FILE_PATH_IDENTITY=..\Identity\.env.local
-SET FILE_PATH_DATABASE=..\Database\.env.local
+SET FILE_PATH_IDENTITY=..\..\Identity\.env.%ENVIRONMENT%
+SET FILE_PATH_DATABASE=..\..\Database\.env.%ENVIRONMENT%
 
 :: Update Authority Identity file (AuthorityDbPassword=)
 SET TEMP_FILE=%TEMP%\tempfile_identity.tmp
@@ -32,7 +34,6 @@ FOR /F "delims=" %%A IN ('TYPE "%FILE_PATH_IDENTITY%"') DO (
         ECHO %%A>>"%TEMP_FILE%"
     )
 )
-
 :: Replace the original Authority Identity file with the updated one
 MOVE /Y "%TEMP_FILE%" "%FILE_PATH_IDENTITY%"
 
@@ -46,7 +47,6 @@ FOR /F "delims=" %%A IN ('TYPE "%FILE_PATH_DATABASE%"') DO (
         ECHO %%A>>"%TEMP_FILE%"
     )
 )
-
 :: Replace the original Authority DB file with the updated one
 MOVE /Y "%TEMP_FILE%" "%FILE_PATH_DATABASE%"
 

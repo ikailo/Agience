@@ -1,8 +1,3 @@
-volumes:  
-    
-  agience_data:
-  icecast_logs:  
-    
 services:
     
   identity:
@@ -30,37 +25,51 @@ services:
   database:  
     restart: always  
     build:
-      context: ..
-      dockerfile: Database/Dockerfile     
+      context: ../../..
+      dockerfile: stack/Authority/Database/Dockerfile     
       args:
         BUILD_ENVIRONMENT: local     
     env_file:
       - ../Database/.env.local
+    ports:
+      - "0.0.0.0:5432:5432"
     volumes:
-        - agience_data:/var/lib/postgresql/data
+      -  authority-data:/var/lib/postgresql/data
 
   broker:
     restart: always  
     build:
-      context: ..
-      dockerfile: Broker/Dockerfile
+      context: ../../..
+      dockerfile: stack/Authority/Broker/Dockerfile
       args:
         BUILD_ENVIRONMENT: local
 
   proxy:
     restart: always  
     build:
-      context: ..
-      dockerfile: Proxy/Dockerfile
+      context: ../../..
+      dockerfile: stack/Authority/Proxy/Dockerfile
       args:
-        BUILD_ENVIRONMENT: local    
+        BUILD_ENVIRONMENT: local   
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:1884:1884"
+      - "0.0.0.0:5001:5001"
+      - "0.0.0.0:5002:5002"
+      #- "0.0.0.0:5432:5432"
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ../Build/certs/local.agience.ai.crt:/etc/nginx/certs/public/local.agience.ai.crt
+      - ../Build/certs/local.agience.ai.key:/etc/nginx/certs/public/local.agience.ai.key
 
   stream:
     restart: always  
     build:      
-      context: ..
-      dockerfile: Stream/Dockerfile      
+      context: ../../..
+      dockerfile: stack/Authority/Stream/Dockerfile      
       args:
         BUILD_ENVIRONMENT: local
     volumes:
-      - icecast_logs:/var/log/icecast  
+      - ../Stream/icecast.local.xml:/etc/icecast.xml
+      - icecast-logs:/var/log/icecast

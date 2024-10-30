@@ -1,0 +1,38 @@
+# Automatically normalize line endings for text files
+* text=auto
+
+# Force Unix-style (LF) line endings for certain file types
+*.sh     text eol=lf
+*.bash   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.json   text eol=lf
+*.md     text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+*.js     text eol=lf
+*.ts     text eol=lf
+*.py     text eol=lf
+*.rb     text eol=lf
+*.conf   text eol=lf
+
+# Force Windows-style (CRLF) line endings for Windows-specific files
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf
+
+# Treat binary files as binary (no line-ending changes)
+*.jpg    binary
+*.png    binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.zip    binary
+*.tar.gz binary
+*.exe    binary
+*.dll    binary
+
+# Specific handling for common document types
+*.docx   binary
+*.xlsx   binary
+*.pptx   binary

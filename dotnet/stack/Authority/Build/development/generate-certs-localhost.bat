@@ -12,7 +12,7 @@ goto EOF
 echo Generating localhost certificates...
 
 dotnet dev-certs https --trust -ep localhost.crt -np --format PEM
-openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt -password pass:
+openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt -passout pass:
 
 :EOF
 

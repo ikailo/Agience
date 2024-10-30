@@ -166,7 +166,7 @@ namespace Agience.Authority.Identity.Data
             modelBuilder.Entity<Log>(lg => {
                 lg.HasKey(lg => lg.Id);
                 lg.ToTable(nameof(Logs));
-                lg.HasOne(lg => lg.Agent).WithMany().HasForeignKey(lg => lg.AgentId);
+                lg.HasOne(lg => lg.Agent).WithMany().HasForeignKey(lg =>lg.AgentId);
             });
         }
 

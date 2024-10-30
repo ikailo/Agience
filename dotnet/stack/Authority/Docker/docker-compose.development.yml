@@ -1,0 +1,75 @@
+services:
+    
+  identity:
+    restart: on-failure
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Identity/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: development
+    environment:
+      - AGIENCE_INITIALIZE=${AGIENCE_INITIALIZE:-false}
+    env_file:
+      - ../Identity/.env.development
+
+  manage:
+    restart: always
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Manage/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: development    
+    env_file:
+      - ../Manage/.env.development
+      
+  database:  
+    restart: always  
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Database/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: development     
+    env_file:
+      - ../Database/.env.development
+    ports:
+      - "0.0.0.0:5432:5432"
+    volumes:
+      -  authority-data:/var/lib/postgresql/data
+
+  broker:
+    restart: always  
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Broker/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: development
+
+  proxy:
+    restart: always  
+    build:
+      context: ../../..
+      dockerfile: stack/Authority/Proxy/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: development   
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:1884:1884"
+      - "0.0.0.0:5001:5001"
+      - "0.0.0.0:5002:5002"
+      - "0.0.0.0:5432:5432"
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ../Build/certs/development.agience.ai.crt:/etc/nginx/certs/public/development.agience.ai.crt
+      - ../Build/certs/development.agience.ai.key:/etc/nginx/certs/public/development.agience.ai.key
+
+  stream:
+    restart: always  
+    build:      
+      context: ../../..
+      dockerfile: stack/Authority/Stream/Dockerfile      
+      args:
+        BUILD_ENVIRONMENT: development
+    volumes:
+      - ../Stream/icecast.development.xml:/etc/icecast.xml
+      - icecast-logs:/var/log/icecast

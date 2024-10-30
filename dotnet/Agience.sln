@@ -29,15 +29,18 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Broker", "Broker", "{5C66C479-A789-484C-AB3C-4F9CBD6B0E34}"
 	ProjectSection(SolutionItems) = preProject
 		stack\Authority\Broker\Dockerfile = stack\Authority\Broker\Dockerfile
+		stack\Authority\Broker\mosquitto.development.conf = stack\Authority\Broker\mosquitto.development.conf
 		stack\Authority\Broker\mosquitto.local.conf = stack\Authority\Broker\mosquitto.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{FC9598DC-D390-4A2A-872A-0AF61867F5F0}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Database\.env.local = stack\Authority\Database\.env.local
+		stack\Authority\Database\.env.development = stack\Authority\Database\.env.development
 		stack\Authority\Database\.env.sample = stack\Authority\Database\.env.sample
 		stack\Authority\Database\Dockerfile = stack\Authority\Database\Dockerfile
+		stack\Authority\Database\pg_hba.development.conf = stack\Authority\Database\pg_hba.development.conf
 		stack\Authority\Database\pg_hba.local.conf = stack\Authority\Database\pg_hba.local.conf
+		stack\Authority\Database\postgresql.development.conf = stack\Authority\Database\postgresql.development.conf
 		stack\Authority\Database\postgresql.local.conf = stack\Authority\Database\postgresql.local.conf
 	EndProjectSection
 EndProject
@@ -65,21 +68,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Models", "Models", "{C57207
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Models", "stack\Authority\Models\Agience.Authority.Models.csproj", "{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "conf", "conf", "{93AD863B-0F2C-4FBE-BB4D-5C003D99E59C}"
-	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\conf\agience-net.conf = stack\Authority\Build\conf\agience-net.conf
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proxy", "Proxy", "{093A0A8B-A879-4EF8-80CF-F4142F7503B4}"
 	ProjectSection(SolutionItems) = preProject
 		stack\Authority\Proxy\Dockerfile = stack\Authority\Proxy\Dockerfile
+		stack\Authority\Proxy\nginx.development.conf = stack\Authority\Proxy\nginx.development.conf
 		stack\Authority\Proxy\nginx.local.conf = stack\Authority\Proxy\nginx.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stream", "Stream", "{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79}"
 	ProjectSection(SolutionItems) = preProject
 		stack\Authority\Stream\Dockerfile = stack\Authority\Stream\Dockerfile
-		stack\Authority\Stream\icecast.local.xml = stack\Authority\Stream\icecast.local.xml
+		stack\Authority\Stream\icecast.development.xml = stack\Authority\Stream\icecast.development.xml
 		stack\Authority\Stream\icecast.sample.xml = stack\Authority\Stream\icecast.sample.xml
 	EndProjectSection
 EndProject
@@ -96,28 +95,36 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FE
 		..\licenses\LICENSE-MIT.txt = ..\licenses\LICENSE-MIT.txt
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "internal", "internal", "{DD8BA9D1-2DF7-4BAB-BC51-A969763ADB7C}"
-	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\internal\generate-certs-internal.bat = stack\Authority\Build\internal\generate-certs-internal.bat
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local", "local", "{918D292F-7D76-4138-A596-49BA3ED7E02B}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\local\agience-init-local.bat = stack\Authority\Build\local\agience-init-local.bat
-		stack\Authority\Build\local\agience-remove-local.bat = stack\Authority\Build\local\agience-remove-local.bat
-		stack\Authority\Build\local\configure-manage-host.bat = stack\Authority\Build\local\configure-manage-host.bat
-		stack\Authority\Build\local\docker-down-local.bat = stack\Authority\Build\local\docker-down-local.bat
-		stack\Authority\Build\local\docker-up-local.bat = stack\Authority\Build\local\docker-up-local.bat
+		stack\Authority\Build\local\agience-init.bat = stack\Authority\Build\local\agience-init.bat
+		stack\Authority\Build\local\agience-remove.bat = stack\Authority\Build\local\agience-remove.bat
+		stack\Authority\Build\local\docker-down.bat = stack\Authority\Build\local\docker-down.bat
+		stack\Authority\Build\local\docker-up.bat = stack\Authority\Build\local\docker-up.bat
+		stack\Authority\Build\local\generate-certs-local.agience.ai.bat = stack\Authority\Build\local\generate-certs-local.agience.ai.bat
+		stack\Authority\Build\local\local.agience.ai.conf = stack\Authority\Build\local\local.agience.ai.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{763F9332-8AAA-4643-B0FF-BA7217F9E817}"
 	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\common\agience-init.bat = stack\Authority\Build\common\agience-init.bat
+		stack\Authority\Build\common\agience-net.conf = stack\Authority\Build\common\agience-net.conf
+		stack\Authority\Build\common\agience-remove.bat = stack\Authority\Build\common\agience-remove.bat
+		stack\Authority\Build\common\docker-down.bat = stack\Authority\Build\common\docker-down.bat
+		stack\Authority\Build\common\docker-up.bat = stack\Authority\Build\common\docker-up.bat
 		stack\Authority\Build\common\ef-migrate.bat = stack\Authority\Build\common\ef-migrate.bat
+		stack\Authority\Build\common\generate-certs-internal.bat = stack\Authority\Build\common\generate-certs-internal.bat
+		stack\Authority\Build\common\generate-certs-internal.sh = stack\Authority\Build\common\generate-certs-internal.sh
 		stack\Authority\Build\common\generate-db-password.bat = stack\Authority\Build\common\generate-db-password.bat
+		stack\Authority\Build\common\update-manage-env.bat = stack\Authority\Build\common\update-manage-env.bat
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development", "development", "{6AD7AA92-3DBD-4881-827C-EB7E4395AC40}"
 	ProjectSection(SolutionItems) = preProject
+		stack\Authority\Build\development\agience-init.bat = stack\Authority\Build\development\agience-init.bat
+		stack\Authority\Build\development\agience-remove.bat = stack\Authority\Build\development\agience-remove.bat
+		stack\Authority\Build\development\docker-down.bat = stack\Authority\Build\development\docker-down.bat
+		stack\Authority\Build\development\docker-up.bat = stack\Authority\Build\development\docker-up.bat
 		stack\Authority\Build\development\generate-certs-localhost.bat = stack\Authority\Build\development\generate-certs-localhost.bat
 	EndProjectSection
 EndProject
@@ -274,11 +281,9 @@ Global
 		{B4CF6467-D6E0-4EC6-AD84-B0DE948BF157} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{C5720790-37E0-4F60-831A-3D9EA1FA2455} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3} = {C5720790-37E0-4F60-831A-3D9EA1FA2455}
-		{93AD863B-0F2C-4FBE-BB4D-5C003D99E59C} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 		{093A0A8B-A879-4EF8-80CF-F4142F7503B4} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
 		{FEF2AC80-11B9-4E17-BE20-17341336A977} = {6D2D0C98-94F4-48C4-AEAF-71C1F9091452}
-		{DD8BA9D1-2DF7-4BAB-BC51-A969763ADB7C} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 		{918D292F-7D76-4138-A596-49BA3ED7E02B} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 		{763F9332-8AAA-4643-B0FF-BA7217F9E817} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}
 		{6AD7AA92-3DBD-4881-827C-EB7E4395AC40} = {981EEB57-FE0B-49B1-BBB7-68684144EB45}

@@ -58,12 +58,12 @@ internal class Program
                     var seedArgs = new Dictionary<string,string>();
 
                     // TODO: Use a Model. Get from Configuration.
-                    //seedArgs["web_domain"] = "web.local.agience.ai";                                        
-                    //seedArgs["web_port"] = string.Empty;
-                    //seedArgs["host_name"] = $"public.web.local.agience.ai";
-                    seedArgs["web_domain"] = "localhost";
-                    seedArgs["web_port"] = ":5002";
-                    seedArgs["host_name"] = $"public.web.localhost";
+                    seedArgs["web_domain"] = "web.local.agience.ai";                                        
+                    seedArgs["web_port"] = string.Empty;
+                    seedArgs["host_name"] = $"public.web.local.agience.ai";
+                    //seedArgs["web_domain"] = "localhost";
+                    //seedArgs["web_port"] = "5002";
+                    //seedArgs["host_name"] = $"public.web.localhost";
                     seedArgs["first_name"] = "Test";
                     seedArgs["last_name"] = "User";
                     seedArgs["email"] = $"agience.test.user@{seedArgs["web_domain"]}";

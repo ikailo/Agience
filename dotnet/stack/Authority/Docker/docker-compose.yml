@@ -3,7 +3,12 @@ networks:
   agience-net:
     name: agience-net
     driver: bridge
- 
+
+volumes:  
+    
+  authority-data:
+  icecast-logs:
+   
 services:
     
   identity:  
@@ -42,14 +47,6 @@ services:
     container_name: proxy-cont
     networks:
       - agience-net
-    ports:
-      - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
-      - "0.0.0.0:1884:1884"
-      - "0.0.0.0:5001:5001"
-      - "0.0.0.0:5002:5002"
-      #- "0.0.0.0:5432:5432"
-      - "0.0.0.0:8000:8000"
     depends_on:      
       - "identity"
       - "manage"
