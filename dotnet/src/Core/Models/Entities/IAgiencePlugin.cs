@@ -1,7 +1,7 @@
-﻿namespace Agience.SDK.Models.Entities;
+﻿namespace Agience.Core.Models.Entities;
 
 /// <summary>
-/// Agience Plugin Interface to be recognized as a Kernel Plugin by the SDK.
+/// Agience Plugin Interface to be recognized as a Kernel Plugin by the Core.
 /// </summary>
 public interface IAgiencePlugin
 {

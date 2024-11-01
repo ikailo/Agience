@@ -1,7 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Text
+namespace Agience.Plugins.Core.Text
 {
     internal class Text //: IAgiencePlugin
     {

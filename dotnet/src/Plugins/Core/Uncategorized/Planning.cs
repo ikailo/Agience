@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Threading.Tasks;
 
-namespace Agience.Plugins.Primary.Uncategorized
+namespace Agience.Plugins.Core.Uncategorized
 {
     public sealed class Planning
     {

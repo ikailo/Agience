@@ -1,9 +1,9 @@
-﻿//using Agience.SDK;
+﻿//using Agience.Core;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 using System.Text.Json;
 
-namespace Agience.Plugins.Primary.Uncategorized
+namespace Agience.Plugins.Core.Uncategorized
 {
     public sealed class PlanExecutor
     {

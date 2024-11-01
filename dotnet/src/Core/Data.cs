@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     public class DataJsonConverter : JsonConverter<Data>
     {

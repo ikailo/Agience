@@ -1,6 +1,6 @@
 ﻿using Microsoft.SemanticKernel;
 
-namespace Agience.SDK.Models.Messages
+namespace Agience.Core.Models.Messages
 {
     public class AgienceChatMessageArgs
     {

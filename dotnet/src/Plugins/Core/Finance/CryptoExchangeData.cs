@@ -1,10 +1,10 @@
-﻿//using Agience.SDK;
-//using Agience.SDK.Models;
+﻿//using Agience.Core;
+//using Agience.Core.Models;
 using Binance.Net.Clients;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Finance
+namespace Agience.Plugins.Core.Finance
 {
     public class CryptoExchangeData //: IAgiencePlugin
     {

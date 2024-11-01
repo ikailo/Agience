@@ -1,7 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Interaction
+namespace Agience.Plugins.Core.Interaction
 {
     public class InteractionPlugin
     {

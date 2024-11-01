@@ -1,10 +1,10 @@
-﻿//using Agience.SDK;
+﻿//using Agience.Core;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace Agience.Plugins.Primary.Jira
+namespace Agience.Plugins.Core.Jira
 {
     public class GetTicket
     {

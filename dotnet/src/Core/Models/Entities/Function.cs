@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace Agience.SDK.Models.Entities
+namespace Agience.Core.Models.Entities
 {
     public class Function : AgienceEntity
     {

@@ -18,9 +18,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Console", "stack\Hosts\Console\Agience.Hosts.Console.csproj", "{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Console", "src\Authority\Hosts\Console\Agience.Hosts.Console.csproj", "{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Service", "stack\Hosts\Service\Agience.Hosts.Service.csproj", "{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Service", "src\Authority\Hosts\Service\Agience.Hosts.Service.csproj", "{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authority", "Authority", "{CA1C732F-4ABA-4390-A035-6FF04CC0A208}"
 EndProject
@@ -28,25 +28,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{981EEB57
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Broker", "Broker", "{5C66C479-A789-484C-AB3C-4F9CBD6B0E34}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Broker\Dockerfile = stack\Authority\Broker\Dockerfile
-		stack\Authority\Broker\mosquitto.development.conf = stack\Authority\Broker\mosquitto.development.conf
-		stack\Authority\Broker\mosquitto.local.conf = stack\Authority\Broker\mosquitto.local.conf
+		src\Authority\Broker\Dockerfile = src\Authority\Broker\Dockerfile
+		src\Authority\Broker\entrypoint.sh = src\Authority\Broker\entrypoint.sh
+		src\Authority\Broker\mosquitto.development.conf = src\Authority\Broker\mosquitto.development.conf
+		src\Authority\Broker\mosquitto.local.conf = src\Authority\Broker\mosquitto.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database", "Database", "{FC9598DC-D390-4A2A-872A-0AF61867F5F0}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Database\.env.development = stack\Authority\Database\.env.development
-		stack\Authority\Database\.env.sample = stack\Authority\Database\.env.sample
-		stack\Authority\Database\Dockerfile = stack\Authority\Database\Dockerfile
-		stack\Authority\Database\pg_hba.development.conf = stack\Authority\Database\pg_hba.development.conf
-		stack\Authority\Database\pg_hba.local.conf = stack\Authority\Database\pg_hba.local.conf
-		stack\Authority\Database\postgresql.development.conf = stack\Authority\Database\postgresql.development.conf
-		stack\Authority\Database\postgresql.local.conf = stack\Authority\Database\postgresql.local.conf
+		src\Authority\Database\.env.development = src\Authority\Database\.env.development
+		src\Authority\Database\.env.local = src\Authority\Database\.env.local
+		src\Authority\Database\.env.sample = src\Authority\Database\.env.sample
+		src\Authority\Database\Dockerfile = src\Authority\Database\Dockerfile
+		src\Authority\Database\entrypoint.sh = src\Authority\Database\entrypoint.sh
+		src\Authority\Database\pg_hba.development.conf = src\Authority\Database\pg_hba.development.conf
+		src\Authority\Database\pg_hba.local.conf = src\Authority\Database\pg_hba.local.conf
+		src\Authority\Database\postgresql.conf = src\Authority\Database\postgresql.conf
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Identity", "stack\Authority\Identity\Agience.Authority.Identity.csproj", "{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Identity", "src\Authority\Identity\Agience.Authority.Identity.csproj", "{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Manage", "stack\Authority\Manage\Agience.Authority.Manage.csproj", "{2F694B9E-DE5E-496E-BC63-00A5707A4C58}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Manage", "src\Authority\Manage\Agience.Authority.Manage.csproj", "{2F694B9E-DE5E-496E-BC63-00A5707A4C58}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Core", "src\Core\Agience.Core.csproj", "{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}"
 EndProject
@@ -56,7 +58,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Core.Tests", "src\T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Plugins.Core.Tests", "src\Tests\Plugins\Core\Agience.Plugins.Core.Tests.csproj", "{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}"
 EndProject
-Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "Agience.Authority.Docker", "stack\Authority\Docker\Agience.Authority.Docker.dcproj", "{1A78E214-56F6-4F21-AAFD-7973C6CDC913}"
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "Agience.Authority.Docker", "src\Authority\Docker\Agience.Authority.Docker.dcproj", "{1A78E214-56F6-4F21-AAFD-7973C6CDC913}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docker", "Docker", "{18A3C4F5-0AE7-4390-B45E-16889CEF61AE}"
 EndProject
@@ -66,25 +68,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Manage", "Manage", "{B4CF64
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Models", "Models", "{C5720790-37E0-4F60-831A-3D9EA1FA2455}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Models", "stack\Authority\Models\Agience.Authority.Models.csproj", "{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Authority.Models", "src\Authority\Models\Agience.Authority.Models.csproj", "{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proxy", "Proxy", "{093A0A8B-A879-4EF8-80CF-F4142F7503B4}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Proxy\Dockerfile = stack\Authority\Proxy\Dockerfile
-		stack\Authority\Proxy\nginx.development.conf = stack\Authority\Proxy\nginx.development.conf
-		stack\Authority\Proxy\nginx.local.conf = stack\Authority\Proxy\nginx.local.conf
+		src\Authority\Proxy\Dockerfile = src\Authority\Proxy\Dockerfile
+		src\Authority\Proxy\entrypoint.sh = src\Authority\Proxy\entrypoint.sh
+		src\Authority\Proxy\nginx.local.conf = src\Authority\Proxy\nginx.local.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stream", "Stream", "{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Stream\Dockerfile = stack\Authority\Stream\Dockerfile
-		stack\Authority\Stream\icecast.development.xml = stack\Authority\Stream\icecast.development.xml
-		stack\Authority\Stream\icecast.sample.xml = stack\Authority\Stream\icecast.sample.xml
+		src\Authority\Stream\Dockerfile = src\Authority\Stream\Dockerfile
+		src\Authority\Stream\icecast.development.xml = src\Authority\Stream\icecast.development.xml
+		src\Authority\Stream\icecast.local.xml = src\Authority\Stream\icecast.local.xml
+		src\Authority\Stream\icecast.sample.xml = src\Authority\Stream\icecast.sample.xml
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocol", "Protocol", "{5E921773-1639-4124-BF14-D7F94FD40850}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{5E921773-1639-4124-BF14-D7F94FD40850}"
 	ProjectSection(SolutionItems) = preProject
-		..\protocol\draft-agi-addressing-rfc-v1.md = ..\protocol\draft-agi-addressing-rfc-v1.md
+		..\protocols\draft-addressing-v1.md = ..\protocols\draft-addressing-v1.md
+		..\protocols\draft-topic-masking-v1.md = ..\protocols\draft-topic-masking-v1.md
+		draft-communication-example-v1.md = draft-communication-example-v1.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FEF2AC80-11B9-4E17-BE20-17341336A977}"
@@ -97,36 +102,38 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FE
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "local", "local", "{918D292F-7D76-4138-A596-49BA3ED7E02B}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\local\agience-init.bat = stack\Authority\Build\local\agience-init.bat
-		stack\Authority\Build\local\agience-remove.bat = stack\Authority\Build\local\agience-remove.bat
-		stack\Authority\Build\local\docker-down.bat = stack\Authority\Build\local\docker-down.bat
-		stack\Authority\Build\local\docker-up.bat = stack\Authority\Build\local\docker-up.bat
-		stack\Authority\Build\local\generate-certs-local.agience.ai.bat = stack\Authority\Build\local\generate-certs-local.agience.ai.bat
-		stack\Authority\Build\local\local.agience.ai.conf = stack\Authority\Build\local\local.agience.ai.conf
+		src\Authority\Build\local\agience-init.bat = src\Authority\Build\local\agience-init.bat
+		src\Authority\Build\local\agience-remove.bat = src\Authority\Build\local\agience-remove.bat
+		src\Authority\Build\local\docker-down.bat = src\Authority\Build\local\docker-down.bat
+		src\Authority\Build\local\docker-up.bat = src\Authority\Build\local\docker-up.bat
+		src\Authority\Build\local\generate-certs-local.agience.ai.bat = src\Authority\Build\local\generate-certs-local.agience.ai.bat
+		src\Authority\Build\local\local.agience.ai.conf = src\Authority\Build\local\local.agience.ai.conf
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{763F9332-8AAA-4643-B0FF-BA7217F9E817}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\common\agience-init.bat = stack\Authority\Build\common\agience-init.bat
-		stack\Authority\Build\common\agience-net.conf = stack\Authority\Build\common\agience-net.conf
-		stack\Authority\Build\common\agience-remove.bat = stack\Authority\Build\common\agience-remove.bat
-		stack\Authority\Build\common\docker-down.bat = stack\Authority\Build\common\docker-down.bat
-		stack\Authority\Build\common\docker-up.bat = stack\Authority\Build\common\docker-up.bat
-		stack\Authority\Build\common\ef-migrate.bat = stack\Authority\Build\common\ef-migrate.bat
-		stack\Authority\Build\common\generate-certs-internal.bat = stack\Authority\Build\common\generate-certs-internal.bat
-		stack\Authority\Build\common\generate-certs-internal.sh = stack\Authority\Build\common\generate-certs-internal.sh
-		stack\Authority\Build\common\generate-db-password.bat = stack\Authority\Build\common\generate-db-password.bat
-		stack\Authority\Build\common\update-manage-env.bat = stack\Authority\Build\common\update-manage-env.bat
+		src\Authority\Build\common\agience-init.bat = src\Authority\Build\common\agience-init.bat
+		src\Authority\Build\common\agience-net.conf = src\Authority\Build\common\agience-net.conf
+		src\Authority\Build\common\agience-remove.bat = src\Authority\Build\common\agience-remove.bat
+		src\Authority\Build\common\docker-down.bat = src\Authority\Build\common\docker-down.bat
+		src\Authority\Build\common\docker-up.bat = src\Authority\Build\common\docker-up.bat
+		src\Authority\Build\common\ef-migrate.bat = src\Authority\Build\common\ef-migrate.bat
+		src\Authority\Build\common\generate-certs-internal.bat = src\Authority\Build\common\generate-certs-internal.bat
+		src\Authority\Build\common\generate-certs-internal.sh = src\Authority\Build\common\generate-certs-internal.sh
+		src\Authority\Build\common\generate-db-password.bat = src\Authority\Build\common\generate-db-password.bat
+		src\Authority\Build\common\update-manage-env.bat = src\Authority\Build\common\update-manage-env.bat
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development", "development", "{6AD7AA92-3DBD-4881-827C-EB7E4395AC40}"
 	ProjectSection(SolutionItems) = preProject
-		stack\Authority\Build\development\agience-init.bat = stack\Authority\Build\development\agience-init.bat
-		stack\Authority\Build\development\agience-remove.bat = stack\Authority\Build\development\agience-remove.bat
-		stack\Authority\Build\development\docker-down.bat = stack\Authority\Build\development\docker-down.bat
-		stack\Authority\Build\development\docker-up.bat = stack\Authority\Build\development\docker-up.bat
-		stack\Authority\Build\development\generate-certs-localhost.bat = stack\Authority\Build\development\generate-certs-localhost.bat
+		src\Authority\Build\development\agience-init.bat = src\Authority\Build\development\agience-init.bat
+		src\Authority\Build\development\agience-remove.bat = src\Authority\Build\development\agience-remove.bat
+		src\Authority\Build\development\docker-down.bat = src\Authority\Build\development\docker-down.bat
+		src\Authority\Build\development\docker-up.bat = src\Authority\Build\development\docker-up.bat
+		src\Authority\Build\development\generate-certs-localhost.bat = src\Authority\Build\development\generate-certs-localhost.bat
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{FE13B17A-2C40-466D-A521-ABF627A12D0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -135,23 +142,20 @@ Global
 		Local|Any CPU = Local|Any CPU
 		Preview|Any CPU = Preview|Any CPU
 		Release|Any CPU = Release|Any CPU
-		Staging|Any CPU = Staging|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Debug|Any CPU.ActiveCfg = Local|Any CPU
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Debug|Any CPU.Build.0 = Local|Any CPU
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Development|Any CPU.ActiveCfg = Local|Any CPU
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Development|Any CPU.Build.0 = Local|Any CPU
+		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Development|Any CPU.ActiveCfg = Development|Any CPU
+		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Development|Any CPU.Build.0 = Development|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Local|Any CPU.ActiveCfg = Local|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Local|Any CPU.Build.0 = Local|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}.Staging|Any CPU.Build.0 = Local|Any CPU
-		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Debug|Any CPU.Build.0 = Development|Any CPU
+		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Development|Any CPU.ActiveCfg = Development|Any CPU
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Development|Any CPU.Build.0 = Development|Any CPU
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Local|Any CPU.ActiveCfg = Local|Any CPU
@@ -160,10 +164,8 @@ Global
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3}.Staging|Any CPU.Build.0 = Local|Any CPU
-		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Debug|Any CPU.Build.0 = Development|Any CPU
+		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Development|Any CPU.ActiveCfg = Development|Any CPU
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Development|Any CPU.Build.0 = Development|Any CPU
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Local|Any CPU.ActiveCfg = Local|Any CPU
@@ -172,10 +174,8 @@ Global
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F}.Staging|Any CPU.Build.0 = Local|Any CPU
-		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Debug|Any CPU.Build.0 = Development|Any CPU
+		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Development|Any CPU.ActiveCfg = Development|Any CPU
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Development|Any CPU.Build.0 = Development|Any CPU
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Local|Any CPU.ActiveCfg = Local|Any CPU
@@ -184,8 +184,6 @@ Global
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{2F694B9E-DE5E-496E-BC63-00A5707A4C58}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -196,8 +194,6 @@ Global
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -208,8 +204,6 @@ Global
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -220,8 +214,6 @@ Global
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{266B7B41-7356-42B0-A54B-20D13139B2C8}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -232,20 +224,15 @@ Global
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1}.Staging|Any CPU.Build.0 = Local|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Debug|Any CPU.ActiveCfg = Development|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Development|Any CPU.ActiveCfg = Development|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Development|Any CPU.Build.0 = Development|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Local|Any CPU.ActiveCfg = Local|Any CPU
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Local|Any CPU.Build.0 = Local|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Preview|Any CPU.ActiveCfg = Preview|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Preview|Any CPU.Build.0 = Preview|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Staging|Any CPU.ActiveCfg = Release|Any CPU
-		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Staging|Any CPU.Build.0 = Release|Any CPU
+		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Preview|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Preview|Any CPU.Build.0 = Debug|Any CPU
+		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Release|Any CPU.ActiveCfg = Development|Any CPU
+		{1A78E214-56F6-4F21-AAFD-7973C6CDC913}.Release|Any CPU.Build.0 = Development|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Debug|Any CPU.ActiveCfg = Development|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Debug|Any CPU.Build.0 = Development|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Development|Any CPU.ActiveCfg = Development|Any CPU
@@ -256,14 +243,11 @@ Global
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Preview|Any CPU.Build.0 = Preview|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Staging|Any CPU.ActiveCfg = Local|Any CPU
-		{4E4283BA-D013-458E-AB8C-ADF40F9DA6A3}.Staging|Any CPU.Build.0 = Local|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{A6C497C8-5E31-4360-B580-9945D9CD25D8} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
 		{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F} = {C0642FFB-6731-49CC-A921-DF9931CB6130}
 		{1C703DD9-6E2C-4F67-A5D0-E6D14ECBDEE3} = {C0642FFB-6731-49CC-A921-DF9931CB6130}
 		{981EEB57-FE0B-49B1-BBB7-68684144EB45} = {CA1C732F-4ABA-4390-A035-6FF04CC0A208}
@@ -272,7 +256,7 @@ Global
 		{E578C0EB-4BB6-46F4-A2A6-FD8627C6C11F} = {91315078-C92C-404C-88F7-0C748B5CF26F}
 		{2F694B9E-DE5E-496E-BC63-00A5707A4C58} = {B4CF6467-D6E0-4EC6-AD84-B0DE948BF157}
 		{F7EA54D5-E238-4482-B6BC-C82BF2F03C3A} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
-		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E} = {BEE4786B-6E4B-4A67-BD21-87134B3CD389}
+		{388707F1-1ED3-4AB4-8906-7B17E01AAB1E} = {FE13B17A-2C40-466D-A521-ABF627A12D0A}
 		{266B7B41-7356-42B0-A54B-20D13139B2C8} = {A6C497C8-5E31-4360-B580-9945D9CD25D8}
 		{D87BECED-12DC-4CE0-94BA-D9A70FA1FCF1} = {A6C497C8-5E31-4360-B580-9945D9CD25D8}
 		{1A78E214-56F6-4F21-AAFD-7973C6CDC913} = {18A3C4F5-0AE7-4390-B45E-16889CEF61AE}

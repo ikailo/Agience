@@ -1,7 +1,7 @@
 ﻿using System.Web;
 using AutoMapper;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Authorizer), ReverseMap = true)]
     public class Authorizer : Models.Entities.Authorizer

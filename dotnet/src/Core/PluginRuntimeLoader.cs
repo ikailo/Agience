@@ -1,10 +1,10 @@
-﻿using Agience.SDK.Extensions;
+﻿using Agience.Core.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using System.Reflection;
-using Agience.SDK.Models.Entities;
+using Agience.Core.Models.Entities;
 
-namespace Agience.SDK;
+namespace Agience.Core;
 
 /// <summary>
 /// Loads Plugins on runtime using reflection.

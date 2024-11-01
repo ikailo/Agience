@@ -1,7 +1,7 @@
-using Agience.Plugins.Primary.Finance;
+using Agience.Plugins.Core.Finance;
 using FluentAssertions;
 
-namespace Agience.Plugins.Primary.Tests.Finance;
+namespace Agience.Plugins.Core.Tests.Finance;
 
 public class CryptoExchangeDataTests
 {

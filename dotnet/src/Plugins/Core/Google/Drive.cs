@@ -1,8 +1,8 @@
-﻿//using Agience.SDK;
+﻿//using Agience.Core;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Google
+namespace Agience.Plugins.Core.Google
 {
     internal class Drive 
     {   

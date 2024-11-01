@@ -10,7 +10,7 @@ using NuGet.Packaging.Signing;
 using NuGet.Resolver;
 using NuGet.Frameworks;
 
-namespace Agience.SDK.Extensions
+namespace Agience.Core.Extensions
 {
     internal static class NuGetExtensions
     {

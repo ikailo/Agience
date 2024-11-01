@@ -1,0 +1,83 @@
+services:
+    
+  identity:
+    restart: on-failure
+    build:
+      context: ../..
+      dockerfile: Authority/Identity/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: development
+    ports:
+      - "0.0.0.0:5001:5001"
+    environment:
+      - AGIENCE_INITIALIZE=${AGIENCE_INITIALIZE:-false}
+    env_file:
+      - ../Identity/.env.development
+    volumes:
+      - ../Build/certs/localhost.pfx:/app/https/localhost.pfx:ro
+      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx:ro
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt:ro
+    entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
+
+  manage:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: Authority/Manage/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: development  
+    ports:
+      - "0.0.0.0:5002:5002"
+    env_file:
+      - ../Manage/.env.development
+    volumes:
+      - ../Build/certs/localhost.pfx:/app/https/localhost.pfx
+      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+    entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
+    
+      
+  database:  
+    restart: always  
+    build:
+      context: ../..
+      dockerfile: Authority/Database/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: development     
+    env_file:
+      - ../Database/.env.development
+    #ports:
+    #  - "0.0.0.0:5432:5432"
+    volumes:      
+      - ../Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt
+      - ../Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key
+      - authority-data:/var/lib/postgresql/data
+
+  broker:
+    restart: always  
+    build:
+      context: ../..
+      dockerfile: Authority/Broker/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: development
+    ports:      
+      - "0.0.0.0:1884:1884"
+    volumes:
+      - ../Build/certs/localhost.crt:/etc/mosquitto/certs/localhost.crt
+      - ../Build/certs/localhost.key:/etc/mosquitto/certs/localhost.key
+      - ../Build/certs/agience-net.crt:/etc/mosquitto/certs/agience-net.crt
+      - ../Build/certs/agience-net.key:/etc/mosquitto/certs/agience-net.key
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+
+  stream:
+    restart: always  
+    build:      
+      context: ../..
+      dockerfile: Authority/Stream/Dockerfile      
+      args:
+        BUILD_ENVIRONMENT: development
+    ports:
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ../Stream/icecast.development.xml:/etc/icecast.xml:ro
+      - icecast-logs:/var/log/icecast

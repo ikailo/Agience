@@ -1,9 +1,9 @@
-﻿//using Agience.SDK;
-//using Agience.SDK.Models;
+﻿//using Agience.Core;
+//using Agience.Core.Models;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Text
+namespace Agience.Plugins.Core.Text
 {
     public class CharacterLength //: IAgiencePlugin
     {

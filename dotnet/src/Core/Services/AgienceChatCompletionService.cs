@@ -1,7 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-namespace Agience.SDK.Services
+namespace Agience.Core.Services
 {
     public class AgienceChatCompletionService : IChatCompletionService
     {

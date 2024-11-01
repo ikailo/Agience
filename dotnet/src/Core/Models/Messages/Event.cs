@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK.Models.Messages
+﻿namespace Agience.Core.Models.Messages
 {
     public enum Event
     {

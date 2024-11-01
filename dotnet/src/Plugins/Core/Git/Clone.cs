@@ -2,7 +2,7 @@
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Git
+namespace Agience.Plugins.Core.Git
 {
     internal class Clone
     {/*

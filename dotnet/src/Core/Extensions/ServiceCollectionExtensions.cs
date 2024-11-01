@@ -1,8 +1,7 @@
-﻿using Agience.SDK.Models.Entities;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Agience.SDK.Extensions
+namespace Agience.Core.Extensions
 {
     public static class ServiceCollectionExtensions
     {
@@ -25,8 +24,10 @@ namespace Agience.SDK.Extensions
             services.AddSingleton(sp =>
             {
                 var broker = sp.GetRequiredService<Broker>();
-                var logger = sp.GetRequiredService<ILogger<Authority>>();
-                return new Authority(authorityUri, broker, null, logger, authorityUriInternal, brokerUriInternal);
+                var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+                var logger = sp.GetRequiredService<ILogger<Authority>>();               
+
+                return new Authority(authorityUri, broker, serviceScopeFactory, logger, authorityUriInternal, brokerUriInternal);
             });
 
             services.AddSingleton(sp =>
@@ -63,10 +64,12 @@ namespace Agience.SDK.Extensions
             services.AddSingleton(sp =>
             {
                 var broker = sp.GetRequiredService<Broker>();
-                var dataAdapter = sp.GetRequiredService<IAuthorityDataAdapter>();
+                var serviceScopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
                 var logger = sp.GetRequiredService<ILogger<Authority>>();
-                return new Authority(authorityUri, broker, dataAdapter, logger, authorityUriInternal, brokerUriInternal);
+
+                return new Authority(authorityUri, broker, serviceScopeFactory, logger, authorityUriInternal, brokerUriInternal);
             });
         }
     }
+
 }

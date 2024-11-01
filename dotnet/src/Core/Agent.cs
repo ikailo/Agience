@@ -4,11 +4,11 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using System.Collections.Concurrent;
 using Timer = System.Timers.Timer;
 using AutoMapper;
-using Agience.SDK.Mappings;
-using Agience.SDK.Models.Messages;
+using Agience.Core.Mappings;
+using Agience.Core.Models.Messages;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Agent), ReverseMap = true)]
     public class Agent : Models.Entities.Agent, IDisposable

@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     public class Information
     {

@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK.Logging
+﻿namespace Agience.Core.Logging
 {
     public interface IAgienceEventLogHandler
     {

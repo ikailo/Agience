@@ -1,6 +1,6 @@
-﻿using Agience.SDK.Extensions;
-using Agience.SDK.Logging;
-using Agience.SDK.Services;
+﻿using Agience.Core.Extensions;
+using Agience.Core.Logging;
+using Agience.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -8,7 +8,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using NuGet.Protocol.Plugins;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     internal class AgentFactory : IDisposable
     {

@@ -4,7 +4,7 @@ using static System.Net.Mime.MediaTypeNames;
 using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions.Common;
 
-namespace Agience.SDK.Tests;
+namespace Agience.Core.Tests;
 
 public class PluginRuntimeLoaderTests
 {
@@ -75,7 +75,7 @@ public class PluginRuntimeLoaderTests
             Directory.CreateDirectory(_pluginFolderName);
 
         // TODO: Use environment variable (Local) instead of hardcoding
-        var libraryFile = new FileInfo(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.Parent.FullName + "\\Core\\Plugins\\Primary\\bin\\Local\\net8.0\\Agience.Plugins.Primary.dll");
+        var libraryFile = new FileInfo(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.Parent.FullName + "\\Core\\Plugins\\Primary\\bin\\Local\\net8.0\\Agience.Plugins.Core.dll");
 
         if (!libraryFile.Exists)
             return false;

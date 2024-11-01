@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
 
-namespace Agience.SDK.Logging
+namespace Agience.Core.Logging
 {
     public class AgienceEventLoggerProvider : ILoggerProvider
     {

@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK
+﻿namespace Agience.Core
 {
     public class HostConfig
     {

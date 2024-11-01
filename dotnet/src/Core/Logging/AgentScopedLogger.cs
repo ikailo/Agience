@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Agience.SDK.Logging
+namespace Agience.Core.Logging
 {
     public class AgentScopedLogger<T> : ILogger<T>, IDisposable
     {

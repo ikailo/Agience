@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK.Attributes
+﻿namespace Agience.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class PluginConnectionAttribute : Attribute

@@ -1,7 +1,7 @@
 ﻿using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Uncategorized
+namespace Agience.Plugins.Core.Uncategorized
 {
     public class AuthorEmailPlanner
     {

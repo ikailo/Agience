@@ -1,8 +1,8 @@
-﻿//using Agience.SDK;
+﻿//using Agience.Core;
 using Microsoft.SemanticKernel;
 using System.ComponentModel;
 
-namespace Agience.Plugins.Primary.Files
+namespace Agience.Plugins.Core.Files
 {
     internal class Delete 
     {

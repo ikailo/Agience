@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using QuikGraph;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     public class InformationVertex
     {

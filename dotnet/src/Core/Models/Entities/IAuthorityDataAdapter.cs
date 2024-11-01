@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK.Models.Entities
+﻿namespace Agience.Core.Models.Entities
 {
     public interface IAuthorityDataAdapter
     {

@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel;
-using Agience.SDK.Services;
-using Agience.SDK.Attributes;
+using Agience.Core.Services;
+using Agience.Core.Attributes;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace Agience.Plugins.Primary.OpenAI
+namespace Agience.Plugins.Core.OpenAI
 {
     [PluginConnection(CONNECTION_NAME)]
     public class ChatCompletionPlugin

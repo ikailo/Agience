@@ -1,0 +1,94 @@
+services:
+    
+  identity:
+    restart: on-failure
+    build:
+      context: ../..
+      dockerfile: Authority/Identity/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: local
+    environment:
+      - AGIENCE_INITIALIZE=${AGIENCE_INITIALIZE:-false}
+    env_file:
+      - ../Identity/.env.local
+    volumes:
+      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+    entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
+
+  manage:
+    restart: always
+    build:
+      context: ../..
+      dockerfile: Authority/Manage/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local  
+    env_file:
+      - ../Manage/.env.local
+    volumes:
+      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+    entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
+      
+  database:  
+    restart: always  
+    build:
+      context: ../..
+      dockerfile: Authority/Database/Dockerfile     
+      args:
+        BUILD_ENVIRONMENT: local     
+    env_file:
+      - ../Database/.env.local
+    volumes:
+      -  authority-data:/var/lib/postgresql/data
+      - ../Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt
+      - ../Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key
+
+  broker:
+    restart: always  
+    build:
+      context: ../..
+      dockerfile: Authority/Broker/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local
+    volumes:
+      - ../Build/certs/agience-net.crt:/etc/mosquitto/certs/agience-net.crt
+      - ../Build/certs/agience-net.key:/etc/mosquitto/certs/agience-net.key
+      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+
+  proxy:
+    image: proxy:latest
+    container_name: proxy-cont
+    networks:
+      - agience-net
+    depends_on:      
+      - "identity"
+      - "manage"
+      - "broker"
+    restart: always  
+    build:
+      context: ../..
+      dockerfile: Authority/Proxy/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: local   
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:1884:1884"
+      - "0.0.0.0:5001:5001"
+      - "0.0.0.0:5002:5002"
+      - "0.0.0.0:8000:8000"
+    volumes:
+      - ../Build/certs/local.agience.ai.crt:/etc/nginx/certs/public/local.agience.ai.crt
+      - ../Build/certs/local.agience.ai.key:/etc/nginx/certs/public/local.agience.ai.key
+
+  stream:
+    restart: always  
+    build:      
+      context: ../..
+      dockerfile: Authority/Stream/Dockerfile      
+      args:
+        BUILD_ENVIRONMENT: local
+    volumes:
+      - ../Stream/icecast.local.xml:/etc/icecast.xml
+      - icecast-logs:/var/log/icecast

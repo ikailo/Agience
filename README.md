@@ -12,66 +12,127 @@ This **open-source** platform enables anyone to easily **build**, **deploy**, an
  
 - **Seamless Integration**: Agience is adaptable to any addressable protocol, ensuring reliable connectivity across systems.
  
-- **Open-Source**: Agience is released under the LGPLv3 license, allowing anyone to use, modify, and distribute the software. You can build anything using Agience, but any modifications to the framework or platform must be shared with the community for the benefit of humanity.
+- **Open-Source**: Agience is released under the AGPL-3.0 license, allowing anyone to use, modify, and distribute the software. You can build anything using Agience, but any modifications to the framework or platform must be shared with the community for the benefit of humanity.
 
 ## Framework Architecture
 
-The Agience Framework standardizes communication between agents, hosts, and their authority, facilitating synchronization and efficient resource management across the network.
+Agience is a distributed intelligent agent platform comprized of a network of **authorities** that provides essential services such as an identity provider, message broker, streaming server, databases, and management APIs. These components enable secure, coordinated interactions across a network of hosts, agents, and topics, each managed by their respective authorities.
 
-### Host
-The **Host** application is deployed on devices or systems, enabling agents to interact with local services and resources.
+A host, deployed on devices or systems, provides computational resources and manages information flow between agents and topics while following instructions from its authority. Agents, acting as digital representatives of people, perform tasks and share information through topics. Agents adhere to the boundaries set by their authority, interacting directly to represent the individuals they serve.
 
-### Agents and Agencies
-**Agents** are autonomous units that perform specific tasks, gather data, and communicate with other agents. Connected agents form an **agency**, allowing for coordinated tasks and shared access to data and services.
+Each authority governs the permissions and interactions of its agents, hosts, and topics, with JWT-based authorization managed by an identity provider (IDP). Authorities can establish trusted relationships, enabling agents from different authorities to interact across boundaries when permitted. This approach ensures agents operate securely within designated scopes and adhere to specified permissions across the Agience ecosystem.
 
-### Functions and Plugins
-**Functions** are predefined tasks or behaviors that agents perform, such as controlling external systems, analyzing data, or facilitating communications. **Plugins** extend agent capabilities by bundling related functions.
+## Configuration Options
 
-### Authority
-The **authority** manages governance, resources, identity, and metadata for hosts and agents. It also facilitates and enforces sharing and ownership within its own domain and with other authorities.
+### **Preview Instance**: A public web host using the Agience Authority.
 
-## Getting Started
+### **Host Preview**: A local host connected to the Agience Preview Authority.
 
-Sign-up: https://web.preview.agience.ai
 
-### Prerequisites
+ 
+### **Developer**: A fully local setup with both a local host and local authority.
 
-Visual Studio 2022
+Prerequsites:
+  - [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
+  - [dotnet-ef](https://www.nuget.org/packages/dotnet-ef)
+  - [GIT](https://www.git-scm.com/downloads)
+  - [Docker](https://docs.docker.com/desktop/install/windows-install/)
+  - [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)
 
-### Installation
+1. **Clone the Repository**: Start by cloning the Agience repository to get access to the source code and configuration files.
 
-**Instructions:** [docs/agience-preview-connect.pdf](docs/agience-preview-connect.pdf)
+   ```bash
+   git clone https://github.com/ikailo/Agience.git
+   ```
 
-git clone https://github.com/ikailo/Agience.git
+2. **Navigate to the Build Directory**: Change into the build directory within the Agience stack. This directory contains configuration and startup scripts for setting up Agience.
 
-- In Agience.Hosts.Console User-Secrets, add HostId, HostSecret, AuthorityUri, and OpenAiApiKey.
-	- In the web preview user interface. Create a host and then generate a key.
-	- AuthorityUri: https://authority.preview.agience.ai
-	- Get a key from OpenAI.
+   ```bash
+   cd Agience/dotnet/src/Authority/Build/development
+   ```
 
-- In web preview, setup an agency and agent, and assign it to the same host.
-- You can add plugins and functions according to the instructions in the pdf doc.
+3. **Run Initialization Script**: Execute the initialization batch file to set up essential dependencies and configurations.
 
-### Running in Docker
+   ```powershell
+   .\agience-init.bat
+   ```
 
-Coming Soon.
+   Accept any prompts that appear during the initialization process.
 
-# AGI Addressing RFC Proposal
+#### Complete Configuration
 
-This repository hosts the draft of an IETF proposal for the `agi://` protocol, which enables the resolution of agent, host, person, and topic addresses by rerouting to existing protocols such as HTTPS, validated using DKIM and JWT.
+After running the initialization script, you’ll need to complete a few outstanding configurations in the `.env.development` files. These files are now located within the `Agience.Authority.Manage` and `Agience.Authority.Identity` directories and control API keys and other credentials.
 
-## Purpose
+1. **Edit Agience.Authority.Manage Environment File**
 
-The goal of this proposal is to provide a standardized method for resolving `agi://` addresses while integrating with existing email and web-based protocols.
+  - Obtain an [OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key) and set it in the `.env.development` file located in `Agience.Authority.Manage`.
+   
+   ```plaintext
+   Agience.Authority.Manage/.env.development
+   HostOpenAiApiKey=<Your_OpenAI_API_Key>
+   ```
 
-## Current Draft
+2. **Edit Agience.Authority.Identity Environment File**  
 
-The current draft can be found in the `/drafts` folder:  
-- [drafts/draft-agi-addressing-rfc-v1.md](drafts/draft-agi-addressing-rfc-v1.md)
+  - Obtain [Google OAuth2.0 Credentials](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred) for Server-side Web Apps.
+	- Enter `https://localhost:5001` for Authorized JavaScript origins.
+	- Enter `https://localhost:5001/signin-google` for Authorized redirect URIs.
+
+	  Additional option for **local** builds (see below):
+	- Enter `https://authority.local.agience.ai` for Authorized JavaScript origins.
+	- Enter `https://authority.local.agience.ai/signin-google` for Authorized redirect URIs.
+
+   In the `.env.development` file located in `Agience.Authority.Identity`, set the following:
+
+   ```plaintext
+   Agience.Authority.Identity/.env.development
+   GoogleClientId=<Your_Google_Client_ID>
+   GoogleClientSecret=<Your_Google_Client_Secret>
+   ```
+
+   These credentials enable Google authentication for Agience.
+
+#### Start Docker Services
+
+Once the configuration is complete, you can start the necessary Docker services for Agience by running the following command:
+
+```powershell
+.\docker-up
+```
+
+This script will bring up the required Docker containers, such as the database, message broker, and any other necessary services specified in the configuration.
+
+---
+
+### **Local Build**
+
+The development build accesses the Agience stack on the `https://localhost:<port>` domain. This is good for debugging and testing locally.
+
+You can also run it locally using the `*.local.agience.ai` domains. This is an example of how it is intended to be hosted, however it does not support debuggind directly.
+
+Run the .\agience-init script from the Build\local directory.  Then run the .\docker-up script to start the services.
+
+
+## Additional Notes:
+
+When in development build, you can debug a project by stopping that specific container and then choosing the `Debug` option in Visual Studio. For example, for the Manage project, you would stop the `manage` container and then choose `Debug` in Visual Studio.
+
+```powershell
+.\docker-down manage
+```
+
+Then run the container in debug mode.
+
 
 # How to Contribute
 
 We welcome feedback from the community! Please feel free to:
 
 - **Submit Issues**: For suggestions, bugs, or questions.
-- **Create Pull Requests**: For proposed changes or improvements to the RFC or associated documentation.
+- **Create Pull Requests**: For proposed changes or improvements.
+- **Join Discussions**: On [Discord](https://discord.gg/fyWWqzeUKH)
+- **Spread the Word**: Tell others about Agience and help grow the community.
+- **Share Your Projects**: Let us know how you're using or planning to use Agience.
+- **Provide Feedback**: Share your thoughts on the platform and how we can improve it.
+- **Suggest Features**: Share your ideas for new features and improvements.
+- **Engage with the Community**: Join discussions and share your knowledge.

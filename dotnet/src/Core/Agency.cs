@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
-using Agience.SDK.Mappings;
+using Agience.Core.Mappings;
 using Microsoft.Extensions.Logging;
-using Agience.SDK.Models.Messages;
+using Agience.Core.Models.Messages;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Agency), ReverseMap = true)]
     public class Agency : Models.Entities.Agency

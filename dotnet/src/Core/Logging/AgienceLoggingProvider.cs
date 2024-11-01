@@ -1,8 +1,8 @@
-﻿using Agience.SDK.Logging;
+﻿using Agience.Core.Logging;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
-namespace Agience.SDK.Logging
+namespace Agience.Core.Logging
 {
     public class AgienceLoggerProvider : ILoggerProvider
     {

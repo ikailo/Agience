@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Agience.Plugins.Primary.Slack
+namespace Agience.Plugins.Core.Slack
 {
     internal class SlackPlugin
     {

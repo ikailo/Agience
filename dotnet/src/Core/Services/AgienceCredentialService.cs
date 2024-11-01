@@ -1,4 +1,4 @@
-﻿namespace Agience.SDK.Services
+﻿namespace Agience.Core.Services
 {
     public class AgienceCredentialService
     {

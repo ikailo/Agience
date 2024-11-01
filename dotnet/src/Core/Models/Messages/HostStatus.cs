@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Agience.SDK.Models.Messages
+namespace Agience.Core.Models.Messages
 {
     internal class HostStatus
     {

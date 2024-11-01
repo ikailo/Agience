@@ -1,6 +1,6 @@
-﻿using Agience.SDK.Mappings;
-using Agience.SDK.Models.Entities;
-using Agience.SDK.Models.Messages;
+﻿using Agience.Core.Mappings;
+using Agience.Core.Models.Entities;
+using Agience.Core.Models.Messages;
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -10,7 +10,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Host), ReverseMap = true)]
     public class Host

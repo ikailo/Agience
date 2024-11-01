@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using System.Reflection;
 
-namespace Agience.SDK.Mappings
+namespace Agience.Core.Mappings
 {
     internal static class AutoMapperConfig
     {

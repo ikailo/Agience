@@ -5,7 +5,7 @@ using Google.Apis.Gmail.v1.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 
-namespace Agience.Plugins.Primary.Google
+namespace Agience.Plugins.Core.Google
 {  
 
     public class GmailServiceHelper

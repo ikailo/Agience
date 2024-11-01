@@ -1,0 +1,395 @@
+﻿@page
+@using System.Text.Json
+@model Agience.Authority.Manage.Pages.IndexModel
+@{
+    ViewBag.Title = "Agience";
+    string agenciesJson = JsonSerializer.Serialize(Model.Agencies);
+
+    var entityName = Model.ActiveAgency?.Name ?? $"{Model.ActiveAgent?.Agency?.Name} > {Model.ActiveAgent?.Name}";
+    var entityId = Model.ActiveAgent?.Id ?? Model.ActiveAgency?.Id;
+    var entityType = Model.ActiveAgent != null ? "Agent" : "Agency";
+}
+
+<form method="post">
+    <input type="hidden" name="agenciesJson" value="@agenciesJson" />
+    <input type="hidden" name="activeTab" id="activeTab" value="@TempData["ActiveTab"]" />
+    <input type="hidden" name="activeAgencyId" id="activeAgencyId" value="@TempData["ActiveAgencyId"]" />
+    <input type="hidden" name="activeAgentId" id="activeAgentId" value="@TempData["ActiveAgentId"]" />
+
+    <div class="tab-container">
+        <div class="tab-container-header w-100">
+            <div class="tab-container-name">Console</div>
+            @foreach (var tabName in new[] { "Interaction", "Logs" })
+            {
+                <div class="tab-header-item@(TempData["ActiveTab"]?.ToString() == tabName.ToLower() ? " active" : "")" id="tab-header-item-@tabName.ToLower()">
+                    <button type="button" onclick="setActiveTab('@tabName.ToLower()')">@tabName</button>
+                </div>
+            }
+        </div>
+
+        <div class="tab-container-content w-100">
+            <div class="left-column">
+                <ul class="list-accordion">
+                    @foreach (var agency in Model.Agencies)
+                    {
+                        <li class="list-accordion-item" id="list-accordion-item-@agency.Id">
+                            <div class="list-accordion-label@(TempData["ActiveAgencyId"]?.ToString() == agency.Id ? " active" : "")">
+                                @if (agency.Agents.Any())
+                                {
+                                    <div class="list-accordion-toggle" onclick="toggleAccordion(this)">
+                                        <span class="list-accordion-carat down  @(agency.IsConnected ? "green" : "red")">&gt;</span>
+                                    </div>
+                                }
+                                <div class="list-accordion-button">
+                                    <button type="button" value="@agency.Id" onclick="setActiveAgency('@agency.Id')">@agency.Name</button>
+                                </div>
+                            </div>
+                            @if (agency.Agents.Any())
+                            {
+                                <ul class="list-accordion-sub-items">
+                                    @foreach (var agent in agency.Agents)
+                                    {
+                                        <li class="list-accordion-sub-item expand" id="list-accordion-sub-item-@agent.Id">
+                                            <div class="list-accordion-label@(TempData["ActiveAgentId"]?.ToString() == agent.Id ? " active" : "")">
+                                                <div class="list-accordion-status">
+                                                    <span class="list-accordion-bullet @(agent.IsConnected ? "green" : "red")">&bull;</span>
+                                                </div>
+                                                <div class="list-accordion-button">
+                                                    <button type="button" value="@agent.Id" onclick="setActiveAgent('@agent.Id')">@agent.Name</button>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="right-column">
+                @{
+                    var isConnected = (Model.ActiveAgency?.IsConnected ?? false) || (Model.ActiveAgent?.IsConnected ?? false);
+                }
+
+                @if (entityName != null)
+                {
+                    <div class="tab-page">
+                        <p><b>[@entityType] @entityName</b></p>
+                        <div class="tab-content">
+                            @if (TempData["ActiveTab"]?.ToString() == "interaction")
+                            {
+                                <div class="tab-page-content">
+                                    <div class="tab-page-top">
+                                        @if (isConnected)
+                                        {
+                                            <div class="tab-page-top-content chat-messages d-flex flex-column">
+                                                @if (TempData["ChatHistory"] != null)
+                                                {
+                                                    <div>@Html.Raw(TempData["ChatHistory"])</div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="tab-page-top-content">
+                                                <p>Agency or Agent is disabled, offline, or not assigned to this Host.</p>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="tab-page-bottom">
+                                        <div class="tab-page-bottom-content">
+                                            <div class="row w-100 m-auto">
+                                                <div class="col-sm-6 offset-sm-2 p-0">
+                                                    <div>
+                                                        <input class="form-control rounded-pill height-30" id="chat-input" placeholder="Type a message..." @(isConnected ? "" : "disabled") />
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2 p-0 ms-1 text-center">
+                                                    <button type="button" class="btn btn-primary bg-primary rounded-pill w-100 border-0 height-30" id="chat-send-button" onclick="sendMessage(this)" data-entityType="@entityType.ToLower()" data-entityId="@entityId" @(isConnected ? "" : "disabled")>
+                                                        <span><i class="fa-solid fa-paper-plane fa-lg"></i></span>  Send
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else if (TempData["ActiveTab"]?.ToString() == "logs")
+                            {
+                                <div class="logs tab-page-top-content">
+                                    <ul>
+                                        @foreach (var log in Model.AgentLogs)
+                                        {
+                                            <li>@log</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="tab-page">
+                        <p>No agency or agent is currently active.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+
+    <script>
+
+        function initializeChat() {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chat-hub")
+                .withAutomaticReconnect()
+                .build();
+
+            connection.onclose((error) => {
+                if (error) {
+                    console.error("Connection closed due to error:", error);
+                } else {
+                    console.log("Connection closed gracefully.");
+                }
+            });
+
+
+            connection.on("ReceiveLog", (entityId, message) => {
+                console.log("ReceiveLog: " + entityId + " " + message);
+
+                const activeAgencyId = document.getElementById('activeAgencyId').value;
+                const activeAgentId = document.getElementById('activeAgentId').value;
+            });
+
+            connection.start()
+                .then(() => console.log("SignalR Connected", connection.connectionId))
+                .catch(err => console.error("SignalR Connection Error: ", err));
+        }
+
+        function initializeChatInput() {
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('chat-send-button');
+
+            if (chatInput && sendButton) {
+                chatInput.addEventListener('keypress', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendButton.click();
+                    }
+                });
+            }
+        }
+
+
+        async function sendMessage(button) {
+            const chatInput = document.getElementById('chat-input');
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            const entityId = button.getAttribute('data-entityId');
+            const entityType = button.getAttribute('data-entityType');
+            const sendButton = button;
+
+            sendButton.disabled = true;
+            displayMessage('chat-message-outgoing', message);
+            document.getElementById('chat-input').value = '';
+
+            //add loader div to collection
+            createChatLoader();
+
+            try {
+
+                const form = document.forms[0];
+                const formData = new FormData(form);
+                formData.append('entityType', entityType);
+                formData.append('entityId', entityId);
+                formData.append('message', message);
+
+                const response = await fetch(
+                    form.action + "?handler=SendMessage", {
+                    method: form.method,
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                const result = await response.json();
+
+                //remove loader
+                deleteChatLoader();
+
+                if (result.success) {
+                    if (result.response) {
+                        displayMessage('chat-message-incoming', result.response);
+                    }
+
+                    //get previous messages array
+                    var chatHistoryArray = getArrayFromLocalStorage("agentchathistory_" + entityId);
+
+                    //append new message to local storage
+                    var obj = { "agentid": entityId, "chatmessageoutgoing": message, "chatmessageincoming": result.response };
+                    chatHistoryArray.push(obj);
+
+                    //set array to local storage
+                    setArrayInLocalStorage("agentchathistory_" + entityId, chatHistoryArray)
+
+                } else {
+                    alert("Failed to send message.");
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert("An error occurred while sending the message.");
+            } finally {
+                sendButton.disabled = false;
+                chatInput.value = '';
+            }
+        }
+
+        function displayMessage(className, message) {
+            const chatMessages = document.querySelector('.chat-messages');
+            const newMessage = document.createElement('div');
+            newMessage.classList.add('chat-message');
+            newMessage.classList.add(className);
+            newMessage.textContent = message;
+            chatMessages.appendChild(newMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function handleAgencyHistoryUpdated(agencyId, message) {
+
+            const activeAgencyId = document.getElementById('activeAgencyId').value;
+            const activeAgentId = document.getElementById('activeAgentId').value;
+
+            if (agencyId === activeAgencyId || agencyId === activeAgentId) {
+                updateHistory(message);
+            }
+        }
+
+        function setActiveTab(tabName) {
+            document.getElementById('activeTab').value = tabName;
+            document.forms[0].submit();
+        }
+
+        function setActiveAgency(agencyId) {
+            document.getElementById('activeAgencyId').value = agencyId;
+            document.forms[0].submit();
+        }
+
+        function setActiveAgent(agentId) {
+            document.getElementById('activeAgentId').value = agentId;
+            document.forms[0].submit();
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            initializeChat();
+            initializeChatInput();
+
+            if (document.getElementById('activeTab').value == "logs") {
+                const logsContainer = document.querySelector('.logs ul');
+                if (logsContainer) {
+
+                    //get logs
+                    var agentLogs = await fetchLogs();
+                    
+                    //append logs
+                    if (agentLogs != null) {
+                        for (let i = 0; i < agentLogs.length; i++) {
+                            const agentLog = agentLogs[i];
+                            const newLog = document.createElement('li');
+
+                            newLog.textContent = "ReceiveLog:"+ agentLog.agent_id + " " + agentLog.log_text;
+
+                            logsContainer.appendChild(newLog);
+                        }
+                    }
+                }
+            }
+
+            if (document.getElementById('activeTab').value == "interaction") 
+            {
+                //load previous chat history of selected agent
+                var agentId = document.getElementById('activeAgentId').value;
+                if(agentId!=null && agentId!=""){
+                    displayChatHistory(agentId);
+                }
+            }
+        });
+
+        //function to get logs by active agent
+        async function fetchLogs() {
+            const form = document.forms[0]; 
+
+            var agentId = document.getElementById('activeAgentId').value;
+
+            //request to get logs
+            const response = await fetch('?handler=GetLogsByAgentId&agentId=' + agentId);
+
+            //get response
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+
+            return result.success = true ? result.response : null;
+        }
+
+        // function to set array in local storage
+        function setArrayInLocalStorage(key, array) {
+            localStorage.setItem(key, JSON.stringify(array));
+        }
+
+        // function to retrieve array from local storage
+        function getArrayFromLocalStorage(key) {
+            const storedData = localStorage.getItem(key);
+            return storedData ? JSON.parse(storedData) : [];
+        }
+
+        // function to dispaly chat history by agent id
+        function displayChatHistory(agentId) {
+            var chatHistoryArray = getArrayFromLocalStorage("agentchathistory_" + agentId);
+            if (chatHistoryArray != undefined && chatHistoryArray.length != 0) {
+                for (i = 0; i < chatHistoryArray.length; i++) {
+                    displayMessage("chat-message-outgoing", chatHistoryArray[i].chatmessageoutgoing);
+                    displayMessage("chat-message-incoming", chatHistoryArray[i].chatmessageincoming);
+                }
+            }
+        }
+
+        function createChatLoader() {
+            // create the loader div as before
+            const divChatLoader = document.createElement('div');
+            divChatLoader.id = 'divChatLoader';
+            divChatLoader.style.display = 'block';
+            divChatLoader.style.width = "9%";
+
+            // Create the loading icon
+            const loaderMessageDiv = document.createElement('div');
+            loaderMessageDiv.className = 'chat-message chat-message-incoming';
+
+            const icon = document.createElement('i');
+            icon.className = 'loader';
+            icon.style.margin = "auto";
+
+            loaderMessageDiv.appendChild(icon);
+            divChatLoader.appendChild(loaderMessageDiv);
+
+            // append loader to chat collection
+            const chatMessagesDiv = document.querySelector('.chat-messages');
+            chatMessagesDiv.appendChild(divChatLoader);
+
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }
+
+        function deleteChatLoader() {
+            const existingLoader = document.getElementById('divChatLoader');
+            existingLoader.remove();
+        }
+    </script>
+}

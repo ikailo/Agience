@@ -1,9 +1,9 @@
-﻿using Agience.SDK;
-using Agience.SDK.Logging;
-using Agience.SDK.Models.Messages;
+﻿using Agience.Core;
+using Agience.Core.Logging;
+using Agience.Core.Models.Messages;
 using Microsoft.SemanticKernel;
 
-namespace Agience.Plugins.Primary.Interaction
+namespace Agience.Plugins.Core.Interaction
 {
     public interface IInteractionService
     {

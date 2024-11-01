@@ -8,9 +8,9 @@ using MQTTnet.Diagnostics;
 using Timer = System.Timers.Timer;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Agience.SDK.Models.Messages;
+using Agience.Core.Models.Messages;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     public class Broker
     {

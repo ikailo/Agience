@@ -3,19 +3,19 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
-using Agience.SDK.Mappings;
-using Agience.SDK.Models.Entities;
-using Agience.SDK.Models.Messages;
+using Agience.Core.Mappings;
+using Agience.Core.Models.Entities;
+using Agience.Core.Models.Messages;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace Agience.SDK
+namespace Agience.Core
 {
     public class Authority
     {
         private const string BROKER_URI_KEY = "broker_uri";
         private const string OPENID_CONFIG_PATH = "/.well-known/openid-configuration";
 
-        private readonly IAuthorityDataAdapter? _authorityDataAdapter;
-
+        private readonly IServiceScopeFactory _serviceScopeFactory;
         public string Id => _authorityUri.Host;
         public string? BrokerUri { get; private set; }
         public string? TokenEndpoint { get; private set; }
@@ -30,14 +30,13 @@ namespace Agience.SDK
 
         public Authority() { }
 
-        public Authority(string authorityUri, Broker broker, IAuthorityDataAdapter? authorityDataAdapter, ILogger<Authority> logger, string? authorityUriInternal = null, string? brokerUriInternal = null)
+        public Authority(string authorityUri, Broker broker, IServiceScopeFactory serviceScopeFactory, ILogger<Authority> logger, string? authorityUriInternal = null, string? brokerUriInternal = null)
         {
             _authorityUri = !string.IsNullOrEmpty(authorityUri) ? new Uri(authorityUri) : throw new ArgumentNullException(nameof(authorityUri));
             _authorityUriInternal = authorityUriInternal == null ? null : new Uri(authorityUriInternal!);
             _broker = broker ?? throw new ArgumentNullException(nameof(broker));
-            _authorityDataAdapter = authorityDataAdapter;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));            
             _mapper = AutoMapperConfig.GetMapper();
             BrokerUri = brokerUriInternal;
         }
@@ -156,27 +155,29 @@ namespace Agience.SDK
 
         private async Task OnHostConnected(string hostId)
         {
-            if (_authorityDataAdapter == null) { throw new ArgumentNullException(nameof(_authorityDataAdapter)); }
+            using var scope = _serviceScopeFactory.CreateScope();
+            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();
 
             _logger.LogInformation($"Received host_connect from: {hostId}");
 
-            var host = await _authorityDataAdapter.GetHostByIdNoTrackingAsync(hostId);
+            var host = await authorityDataAdapter.GetHostByIdNoTrackingAsync(hostId);
 
             _logger.LogInformation($"Found Host {host.Name}");
             _logger.LogDebug($"Host: {JsonSerializer.Serialize(host)}");
 
-            var plugins = await _authorityDataAdapter.GetPluginsForHostIdNoTrackingAsync(hostId);
+            var plugins = await authorityDataAdapter.GetPluginsForHostIdNoTrackingAsync(hostId);
 
             _logger.LogInformation($"Found {plugins.Count()} Plugins");
             _logger.LogDebug($"Plugins: {JsonSerializer.Serialize(plugins)}");
 
-            var agents = await _authorityDataAdapter.GetAgentsForHostIdNoTrackingAsync(hostId);
-                        
+            var agents = await authorityDataAdapter.GetAgentsForHostIdNoTrackingAsync(hostId);
+
             _logger.LogInformation($"Found {agents.Count()} Agents");
             _logger.LogDebug($"Agents: {JsonSerializer.Serialize(agents)}");
 
-            SendHostWelcomeEvent(host, plugins, agents);            
+            SendHostWelcomeEvent(host, plugins, agents);
         }
+
 
         private void SendHostWelcomeEvent(Models.Entities.Host host, IEnumerable<Models.Entities.Plugin> plugins, IEnumerable<Models.Entities.Agent> agents)
         {
@@ -203,9 +204,10 @@ namespace Agience.SDK
         {   
             if (!IsConnected) { throw new InvalidOperationException("Not Connected"); }
 
-            if (_authorityDataAdapter == null) { throw new InvalidOperationException("AuthorityDataAdapter is missing"); }
+            using var scope = _serviceScopeFactory.CreateScope();
+            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();
 
-            var hostId = await _authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
+            var hostId = await authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
 
             _logger.LogInformation($"Sending Agent Connect Event: {agent.Name}");
             _logger.LogDebug($"Agent: {JsonSerializer.Serialize(agent)}");
@@ -228,9 +230,10 @@ namespace Agience.SDK
         {
             if (!IsConnected) { throw new InvalidOperationException("Not Connected"); }
 
-            if (_authorityDataAdapter == null) { throw new InvalidOperationException("AuthorityDataAdapter is missing"); }
+            using var scope = _serviceScopeFactory.CreateScope();
+            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();            
 
-            var hostId = await _authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
+            var hostId = await authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
 
             _broker!.Publish(new BrokerMessage()
             {
