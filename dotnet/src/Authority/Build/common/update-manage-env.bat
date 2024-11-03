@@ -40,6 +40,10 @@ for /f "delims=" %%A in ('type "%FILE_PATH_MANAGE%"') do (
 
 :: Replace the original file with the updated one
 move /y "%TEMP_FILE%" "%FILE_PATH_MANAGE%"
+if errorlevel 1 (
+    echo Error: Failed to update the file. Could not move "%TEMP_FILE%" to "%FILE_PATH_MANAGE%".
+    exit /b 1
+)
 
 echo Updated HostId and HostSecret in the file successfully.
 

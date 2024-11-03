@@ -16,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\FUNDING.yml = ..\FUNDING.yml
 		..\LICENSE.md = ..\LICENSE.md
 		..\README.md = ..\README.md
+		..\ROADMAP.md = ..\ROADMAP.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Agience.Hosts.Console", "src\Authority\Hosts\Console\Agience.Hosts.Console.csproj", "{060BBAA9-9D75-4B3B-9AA9-82E27E982E0F}"
@@ -88,8 +89,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{5E921773-1639-4124-BF14-D7F94FD40850}"
 	ProjectSection(SolutionItems) = preProject
 		..\protocols\draft-addressing-v1.md = ..\protocols\draft-addressing-v1.md
-		..\protocols\draft-topic-masking-v1.md = ..\protocols\draft-topic-masking-v1.md
 		draft-communication-example-v1.md = draft-communication-example-v1.md
+		..\protocols\draft-topic-masking-v1.md = ..\protocols\draft-topic-masking-v1.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{FEF2AC80-11B9-4E17-BE20-17341336A977}"
