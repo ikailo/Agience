@@ -46,23 +46,19 @@ Prerequsites:
   - [OpenSSL](https://slproweb.com/products/Win32OpenSSL.html)
 
 1. **Clone the Repository**: Start by cloning the Agience repository to get access to the source code and configuration files.
-
    ```bash
    git clone https://github.com/ikailo/Agience.git
    ```
 
 2. **Navigate to the Build Directory**: Change into the build directory within the Agience stack. This directory contains configuration and startup scripts for setting up Agience.
-
    ```bash
    cd Agience/dotnet/src/Authority/Build/development
    ```
 
 3. **Run Initialization Script**: Execute the initialization batch file to set up essential dependencies and configurations.
-
    ```bash
    .\agience-init.bat
    ```
-
    Accept any prompts that appear during the initialization process.
 
 #### Complete Configuration
@@ -77,8 +73,7 @@ If it fails, you will need to correct the errors and run `agience-remove.bat` to
 
 1. **Edit Agience.Authority.Manage Environment File**
 
-  - Obtain an [OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key) and set it in the `.env.development` file located in `Agience.Authority.Manage`.  
-
+  - Obtain an [OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key) and set it in the `.env.development` file located in `Agience.Authority.Manage`.
    ```plaintext   
    HostOpenAiApiKey=<Your_OpenAI_API_Key>
    ```
@@ -94,7 +89,6 @@ If it fails, you will need to correct the errors and run `agience-remove.bat` to
 	- Enter `https://authority.local.agience.ai/signin-google` for Authorized redirect URIs.
 
    In the `.env.development` file located in `Agience.Authority.Identity`, set the following:
-
    ```plaintext   
    GoogleClientId=<Your_Google_Client_ID>
    GoogleClientSecret=<Your_Google_Client_Secret>
@@ -105,11 +99,9 @@ If it fails, you will need to correct the errors and run `agience-remove.bat` to
 #### Start Docker Services
 
 Once the configuration is complete, you can start the necessary Docker services for Agience by running the following command:
-
 ```bash
 .\docker-up.bat
 ```
-
 This script will bring up the required Docker containers, such as the database, message broker, and any other necessary services specified in the configuration.
 
 ---
