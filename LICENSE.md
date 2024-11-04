@@ -4,7 +4,7 @@ This repository contains various types of content, each covered by different lic
 ## Core Software (Dual License: AGPL-3.0 and Commercial)
 
 #### AGPL-3.0 License
-The core software, found in the `/src` directories (e.g., `/dotnet/src`, `/python/src`), is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Under this license, if you use, modify, or distribute the software, you **must** contribute any modifications back to the community by making the source code publicly available under the same AGPL-3.0 license.
+The core software and plugins, found in the `../src/Core` or `../src/Plugins` directories (e.g., `/dotnet/src/Core`, `/python/src/Core`), is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Under this license, if you use, modify, or distribute the software, you **must** contribute any modifications back to the community by making the source code publicly available under the same AGPL-3.0 license.
 
 If you derive value or proceeds from the use of the software, you are encouraged to [donate](https://github.com/sponsors/ikailo) 10% of it back to the project.
 
@@ -41,7 +41,7 @@ To obtain a Community Commercial License, or if you have any questions, please c
 ---
 
 ## Example Code (MIT License)
-All example code in **a `/samples` or `/stack` directory** (e.g., `/dotnet/stack`, `/python/samples`) is licensed under the **MIT License**. This allows you to use, copy, modify, merge, publish, and distribute the example code freely, provided that the copyright notice and this permission notice are included in all copies or substantial portions of the software.
+All example code in the **`../src/Authority` or `../src/Hosts`** directories (e.g., `/dotnet/src/Authority`, `/python/src/Authority`) is licensed under the **MIT License**. This allows you to use, copy, modify, merge, publish, and distribute the example code freely, provided that the copyright notice and this permission notice are included in all copies or substantial portions of the software.
 
 A full copy of the MIT license can be found in the `LICENSE-MIT.txt` file.
 

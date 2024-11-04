@@ -11,6 +11,7 @@ Both Alice and Bob have their main topics where they can communicate with their 
  - Bob's main topic is `"bb:bob/main"`
 	
 - Alice's agent, Astra, is assigned to the topic `"aa:alice/main"`.
+- Bob's agent, Delta, is assigned to the topic `"aa:bob/main"`.
 
 Bob has published two topics related to his calendar:
   - `bob/calendar/events/add | Add events to Bob's calendar.`

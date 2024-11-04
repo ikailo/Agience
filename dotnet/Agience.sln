@@ -89,7 +89,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{5E921773-1639-4124-BF14-D7F94FD40850}"
 	ProjectSection(SolutionItems) = preProject
 		..\protocols\draft-addressing-v1.md = ..\protocols\draft-addressing-v1.md
-		draft-communication-example-v1.md = draft-communication-example-v1.md
+		..\protocols\draft-communication-example-v1.md = ..\protocols\draft-communication-example-v1.md
 		..\protocols\draft-topic-masking-v1.md = ..\protocols\draft-topic-masking-v1.md
 	EndProjectSection
 EndProject

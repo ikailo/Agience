@@ -90,6 +90,7 @@ This roadmap outlines the planned features and future goals for Agience.
 - End-to-end encryption for secure agent and topic communication
 - Fine-grained permissions and topic masks for controlled access within and across authorities
 - Claims-based permissions with JWT authorization and OAuth flows for robust access control
+- Expanded identity provider support for seamless integration with existing identity services
 
 ---
 
