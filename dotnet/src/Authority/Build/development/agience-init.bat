@@ -9,4 +9,7 @@ call generate-certs-localhost.bat
 echo Initializing Agience...
 
 cd ..\common
+
 call agience-init.bat development
+
+cd ..\development

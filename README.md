@@ -61,15 +61,17 @@ Prerequsites:
    ```
    Accept any prompts that appear during the initialization process.
 
-#### Complete Configuration
-
-After running the initialization script, you’ll need to complete a few outstanding configurations in the `.env.development` files. These files are now located within the `Agience.Authority.Manage` and `Agience.Authority.Identity` directories and control API keys and other credentials.
-
 **NOTE**: The `agience-init.bat` script is succesful if the final output is:
 ```plaintext
   Updated HostId and HostSecret in the file successfully.
 ```
-If it fails, you will need to correct the errors and run `agience-remove.bat` to reset the configuration. PLEASE reach out via [email](mailto:connect@agience.ai) or [Discord](https://discord.gg/fyWWqzeUKH) for real-time assistance.
+If it fails, you will need to correct the errors and also run `.\agience-remove.bat` to reset the configuration before running the init script again.
+
+### Running into an issue?  **Reach out via [email](mailto:connect@agience.ai) or via [Discord](https://discord.gg/fyWWqzeUKH) for real-time assistance.**
+
+### Complete Configuration
+
+After running the initialization script, you’ll need to complete a few outstanding configurations in the `.env.development` files. These files are now located within the `Agience.Authority.Manage` and `Agience.Authority.Identity` directories and control API keys and other credentials.
 
 1. **Edit Agience.Authority.Manage Environment File**
 
