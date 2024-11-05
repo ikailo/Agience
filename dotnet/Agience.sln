@@ -126,6 +126,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{763F93
 		src\Authority\Build\common\generate-certs-internal.sh = src\Authority\Build\common\generate-certs-internal.sh
 		src\Authority\Build\common\generate-db-password.bat = src\Authority\Build\common\generate-db-password.bat
 		src\Authority\Build\common\update-manage-env.bat = src\Authority\Build\common\update-manage-env.bat
+		src\Authority\Build\common\update-stream-env.bat = src\Authority\Build\common\update-stream-env.bat
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "development", "development", "{6AD7AA92-3DBD-4881-827C-EB7E4395AC40}"

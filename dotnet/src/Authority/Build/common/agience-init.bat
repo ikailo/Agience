@@ -37,6 +37,7 @@ IF NOT EXIST .env.%ENVIRONMENT% (
 cd ..\Stream
 IF NOT EXIST icecast.%ENVIRONMENT%.xml (    
     copy icecast.sample.secrets.xml icecast.%ENVIRONMENT%.secrets.xml
+    call update-stream-env.bat %ENVIRONMENT%
 )
 
 cd ..\Build\common
