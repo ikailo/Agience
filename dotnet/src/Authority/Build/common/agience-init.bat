@@ -35,8 +35,8 @@ IF NOT EXIST .env.%ENVIRONMENT% (
 )
 
 cd ..\Stream
-IF NOT EXIST icecast.%ENVIRONMENT%.xml (
-    copy icecast.sample.xml icecast.%ENVIRONMENT%.xml
+IF NOT EXIST icecast.%ENVIRONMENT%.xml (    
+    copy icecast.sample.secrets.xml icecast.%ENVIRONMENT%.secrets.xml
 )
 
 cd ..\Build\common
@@ -60,6 +60,6 @@ call update-manage-env.bat %ENVIRONMENT%
 
 REM call docker-down.bat %ENVIRONMENT% 
 
-echo Agience %ENVIRONMENT% initialization complete. Run .\docker-up.bat to start the authority.
+echo Agience %ENVIRONMENT% initialization complete. Complete the configuration and then run .\docker-up.bat to start the authority.
 
 ENDLOCAL

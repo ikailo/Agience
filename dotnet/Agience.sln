@@ -81,9 +81,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Stream", "Stream", "{1B2C0BC1-D9BD-4DF7-BB43-280D5DB50E79}"
 	ProjectSection(SolutionItems) = preProject
 		src\Authority\Stream\Dockerfile = src\Authority\Stream\Dockerfile
+		src\Authority\Stream\icecast.development.secrets.xml = src\Authority\Stream\icecast.development.secrets.xml
 		src\Authority\Stream\icecast.development.xml = src\Authority\Stream\icecast.development.xml
+		src\Authority\Stream\icecast.local.secrets.xml = src\Authority\Stream\icecast.local.secrets.xml
 		src\Authority\Stream\icecast.local.xml = src\Authority\Stream\icecast.local.xml
-		src\Authority\Stream\icecast.sample.xml = src\Authority\Stream\icecast.sample.xml
+		src\Authority\Stream\icecast.sample.secrets.xml = src\Authority\Stream\icecast.sample.secrets.xml
+		src\Authority\Stream\icecast.secrets.xml = src\Authority\Stream\icecast.secrets.xml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{5E921773-1639-4124-BF14-D7F94FD40850}"

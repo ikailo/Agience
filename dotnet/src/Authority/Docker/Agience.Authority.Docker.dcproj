@@ -6,15 +6,12 @@
     <DockerPublishLocally>False</DockerPublishLocally>
     <ProjectGuid>1a78e214-56f6-4f21-aafd-7973c6cdc913</ProjectGuid>
   </PropertyGroup>
-  <ItemGroup>    
-    <None Include="docker-compose.yml" />    
+  <ItemGroup>
+    <None Include="docker-compose.yml" />
     <None Include="docker-compose.development.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.local.yml">
-      <DependentUpon>docker-compose.yml</DependentUpon>
-    </None>
-    <None Include="docker-compose.preview.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
   </ItemGroup>

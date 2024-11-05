@@ -11,18 +11,17 @@ PUBLIC_CERT_PATH="/etc/nginx/certs/agience-net.crt"
 
 mkdir -p "${CERT_DIR}"
 
-echo "Checking if certificates for ${DOMAIN} require generation or renewal..."
+echo "Copying public certificate from source directory..."
+cp "/usr/local/share/agience/agience-net.crt" "${PUBLIC_CERT_PATH}"     
 
-if [ ! -f "${CERT_PATH}" ] || ! openssl x509 -checkend 2592000 -noout -in "${CERT_PATH}"; then
+# TODO: This should not be in the public build. It is internal for Agience-SaaS
+if [ "$BUILD_ENVIRONMENT" == "preview" ] && ( [ ! -f "${CERT_PATH}" ] || ! openssl x509 -checkend 2592000 -noout -in "${CERT_PATH}" ); then
 
     echo "Copying domain configuration from source directory..."
     cp "/usr/local/share/agience/${DOMAIN}.conf" "${DOMAIN_CONF_PATH}"
 
     echo "Copying certbot configuration from source directory..."
     cp "/usr/local/share/agience/certbot.conf" "${CERTBOT_CONF_PATH}" 
-    
-    echo "Copying public certificate from source directory..."
-    cp "/usr/local/share/agience/agience-net.crt" "${PUBLIC_CERT_PATH}"     
 
     if [ ! -f "${KEY_PATH}" ]; then
         echo "Creating private key for ${DOMAIN}..."
@@ -56,10 +55,8 @@ if [ ! -f "${CERT_PATH}" ] || ! openssl x509 -checkend 2592000 -noout -in "${CER
     chown root:root "${CERT_PATH}" "${KEY_PATH}"
     
     echo "Certificate issued and applied successfully."
-else
-    echo "Certificate for ${DOMAIN} is valid and does not require renewal."
 fi
 
 # Start NGINX in the foreground
-echo "Starting NGINX with the latest certificate..."
+echo "Starting NGINX..."
 nginx -g "daemon off;"
