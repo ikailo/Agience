@@ -1,7 +1,8 @@
 services:
     
   identity:
-    restart: on-failure
+    image: identity:local  
+    restart: always
     build:
       context: ../..
       dockerfile: Authority/Identity/Dockerfile     
@@ -17,6 +18,7 @@ services:
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
 
   manage:
+    image: manage:local  
     restart: always
     build:
       context: ../..
@@ -26,11 +28,12 @@ services:
     env_file:
       - ../Manage/.env.local
     volumes:
-      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - /src/Authority/Build/certs/agience-net.pfx:/app/https/agience-net.pfx
+      - /src/Authority/Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
       
-  database:  
+  database:
+    image: database:local    
     restart: always  
     build:
       context: ../..
@@ -41,10 +44,11 @@ services:
       - ../Database/.env.local
     volumes:
       -  authority-data:/var/lib/postgresql/data
-      - ../Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt
-      - ../Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key
+      - /src/Authority/Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt:ro
+      - /src/Authority/Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key:ro
 
   broker:
+    image: broker:local  
     restart: always  
     build:
       context: ../..
@@ -57,7 +61,7 @@ services:
       - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
 
   proxy:
-    image: proxy:latest
+    image: proxy:local
     container_name: proxy-cont
     networks:
       - agience-net

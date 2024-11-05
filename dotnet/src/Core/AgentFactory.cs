@@ -80,9 +80,9 @@ namespace Agience.Core
 
             kernelServiceCollection.AddSingleton<ILoggerFactory>(sp =>
             {
-                var agienceEventLoggerFactory = new AgienceEventLoggerFactory(modelAgent.AgencyId, modelAgent.Id);
+                var agienceEventLoggerFactory = new EventLoggerFactory(modelAgent.AgencyId, modelAgent.Id);
 
-                var agienceEventLoggerProvider = _mainServiceProvider.GetRequiredService<AgienceEventLoggerProvider>();
+                var agienceEventLoggerProvider = _mainServiceProvider.GetRequiredService<EventLoggerProvider>();
 
                 agienceEventLoggerFactory.AddProvider(agienceEventLoggerProvider);
 
@@ -97,7 +97,8 @@ namespace Agience.Core
                 return agienceEventLoggerFactory;
             });
 
-            // Add or override services specific to this Kernel
+            // TODO: FIXME: This architecture is not ideal. We need to ensure that kernels aren't available to unassociated agents. Perhaps we just make a singular Kernel Wrapper instead.
+            kernelServiceCollection.AddSingleton(sp => _mainServiceProvider.GetRequiredService<IKernelStore>());                       
 
             var credentialService = new AgienceCredentialService(modelAgent.Id, _authority, _broker);
             if (!string.IsNullOrWhiteSpace(_hostOpenAiApiKey))
@@ -177,10 +178,14 @@ namespace Agience.Core
         {
             var kernel = new Kernel(serviceProvider, plugins);
 
+            kernel.Data["agent_id"] = modelAgent.Id;
+
+            _mainServiceProvider.GetRequiredService<IKernelStore>().AddKernel(modelAgent.Id, kernel);
+
             var agencyLogger = kernel.LoggerFactory.CreateLogger<Agency>();
 
             var agentLogger = kernel.LoggerFactory.CreateLogger<Agent>();
-            
+
             var agency = GetAgency(modelAgent.Agency, agencyLogger);
 
             var agent = new Agent(modelAgent.Id, modelAgent.Name, _authority, _broker, agency, modelAgent.Persona, kernel, agentLogger);
@@ -192,13 +197,32 @@ namespace Agience.Core
             return agent;
         }
 
-        public void Dispose()
+        public void DisposeAgent(string agentId)
         {
-            foreach (var agent in _agents)
+            var agent = _agents.FirstOrDefault(a => a.Id == agentId);
+
+            if (agent != null)
             {
+                _agents.Remove(agent);
+                _mainServiceProvider.GetRequiredService<IKernelStore>().RemoveKernel(agent.Id);
                 agent.Dispose();
             }
         }
+
+        public void Dispose()
+        {
+            // Create a list to avoid modifying the collection while iterating
+            var agentsToRemove = new List<Agent>(_agents);
+
+            foreach (var agent in agentsToRemove)
+            {
+                DisposeAgent(agent.Id); // Use agent.Id as the string parameter
+            }
+
+            // Clear all agents from the collection
+            _agents.Clear();
+        }
+
 
         private KernelPlugin CreateKernelPluginCompiled(IServiceProvider serviceProvider, Type pluginType, string pluginName, AgienceCredentialService credentialService)
         {

@@ -7,17 +7,17 @@ using System.Collections.Concurrent;
 
 namespace Agience.Authority.Manage.Services
 {
-    public class AgienceWebInteractionService : IInteractionService, IAgienceEventLogHandler
+    public class AgienceWebInteractionService : IInteractionService, IEventLogHandler
     {
 
         public event Func<string, Task>? AgencyConnected;
         public event Func<string, Task>? AgencyDisconnected;
-        public event Func<AgienceEventLogArgs, Task>? AgencyLogEntryReceived;
+        public event Func<EventLogArgs, Task>? AgencyLogEntryReceived;
         public event Func<AgienceChatMessageArgs, Task>? AgencyChatMessageReceived;
 
         public event Func<string, Task>? AgentConnected;
         public event Func<string, Task>? AgentDisconnected;
-        public event Func<AgienceEventLogArgs, Task>? AgentLogEntryReceived;
+        public event Func<EventLogArgs, Task>? AgentLogEntryReceived;
         public event Func<AgienceChatMessageArgs, Task>? AgentChatMessageReceived;
 
         private readonly Core.Host _host;
@@ -109,7 +109,7 @@ namespace Agience.Authority.Manage.Services
         }
 
         // Handle log entries from agencies
-        private void OnAgencyLogEntryReceived(AgienceEventLogArgs args)
+        private void OnAgencyLogEntryReceived(EventLogArgs args)
         {
             if (args.AgencyId == null)
             {
@@ -129,7 +129,7 @@ namespace Agience.Authority.Manage.Services
         }
 
         // Handle log entries from agents
-        private void OnAgentLogEntryReceived(AgienceEventLogArgs args)
+        private void OnAgentLogEntryReceived(EventLogArgs args)
         {
             if (args.AgentId == null)
             {
@@ -149,7 +149,7 @@ namespace Agience.Authority.Manage.Services
         }
 
         // Implement IAgienceEventLogHandler method
-        public void OnLogEntryReceived(object? sender, AgienceEventLogArgs args)
+        public void OnLogEntryReceived(object? sender, EventLogArgs args)
         {
             if (args.AgentId != null)
             {

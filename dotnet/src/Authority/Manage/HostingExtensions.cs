@@ -10,6 +10,7 @@ using Agience.Plugins.Core.OpenAI;
 using Microsoft.SemanticKernel.Plugins.Core;
 using Agience.Core.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Agience.Core.Services;
 
 namespace Agience.Authority.Manage
 {
@@ -40,7 +41,7 @@ namespace Agience.Authority.Manage
             if (string.IsNullOrWhiteSpace(appConfig.HostSecret)) { throw new ArgumentNullException(nameof(appConfig.HostSecret)); }
 
             // Agience specific logging
-            builder.Services.AddSingleton(sp => new AgienceEventLoggerProvider(sp));
+            builder.Services.AddSingleton(sp => new EventLoggerProvider(sp));
 
             // This is the host.
             builder.Services.AddAgienceHost(appConfig.AuthorityUri, appConfig.HostId, appConfig.HostSecret, appConfig.CustomNtpHost, appConfig.AuthorityUriInternal, appConfig.BrokerUriInternal, appConfig.HostOpenAiApiKey);
@@ -50,7 +51,7 @@ namespace Agience.Authority.Manage
 
             // This is the service that connects to the chat.
             builder.Services.AddSingleton<AgienceWebInteractionService>();
-            builder.Services.AddSingleton<IAgienceEventLogHandler>(sp => sp.GetRequiredService<AgienceWebInteractionService>());
+            builder.Services.AddSingleton<IEventLogHandler>(sp => sp.GetRequiredService<AgienceWebInteractionService>());
 
             // This is the Agience Authority Service that connects to the Authority API.
             builder.Services.AddTransient(sp =>

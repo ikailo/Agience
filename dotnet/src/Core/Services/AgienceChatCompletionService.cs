@@ -16,12 +16,15 @@ namespace Agience.Core.Services
 
         public async Task<IReadOnlyList<ChatMessageContent>> GetChatMessageContentsAsync(ChatHistory chatHistory, PromptExecutionSettings? executionSettings = null, Kernel? kernel = null, CancellationToken cancellationToken = default)
         {
+
+            Data data = new Data();
+            
             var args = new KernelArguments(executionSettings);
 
             args["chatHistory"] = chatHistory;
             args["executionSettings"] = executionSettings;
-            args["kernel"] = kernel;
-            args["cancellationToken"] = cancellationToken;
+            args["agentId"] = kernel?.Data["agent_id"];
+            //args["cancellationToken"] = cancellationToken;
 
             // TODO: We need to ensure that the Chat Completion function will return a list of ChatMessageContent. This will break otherwise.
             // TODO: Support other formats for input/output of the ChatCompletionFunction.

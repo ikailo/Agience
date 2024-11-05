@@ -1,6 +1,6 @@
 @echo off
 
-cd certs
+cd ..\certs
 
 REM Check if any of the internal certificate files do not exist
 if not exist "localhost.crt" goto GENERATE
@@ -16,4 +16,4 @@ openssl pkcs12 -export -out localhost.pfx -inkey localhost.key -in localhost.crt
 
 :EOF
 
-cd ..
+cd ..\development

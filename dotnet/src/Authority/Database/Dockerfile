@@ -13,10 +13,6 @@ RUN chmod 644 /etc/postgresql/postgresql.conf && \
     chmod 755 /etc/postgresql/entrypoint.sh && \
     chown postgres:postgres /etc/postgresql/postgresql.conf /etc/postgresql/pg_hba.conf /etc/postgresql/entrypoint.sh
 
-#RUN mkdir -p /var/lib/postgresql/data && \
-#    chmod 700 /var/lib/postgresql/data && \
-#    chown -R postgres:postgres /var/lib/postgresql/data
-
 # Use custom entrypoint script
 ENTRYPOINT ["/etc/postgresql/entrypoint.sh"]
 

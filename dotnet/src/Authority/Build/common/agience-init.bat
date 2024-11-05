@@ -6,18 +6,19 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 
 set AGIENCE_INITIALIZE=TRUE
 
+echo Generating local certificates...
+call generate-certs-internal.bat
+
 cd ..
 
 echo Creating configurations...
 
 cd ..\Identity
-
 IF NOT EXIST .env.%ENVIRONMENT% (
     copy .env.sample .env.%ENVIRONMENT%
 )
 
 cd ..\Database
-
 IF NOT EXIST .env.%ENVIRONMENT% (
     copy .env.sample .env.%ENVIRONMENT%
     
@@ -29,9 +30,13 @@ IF NOT EXIST .env.%ENVIRONMENT% (
 )
 
 cd ..\Manage
-
 IF NOT EXIST .env.%ENVIRONMENT% (
     copy .env.sample .env.%ENVIRONMENT%
+)
+
+cd ..\Stream
+IF NOT EXIST icecast.%ENVIRONMENT%.xml (
+    copy icecast.sample.xml icecast.%ENVIRONMENT%.xml
 )
 
 cd ..\Build\common

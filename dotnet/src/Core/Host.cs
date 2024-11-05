@@ -277,6 +277,8 @@ namespace Agience.Core
             {
                 await AgencyDisconnected.Invoke(agent.Agency.Id);
             }
+
+            _agentFactory.DisposeAgent(agentId);
         }
 
 

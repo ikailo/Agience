@@ -14,5 +14,10 @@ if [ ! -f "${CERT}.crt" ] || [ ! -f "${CERT}.key" ] || [ ! -f "${CERT}.pfx" ]; t
 
     openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -keyout "${CERT}.key" -out "${CERT}.crt" -config "$CONFIG_FILE"
     openssl pkcs12 -export -out "${CERT}.pfx" -inkey "${CERT}.key" -in "${CERT}.crt" -passout pass:
+
+    chmod 600 "${CERT}.key"
+    chmod 644 "${CERT}.crt" "${CERT}.pfx"
+
+    echo "Internal certificates generated successfully."
     
 fi

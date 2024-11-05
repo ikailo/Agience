@@ -44,7 +44,7 @@ namespace Agience.Authority.Manage.Pages
             }
         }
 
-        private async Task HandleAgencyLogEntryReceived(AgienceEventLogArgs args)
+        private async Task HandleAgencyLogEntryReceived(EventLogArgs args)
         {
             if (Agencies.Any(a => a.Id == args.AgencyId))
             {
@@ -52,7 +52,7 @@ namespace Agience.Authority.Manage.Pages
             }
         }
 
-        private async Task HandleAgentLogEntryReceived(AgienceEventLogArgs args)
+        private async Task HandleAgentLogEntryReceived(EventLogArgs args)
         {
             if (Agencies.SelectMany(a => a.Agents).Any(a => a.Id == args.AgentId))
             {

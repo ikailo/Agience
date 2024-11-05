@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Agience.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Agience.Core.Extensions
@@ -15,6 +16,9 @@ namespace Agience.Core.Extensions
             string? brokerUriInternal = null,
             string? hostOpenAiApiKey = null)
         {
+
+            services.AddSingleton<IKernelStore, KernelStore>();
+
             services.AddSingleton(sp =>
             {
                 var logger = sp.GetRequiredService<ILogger<Broker>>();

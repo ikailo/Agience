@@ -16,8 +16,8 @@ namespace Agience.Plugins.Core.Interaction
         event Func<string, Task>? AgentDisconnected;
 
         // Log Events
-        event Func<AgienceEventLogArgs, Task>? AgencyLogEntryReceived;
-        event Func<AgienceEventLogArgs, Task>? AgentLogEntryReceived;
+        event Func<EventLogArgs, Task>? AgencyLogEntryReceived;
+        event Func<EventLogArgs, Task>? AgentLogEntryReceived;
 
         // Incoming Chat Message Events
         event Func<AgienceChatMessageArgs, Task>? AgencyChatMessageReceived;

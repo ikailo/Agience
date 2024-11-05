@@ -12,7 +12,6 @@ volumes:
 services:
     
   identity:  
-    image: identity:latest
     container_name: identity-cont    
     networks:
       - agience-net
@@ -21,7 +20,6 @@ services:
       - "database"
 
   manage:
-    image: manage:latest  
     container_name: manage-cont
     networks:
       - agience-net
@@ -29,13 +27,11 @@ services:
       - "identity"
       
   database:
-    image: database:latest
     container_name: database-cont
     networks:
       - agience-net
 
   broker:
-    image: broker:latest  
     container_name: broker-cont
     networks:
       - agience-net
@@ -43,9 +39,9 @@ services:
       - "database"
    
   stream:          
-    image: stream:latest
     container_name: stream-cont
     networks:
       - agience-net
     depends_on:
       - "database"
+ 
