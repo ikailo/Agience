@@ -30,7 +30,7 @@ Organizations that meet any of the following criteria qualify for a free Communi
 
 - Registered non-profit organizations.
 - Accredited educational institutions or students.
-- Organizations generating less than $1 million USD in annual revenue. 
+- Organizations generating less than $1 million USD in annual revenue AND have fewer than 100 employees. 
 
 The Community Commercial License allows you to use the software for non-commercial purposes. However, it does not permit closed-source modifications or redistribution without a separate agreement. 
 
