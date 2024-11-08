@@ -553,26 +553,21 @@ namespace Agience.Authority.Identity.Data.Adapters
                 throw new InvalidOperationException("searchTerm is invalid");
             }
 
-            // Full-text search query for the description
-            //var fullTextQuery = _context.Plugins.Where(p => p.DescriptionSearchVector.Matches(searchTerm));
-
-            // Trigram similarity search query for the name
-            var trigramQuery = _context.Plugins.Where(p => !string.IsNullOrEmpty(p.Name) && EF.Functions.TrigramsSimilarity(p.Name, searchTerm) > 0.3);
-
+            // Trigram similarity search query for the name with the additional filter
+            var trigramQuery = _context.Plugins
+                .Where(p => !string.IsNullOrEmpty(p.Name)
+                            && EF.Functions.TrigramsSimilarity(p.Name, searchTerm) > 0.3
+                            && (p.CreatorId == personId || (includePublic && p.Visibility == Core.Models.Entities.Visibility.Public)));
 
             var queryResults = await trigramQuery
-                //await fullTextQuery
-                //.Union(trigramQuery)                
-                //.Where(p => p.CreatorId == personId || (includePublic && p.Visibility == Core.Models.Entities.Visibility.Public))
-                //.OrderByDescending(p => EF.Functions.TrigramsSimilarity(p.Name ?? string.Empty, searchTerm)
-                //                                      + p.DescriptionSearchVector.Rank(EF.Functions.ToTsQuery("english", searchTerm))
-                //                  )
+                .OrderByDescending(p => EF.Functions.TrigramsSimilarity(p.Name ?? string.Empty, searchTerm))
                 .ToListAsync();
 
             _logger.LogInformation("FindPluginsAsPersonAsync: Found {0} plugins", queryResults.Count);
 
             return queryResults;
         }
+
 
 
         public async Task AddPluginToHostAsPersonAsync(string hostId, string pluginId, string personId)

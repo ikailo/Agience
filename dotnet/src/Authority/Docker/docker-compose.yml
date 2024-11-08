@@ -1,7 +1,6 @@
 networks:
     
   agience-net:
-    name: agience-net
     driver: bridge
 
 volumes:  
@@ -11,8 +10,7 @@ volumes:
    
 services:
     
-  identity:  
-    container_name: identity-cont    
+  identity:          
     networks:
       - agience-net
     depends_on:
@@ -20,26 +18,22 @@ services:
       - "database"
 
   manage:
-    container_name: manage-cont
     networks:
       - agience-net
     depends_on:
       - "identity"
       
   database:
-    container_name: database-cont
     networks:
       - agience-net
 
   broker:
-    container_name: broker-cont
     networks:
       - agience-net
     depends_on:
       - "database"
    
   stream:          
-    container_name: stream-cont
     networks:
       - agience-net
     depends_on:

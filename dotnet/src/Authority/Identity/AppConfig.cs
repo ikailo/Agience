@@ -14,7 +14,10 @@ namespace Agience.Authority.Identity
         public string? AuthorityDbUri { get; set; }
         public string? AuthorityDbDatabase { get; set; }
         public string? AuthorityDbUsername { get; set; }
-        public string? AuthorityDbPassword { get; set; }        
+        public string? AuthorityDbPassword { get; set; }           
+        public string? MailchimpApiKey { get; set; }
+        public string? MailchimpAudienceId { get; set; }
+        public string? MailchimpTags { get; set; }
 
         internal IEnumerable<IdentityResource> IdentityResources =>
             new List<IdentityResource>

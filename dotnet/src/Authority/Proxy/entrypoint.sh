@@ -7,12 +7,12 @@ KEY_PATH="${CERT_DIR}/${DOMAIN}.key"
 CSR_PATH="${CERT_DIR}/${DOMAIN}.csr"
 DOMAIN_CONF_PATH="${CERT_DIR}/${DOMAIN}.conf"
 CERTBOT_CONF_PATH="${CERT_DIR}/certbot.conf"
-PUBLIC_CERT_PATH="/etc/nginx/certs/agience-net.crt"
+PUBLIC_CERT_DIR="/etc/nginx/certs"
 
 mkdir -p "${CERT_DIR}"
 
 echo "Copying public certificate from source directory..."
-cp "/usr/local/share/agience/agience-net.crt" "${PUBLIC_CERT_PATH}"     
+cp /usr/local/share/agience/*.crt "${PUBLIC_CERT_DIR}/"
 
 # TODO: This should not be in the public build. It is internal for Agience-SaaS
 if [ "$BUILD_ENVIRONMENT" == "preview" ] && ( [ ! -f "${CERT_PATH}" ] || ! openssl x509 -checkend 2592000 -noout -in "${CERT_PATH}" ); then

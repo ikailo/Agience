@@ -11,7 +11,7 @@ set FILE_PATH_MANAGE=..\..\Manage\.env.%ENVIRONMENT%
 set TEMP_FILE=%TEMP%\tempfile.tmp
 
 :: Capture the output of the docker logs command
-for /f "tokens=1,2 delims==" %%i in ('docker logs identity-cont ^| findstr /r "^HostId ^HostSecret"') do (
+for /f "tokens=1,2 delims==" %%i in ('docker logs identity-%ENVIRONMENT% ^| findstr /r "^HostId ^HostSecret"') do (
     if "%%i"=="HostId" set "HostIdValue=%%j"
     if "%%i"=="HostSecret" set "HostSecretValue=%%j"
 )

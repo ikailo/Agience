@@ -1,6 +1,12 @@
+networks:
+    
+  agience-net:
+    name: agience-net-local
+
 services:
     
   identity:
+    container_name: identity-local  
     image: identity:local  
     restart: always
     build:
@@ -13,11 +19,12 @@ services:
     env_file:
       - ../Identity/.env.local
     volumes:
-      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-local.pfx:/app/https/agience-local.pfx
+      - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
 
   manage:
+    container_name: manage-local  
     image: manage:local  
     restart: always
     build:
@@ -28,11 +35,12 @@ services:
     env_file:
       - ../Manage/.env.local
     volumes:
-      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-local.pfx:/app/https/agience-local.pfx
+      - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
       
   database:
+    container_name: database-local  
     image: database:local    
     restart: always  
     build:
@@ -44,10 +52,11 @@ services:
       - ../Database/.env.local
     volumes:
       -  authority-data:/var/lib/postgresql/data
-      - ../Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt
-      - ../Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key
+      - ../Build/certs/agience-local.crt:/etc/postgresql/certs/certfile.crt
+      - ../Build/certs/agience-local.key:/etc/postgresql/certs/keyfile.key
 
   broker:
+    container_name: broker-local  
     image: broker:local  
     restart: always  
     build:
@@ -56,13 +65,13 @@ services:
       args:
         BUILD_ENVIRONMENT: local
     volumes:
-      - ../Build/certs/agience-net.crt:/etc/mosquitto/certs/agience-net.crt
-      - ../Build/certs/agience-net.key:/etc/mosquitto/certs/agience-net.key
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-local.crt:/etc/mosquitto/certs/agience-local.crt
+      - ../Build/certs/agience-local.key:/etc/mosquitto/certs/agience-local.key
+      - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
 
   proxy:
-    image: proxy:local
-    container_name: proxy-cont
+    container_name: proxy-local  
+    image: proxy:local    
     networks:
       - agience-net
     depends_on:      
@@ -85,9 +94,11 @@ services:
     volumes:
       - ../Build/certs/local.agience.ai.crt:/etc/nginx/certs/public/local.agience.ai.crt
       - ../Build/certs/local.agience.ai.key:/etc/nginx/certs/public/local.agience.ai.key
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
 
   stream:
+    container_name: stream-local
+    image: stream:local
     restart: always  
     build:      
       context: ../..

@@ -1,6 +1,13 @@
+networks:
+    
+  agience-net:
+    name: agience-net-development
+
 services:
     
   identity:
+    container_name: identity-development
+    image: identity:development
     restart: on-failure
     build:
       context: ../..
@@ -15,11 +22,13 @@ services:
       - ../Identity/.env.development
     volumes:
       - ../Build/certs/localhost.pfx:/app/https/localhost.pfx:ro
-      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx:ro
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt:ro
+      - ../Build/certs/agience-development.pfx:/app/https/agience-development.pfx:ro
+      - ../Build/certs/agience-development.crt:/usr/local/share/ca-certificates/agience-development.crt:ro
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
 
   manage:
+    container_name: manage-development  
+    image: manage:development
     restart: always
     build:
       context: ../..
@@ -32,12 +41,14 @@ services:
       - ../Manage/.env.development
     volumes:
       - ../Build/certs/localhost.pfx:/app/https/localhost.pfx
-      - ../Build/certs/agience-net.pfx:/app/https/agience-net.pfx
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-development.pfx:/app/https/agience-development.pfx
+      - ../Build/certs/agience-development.crt:/usr/local/share/ca-certificates/agience-development.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
     
       
   database:  
+    container_name: database-development  
+    image: database:development
     restart: always  
     build:
       context: ../..
@@ -46,14 +57,18 @@ services:
         BUILD_ENVIRONMENT: development     
     env_file:
       - ../Database/.env.development
-    #ports:
-    #  - "0.0.0.0:5432:5432"
-    volumes:      
-      - ../Build/certs/agience-net.crt:/etc/postgresql/certs/certfile.crt
-      - ../Build/certs/agience-net.key:/etc/postgresql/certs/keyfile.key
+    ports:
+      - "0.0.0.0:5432:5432"
+    volumes:
+      #- ../Build/certs/localhost.crt:/etc/postgresql/certs/certfile.crt
+      #- ../Build/certs/localhost.key:/etc/postgresql/certs/keyfile.key
+      - ../Build/certs/agience-development.crt:/etc/postgresql/certs/certfile.crt
+      - ../Build/certs/agience-development.key:/etc/postgresql/certs/keyfile.key
       - authority-data:/var/lib/postgresql/data
 
   broker:
+    container_name: broker-development  
+    image: broker:development
     restart: always  
     build:
       context: ../..
@@ -65,11 +80,13 @@ services:
     volumes:
       - ../Build/certs/localhost.crt:/etc/mosquitto/certs/localhost.crt
       - ../Build/certs/localhost.key:/etc/mosquitto/certs/localhost.key
-      - ../Build/certs/agience-net.crt:/etc/mosquitto/certs/agience-net.crt
-      - ../Build/certs/agience-net.key:/etc/mosquitto/certs/agience-net.key
-      - ../Build/certs/agience-net.crt:/usr/local/share/ca-certificates/agience-net.crt
+      - ../Build/certs/agience-development.crt:/etc/mosquitto/certs/agience-development.crt
+      - ../Build/certs/agience-development.key:/etc/mosquitto/certs/agience-development.key
+      - ../Build/certs/agience-development.crt:/usr/local/share/ca-certificates/agience-development.crt
 
   stream:
+    container_name: stream-development  
+    image: stream:development
     restart: always  
     build:      
       context: ../..
@@ -80,4 +97,5 @@ services:
       - "0.0.0.0:8000:8000"
     volumes:
       - ../Stream/icecast.development.xml:/etc/icecast.xml:ro
+      - ../Stream/icecast.development.secrets.xml:/etc/icecast.secrets.xml:ro
       - icecast-logs:/var/log/icecast

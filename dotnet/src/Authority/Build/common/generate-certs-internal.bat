@@ -1,6 +1,9 @@
 @echo off
 
-set DOMAIN=agience-net
+setlocal
+
+set ENVIRONMENT=%1
+set DOMAIN=agience-%ENVIRONMENT%
 
 cd ..\certs
 
@@ -15,10 +18,12 @@ goto EOF
 :GENERATE
 echo Generating internal certificates...
 
-openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -keyout %DOMAIN%.key -out %DOMAIN%.crt -config ..\common\%DOMAIN%.conf
+openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -keyout %DOMAIN%.key -out %DOMAIN%.crt -config ..\%ENVIRONMENT%\%DOMAIN%.conf
 openssl pkcs12 -export -out %DOMAIN%.pfx -inkey %DOMAIN%.key -in %DOMAIN%.crt -password pass:
 
 :EOF
+
+endlocal
 
 echo Internal certificate generation complete...
 

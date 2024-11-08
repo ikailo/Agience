@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Agience.Authority.Identity.Filters;
 using Agience.Authority.Identity.Models;
 using System.Security.Claims;
+using Agience.Authority.Identity.Services;
 
 namespace IdentityServerHost.Pages.ExternalLogin;
 
@@ -17,21 +18,25 @@ namespace IdentityServerHost.Pages.ExternalLogin;
 [SecurityHeaders]
 public class Callback : PageModel
 {
-    private readonly IUserStore<Person> _users;
     private readonly IIdentityServerInteractionService _interaction;
-    private readonly ILogger<Callback> _logger;
     private readonly IEventService _events;
+    private readonly ILogger<Callback> _logger;
+    private readonly IUserStore<Person> _users;
+    private readonly ICrmService? _crmService;
 
     public Callback(
         IIdentityServerInteractionService interaction,
         IEventService events,
         ILogger<Callback> logger,
-        IUserStore<Person> users)
+        IUserStore<Person> users,
+        ICrmService? crmService = null
+        )
     {
         _users = users;
         _interaction = interaction;
         _logger = logger;
         _events = events;
+        _crmService = crmService;
     }
 
     public async Task<IActionResult> OnGet()
@@ -63,6 +68,8 @@ public class Callback : PageModel
 
         var providerPersonId = userIdClaim.Value;
 
+        _logger.LogInformation("Looking for user");
+
         // find external user
         var user = await _users.FindByIdAsync(Person.CombineProviderAndId(providerId, providerPersonId), default); // TODO: Implement Cancellation Token
 
@@ -71,10 +78,13 @@ public class Callback : PageModel
             // this might be where you might initiate a custom workflow for user registration
             // in this sample we don't show how that would be done, as our sample implementation
             // simply auto-provisions new external user
+
             //
             // remove the user id claim so we don't include it as an extra claim if/when we provision the user
             //var claims = externalUser.Claims.ToList();
             //claims.Remove(userIdClaim);
+
+            _logger.LogInformation("User not found in database.");
 
             user = new Person()
             {
@@ -95,10 +105,22 @@ public class Callback : PageModel
                 throw new Exception("User not provisioned.");
             }
 
+            if (_crmService != null)
+            {
+                _logger.LogInformation("Adding subscriber to CRM.");
+                _ = _crmService.AddSubscriberAsync(user.Email!, user?.FirstName, user?.LastName);
+            }
+            else
+            {
+                _logger.LogWarning("CRM service not available.");
+            }
+
             //user = await _users.FindByIdAsync(Person.CombineProviderAndId(provider, providerUserId), default); // TODO: Probably we can skip this and just use the newly created users.
         }
         else
         {
+            _logger.LogInformation("User found in database.");
+
             user.LastLogin = DateTime.UtcNow;
             _ = await _users.UpdateAsync(user, default); // TODO: Await not necessary.
         }

@@ -7,7 +7,7 @@ SETLOCAL ENABLEDELAYEDEXPANSION
 set AGIENCE_INITIALIZE=TRUE
 
 echo Generating local certificates...
-call generate-certs-internal.bat
+call generate-certs-internal.bat %ENVIRONMENT%
 
 cd ..
 
@@ -48,8 +48,8 @@ call docker-up.bat %ENVIRONMENT% database
 
 call ef-migrate.bat
 
-docker exec -it database-cont psql -U agience_db_root -d agience_authority -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-docker exec -it database-cont psql -U agience_db_root -d agience_authority -c "SELECT * FROM pg_extension WHERE extname = 'pg_trgm';"
+docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "SELECT * FROM pg_extension WHERE extname = 'pg_trgm';"
 
 echo Configuring manage host...
 

@@ -18,9 +18,7 @@ internal class Program
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            var environmentName = builder.Environment.EnvironmentName;
-
-            if (environmentName == "Design")
+            if (builder.Environment.EnvironmentName == "Design")
             {
                 return; // Skip Building - AgienceDbContextFactory will handle this.
             }
@@ -34,10 +32,15 @@ internal class Program
                 .ReadFrom.Configuration(ctx.Configuration));
 
             builder.Configuration
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
-                .AddDotNetEnv($".env.{environmentName}")
-                .AddEnvironmentVariables();
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+            .AddDotNetEnv($".env.{builder.Environment.EnvironmentName}")
+            .AddEnvironmentVariables();
+
+            if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName.ToLower() == "debug")
+            {
+                builder.Configuration.AddUserSecrets<Program>();
+            }
 
             var app = builder
                 .ConfigureServices()
@@ -59,14 +62,14 @@ internal class Program
 
                     // TODO: Use a Model. Move to some config or util class. Get from Configuration.
 
-                    if (environmentName == "development")
+                    if (builder.Environment.EnvironmentName == "development")
                     {
                         seedArgs["web_domain"] = "localhost";
                         seedArgs["web_port"] = ":5002";
                         seedArgs["host_name"] = $"public.web.localhost";
                     }
 
-                    else if (environmentName == "local")
+                    else if (builder.Environment.EnvironmentName == "local")
                     {
                         seedArgs["web_domain"] = "web.local.agience.ai";
                         seedArgs["web_port"] = string.Empty;

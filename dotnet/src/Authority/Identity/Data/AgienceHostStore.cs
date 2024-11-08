@@ -19,21 +19,24 @@ namespace Agience.Authority.Identity.Data
 
         public async Task<Client?> FindClientByIdAsync(string hostId)
         {
-            var host = await _dataAdapter.GetRecordByIdAsync<Host>(hostId);            
+            var host = await _dataAdapter.GetRecordByIdAsync<Host>(hostId);
 
             if (host == null) { return null; }
 
             var clientIdentity = new Client()
             {
                 ClientName = host.Name,
-                ClientId = host.Id ?? throw new Exception("Host id not found"), // TODO: why throw exceptions?
-                ClientSecrets = host.Keys?.Select(hostKey => new Secret($"{hostKey.SaltedValue}")).ToList() ?? throw new Exception("Key value not provided."),
+                ClientId = host.Id ?? throw new InvalidOperationException("Host id not found"),
+                ClientSecrets = host.Keys?.Select(hostKey => new Secret($"{hostKey.SaltedValue}")).ToList()
+                                 ?? throw new InvalidOperationException("Key value not provided."),
                 RedirectUris = host.RedirectUris?.Split(' ') ?? new string[0],
                 PostLogoutRedirectUris = host.PostLogoutUris?.Split(' ') ?? new string[0],
                 AllowedScopes = host.Scopes,
                 EnableLocalLogin = false,
                 AlwaysIncludeUserClaimsInIdToken = true,
-                AccessTokenLifetime = 60 * 60 * 24, // 1 day
+                AccessTokenLifetime = 24 * 60 * 60, // 24 hours
+                AbsoluteRefreshTokenLifetime = 30 * 24 * 60 * 60, // 30 days
+                SlidingRefreshTokenLifetime = 15 * 24 * 60 * 60, // Sliding expiration of 15 days
                 ClientClaimsPrefix = "",
                 Claims = new List<ClientClaim> {
                     new ClientClaim(JwtClaimTypes.Role, "host"),

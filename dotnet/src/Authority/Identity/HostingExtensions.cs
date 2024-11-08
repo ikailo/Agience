@@ -11,8 +11,7 @@ using Agience.Authority.Identity.Data.Adapters;
 using Agience.Core.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Agience.Core.Models.Entities;
-using Duende.IdentityServer.Configuration;
-using Duende.IdentityServer.Services;
+
 
 namespace Agience.Authority.Identity;
 
@@ -54,6 +53,7 @@ internal static class HostingExtensions
         {
             options.IssuerUri = appConfig.AuthorityUri;
             options.Discovery.CustomEntries.Add("broker_uri", appConfig.BrokerUri ?? throw new ArgumentNullException("BrokerUri"));
+            options.Authentication.CookieLifetime = TimeSpan.FromDays(30); // TODO: Manage sessions better.
         })
             .AddInMemoryIdentityResources(appConfig.IdentityResources)
             .AddInMemoryApiResources(appConfig.ApiResources)
@@ -62,26 +62,42 @@ internal static class HostingExtensions
             .AddClientStore<AgienceHostStore>()
             .AddSecretValidator<HostSecretValidator>()
             .AddJwtBearerClientAuthentication();
-        /*
-        builder.Services.AddTransient<IServerUrls>(sp =>
-        {
-            var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
-            return new AgienceServerUrls(httpContextAccessor);
-        });*/
 
         builder.Services.AddSingleton(new AgienceIdProvider(appConfig.AuthorityUri));
         builder.Services.AddSingleton<AgienceKeyMaterialService>();
         builder.Services.AddScoped<StateValidator>();
 
+        // Mailchimp Setup
+        var mailchimpApiKey = appConfig.MailchimpApiKey;
+        var mailchimpAudienceId = appConfig.MailchimpAudienceId;
+
+        if (!string.IsNullOrEmpty(mailchimpApiKey) && !string.IsNullOrEmpty(mailchimpAudienceId))
+        {
+            builder.Services.AddSingleton<ICrmService>(sp =>
+            {
+                var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient();
+                var mailchimpTags = appConfig.MailchimpTags?.Split(',') ?? Array.Empty<string>();
+                return new MailchimpService(httpClient, mailchimpApiKey, mailchimpAudienceId, mailchimpTags, sp.GetRequiredService<ILogger<MailchimpService>>());
+            });
+        }
+
         Uri authorityDbUri = new Uri(appConfig.AuthorityDbUri ?? throw new ArgumentNullException("AuthorityDbUri"));
 
         var connectionString =
-            $"Host={authorityDbUri.Host};" +
-            $"Port={authorityDbUri.Port};" +
-            $"Database={appConfig.AuthorityDbDatabase};" +
-            $"Username={appConfig.AuthorityDbUsername};" +
-            $"Password={appConfig.AuthorityDbPassword};" +
-            (authorityDbUri.Scheme == Uri.UriSchemeHttps ? $"SSL Mode=VerifyFull;" : string.Empty);
+             $"Host={authorityDbUri.Host};" +
+             $"Port={authorityDbUri.Port};" +
+             $"Database={appConfig.AuthorityDbDatabase};" +
+             $"Username={appConfig.AuthorityDbUsername};" +
+             $"Password={appConfig.AuthorityDbPassword};";
+
+        if (builder.Environment.EnvironmentName.Equals("debug", StringComparison.OrdinalIgnoreCase))
+        {
+            connectionString += "SSL Mode=Require;Trust Server Certificate=true;";
+        }
+        else
+        {
+            connectionString += "SSL Mode=VerifyFull;";
+        }
 
         builder.Services.AddDbContext<AgienceDbContext>(options =>
         {

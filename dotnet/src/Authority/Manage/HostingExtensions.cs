@@ -86,7 +86,12 @@ namespace Agience.Authority.Manage
                 options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
             })
-            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+            {
+                options.ExpireTimeSpan = TimeSpan.FromDays(30); // Set the cookie expiration to 30 days
+                options.SlidingExpiration = true; // Enable sliding expiration
+            })
+
             .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
             {
                 options.Authority = appConfig.AuthorityUri;
@@ -97,6 +102,7 @@ namespace Agience.Authority.Manage
 
                 options.UsePkce = true;
                 options.SaveTokens = true;
+                options.UseTokenLifetime = false; // Use the cookie's lifetime, not the token's lifetime
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
