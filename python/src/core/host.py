@@ -8,8 +8,7 @@ import asyncio
 from enum import Enum
 
 
-class BrokerMessageType(Enum):
-    EVENT = "EVENT"
+from models.messages.broker_message import BrokerMessageType
 
 
 @dataclass
