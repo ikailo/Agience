@@ -1,3 +1,4 @@
-pydantic>=2.5.2
-paho-mqtt >= 1.6.1
-ntplib >= 0.4.0
+aiohttp
+paho-mqtt
+dataclasses
+typing-extensions
