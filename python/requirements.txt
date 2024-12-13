@@ -3,3 +3,5 @@ paho-mqtt
 dataclasses
 typing-extensions
 semantic-kernel
+ntplib
+websockets

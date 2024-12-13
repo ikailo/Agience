@@ -5,7 +5,9 @@ from typing import Callable, Dict, List, Optional
 from paho.mqtt.client import Client, MQTTMessage
 from ntplib import NTPClient, NTPException
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 import threading
+from models.messages.broker_message import BrokerMessage, BrokerMessageType
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,10 +27,12 @@ class Broker:
             "oceania.pool.ntp.org",
         ]
         self._mqtt_client = Client()
-        self._callbacks: Dict[str, List[Callable[[BrokerMessage], asyncio.Task]]] = {}
+        self._callbacks: Dict[str,
+                              List[Callable[[BrokerMessage], asyncio.Task]]] = {}
         self._is_connected = False
         self._timestamp_format = "%Y-%m-%dT%H:%M:%S.%f"
-        self._ntp_timer = threading.Timer(interval=86400, function=self._start_ntp_sync)
+        self._ntp_timer = threading.Timer(
+            interval=86400, function=self._start_ntp_sync)
         self._lock = threading.Lock()
 
         # MQTT client event handlers
@@ -40,10 +44,22 @@ class Broker:
         await self._start_ntp_sync()
         logger.info("Connecting to MQTT broker: %s", broker_uri)
 
+        # Parse the broker URI to get host and port
+        parsed_uri = urlparse(broker_uri)
+        host = parsed_uri.hostname
+        port = parsed_uri.port or 443  # Default to 443 if not specified
+
         # MQTT connection configuration
-        self._mqtt_client.username_pw_set(username=token, password="<no_password>")
+        self._mqtt_client.username_pw_set(
+            username=token, password="<no_password>")
         self._mqtt_client.tls_set()
-        self._mqtt_client.connect(broker_uri)
+
+        # Configure for websockets
+        self._mqtt_client.transport = "websockets"
+        self._mqtt_client.ws_set_options(path="/mqtt")  # Adjust path if needed
+
+        # Connect using the parsed host and port
+        self._mqtt_client.connect(host, port)
 
         # Start a background loop for the MQTT client
         loop = asyncio.get_running_loop()
@@ -114,8 +130,10 @@ class Broker:
         with self._lock:
             if topic in self._callbacks:
                 for callback in self._callbacks[topic]:
-                    message_type = msg.properties.UserProperties.get("message.type", BrokerMessageType.UNKNOWN)
-                    message = BrokerMessage(topic=topic, message_type=message_type, data=payload)
+                    message_type = msg.properties.UserProperties.get(
+                        "message.type", BrokerMessageType.UNKNOWN)
+                    message = BrokerMessage(
+                        topic=topic, message_type=message_type, data=payload)
                     asyncio.create_task(callback(message))
 
     async def _start_ntp_sync(self):
@@ -129,10 +147,10 @@ class Broker:
                 logger.info("Querying NTP server: %s", host)
                 response = self._ntp_client.request(host)
                 timestamp = datetime.utcfromtimestamp(response.tx_time)
-                logger.info("NTP Time from %s: %s", host, timestamp.strftime(self._timestamp_format))
+                logger.info("NTP Time from %s: %s", host,
+                            timestamp.strftime(self._timestamp_format))
                 return
             except (NTPException, Exception) as e:
                 logger.error("Failed to query NTP server %s: %s", host, e)
                 delay = min(delay * 2, max_delay_seconds)
                 await asyncio.sleep(delay)
-
