@@ -5,3 +5,4 @@ typing-extensions
 semantic-kernel
 ntplib
 websockets
+python-dotenv
