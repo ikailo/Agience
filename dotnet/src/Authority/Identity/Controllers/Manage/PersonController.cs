@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using Agience.Authority.Identity.Services;
-using Agience.Authority.Identity.Data.Adapters;
-using Agience.Authority.Models.Manage;
+using Agience.Authority.Identity.Models;
+using ManageModel = Agience.Authority.Models.Manage;
 using AutoMapper;
-using Microsoft.AspNetCore.Identity;
+using Agience.Authority.Identity.Data.Repositories;
 
 namespace Agience.Authority.Identity.Controllers.Manage
 {
@@ -13,32 +10,54 @@ namespace Agience.Authority.Identity.Controllers.Manage
     [ApiController]
     public class PersonController : ManageControllerBase
     {
+        private readonly RecordsRepository _repository;
         private readonly IMapper _mapper;
 
-        public PersonController(IAgienceDataAdapter dataAdapter, ILogger<AgentController> logger, IMapper mapper)
-            : base(dataAdapter, logger)
+        public PersonController(RecordsRepository repository, ILogger<PersonController> logger, IMapper mapper)
+            : base(logger)
         {
+            _repository = repository;
             _mapper = mapper;
         }
-
+                
         [HttpGet("person")]
-        public async Task<ActionResult<Person>> GetPerson()
+        public async Task<ActionResult<ManageModel.Person>> GetPerson()
         {
             return await HandleGet(async () =>
             {
-                var modelPerson = await _dataAdapter.GetRecordByIdAsPersonAsync<Models.Person>(PersonId, PersonId);
-                return _mapper.Map<Person>(modelPerson);
-            }
-            );
-        }
+                var personEntity = await _repository.GetRecordByIdAsSystemAsync<Person>(PersonId); // This is the logged in user
 
-        [HttpPut("person")]
-        public async Task<IActionResult> PutPerson([FromBody] Person person)
+                if (personEntity == null)
+                {
+                    throw new KeyNotFoundException("Person not found."); // This should never happen
+                }
+
+                return _mapper.Map<ManageModel.Person>(personEntity);
+            });
+        }
+                
+        [HttpPut("person/{personId}")]
+        public async Task<IActionResult> UpdatePerson(string personId, [FromBody] Person person)
         {
             return await HandlePut(async () =>
             {
-                var modelPerson = _mapper.Map<Models.Person>(person);
-                await _dataAdapter.UpdateRecordAsPersonAsync(modelPerson, PersonId);
+                if (person.Id != PersonId)
+                {
+                    throw new InvalidOperationException("Person not found.");
+                }
+                
+                if (person?.Id == null)
+                    throw new ArgumentNullException("Person Id is required.");
+
+                if (person.Id != null && !person.Id.Equals(personId))
+                {
+                    throw new InvalidOperationException("If an Id is provided in the body, it must match the Id in the URL.");
+                }
+
+                person.Id = personId;
+
+                person = await _repository.UpdateRecordAsSystemAsync(person);
+                
             });
         }
     }

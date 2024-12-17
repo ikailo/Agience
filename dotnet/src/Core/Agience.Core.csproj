@@ -23,15 +23,17 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="7.6.2" />
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="7.6.2" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.15.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.32.0" />
     <PackageReference Include="MQTTnet" Version="4.3.6.1152" />
     <PackageReference Include="NuGet.Packaging" Version="6.10.1" />
     <PackageReference Include="NuGet.Protocol" Version="6.10.1" />
     <PackageReference Include="NuGet.Resolver" Version="6.10.1" />
     <PackageReference Include="QuikGraph" Version="2.5.0" />
+    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.6.2" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>

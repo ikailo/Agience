@@ -1,0 +1,31 @@
+﻿@page "/connections"
+@using Agience.Authority.Models.Manage
+@using Agience.Authority.Manage.Components.Shared
+@using Agience.Authority.Manage.Services
+@using Agience.Authority.Manage.Models
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using System.Text.Json
+
+<EntityPage @key="typeof(Connection)" TEntity="Connection" Icon="@Icons.Material.Filled.Commit">
+    <EntityDetailPanel TEntity="Connection" Fields="ConnectionFields"/>
+    <EntityListPanel TParent="Connection" TChild="Authorizer" TabName="Authorizers" Fields="AuthorizerFields" />
+</EntityPage>
+
+@code {
+    [Inject] private ILogger<Connections> _logger { get; set; } = null!;
+
+
+    public List<FieldDefinition> ConnectionFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" }
+    };
+
+    public List<FieldDefinition> AuthorizerFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "Id", Label = "Authorizer", RelatedEntityApiName = "authorizer",  RelatedEntityFieldName = "this" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true}
+    };
+
+
+}

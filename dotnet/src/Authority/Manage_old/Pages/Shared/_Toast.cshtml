@@ -1,0 +1,41 @@
+﻿<div id="toastContainer">
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    @TempData["SuccessMessage"]
+                </div>
+                <button type="button" class="btn-close bg-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    @TempData["ErrorMessage"]
+                </div>
+                <button type="button" class="btn-close bg-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+           
+        var successToastEl = document.getElementById('successToast');
+        var errorToastEl = document.getElementById('errorToast');
+
+        if (successToastEl) {
+            var successToast = new bootstrap.Toast(successToastEl);
+            successToast.show();
+        }
+
+        if (errorToastEl) {
+            var errorToast = new bootstrap.Toast(errorToastEl);
+            errorToast.show();
+        }
+    });
+</script>

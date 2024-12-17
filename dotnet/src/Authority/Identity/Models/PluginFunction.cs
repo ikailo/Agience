@@ -1,25 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Agience.Core.Models.Entities.Abstract;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace Agience.Authority.Identity.Models
 {
-    public class PluginFunction
+    public class PluginFunction : BaseEntity
     {
-        [JsonPropertyName("plugin_id")]
-        public string PluginId { get; set; } = string.Empty;
-
-        [JsonPropertyName("function_id")]
-        public string FunctionId { get; set; } = string.Empty;
-
-        [ForeignKey("PluginId")]
+        [ForeignKey(nameof(PluginId))]
         [JsonIgnore]
         public virtual Plugin? Plugin { get; set; }
 
-        [ForeignKey("FunctionId")]
+        [ForeignKey(nameof(FunctionId))]
         [JsonIgnore]
-        public virtual Function? Function { get; set; }        
+        public virtual Function? Function { get; set; }
+
+
+        [JsonPropertyName("plugin_id")]
+        public string? PluginId { get; set; }
+
+        [JsonPropertyName("function_id")]
+        public string? FunctionId { get; set; }
 
         [JsonPropertyName("is_root")]
-        public bool IsRoot { get; set; }
+        public bool IsRoot { get; set; } = false;
     }    
 }

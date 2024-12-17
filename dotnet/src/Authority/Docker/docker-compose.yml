@@ -20,8 +20,6 @@ services:
   manage:
     networks:
       - agience-net
-    depends_on:
-      - "identity"
       
   database:
     networks:

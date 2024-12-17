@@ -1,25 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Agience.Core.Models.Entities.Abstract;
+using Agience.Core.Models.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace Agience.Core.Models.Entities
 {
-    public class Plugin : AgienceEntity
+    public class Plugin : PublicEntity
     {
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
-
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
-
-        [JsonPropertyName("type")]
-        public PluginType Type { get; set; } = PluginType.Curated;
-
-        [JsonPropertyName("visibility")]
-        public Visibility Visibility { get; set; } = Visibility.Private;
-
+        [JsonIgnore]
         [NotMapped]
+        public  virtual Type? Type { get; set; }
+
+        [JsonPropertyName("unique_name")]
+        public string? UniqueName { get; set; }
+
+        [JsonPropertyName("plugin_provider")]
+        public PluginProvider PluginProvider { get; set; } = PluginProvider.Prompt;
+
+        [JsonPropertyName("plugin_source")]
+        public PluginSource PluginSource { get; set; } = PluginSource.UserDefined;
+
         [JsonPropertyName("functions")]
-        public virtual List<Function> Functions { get; set; } = new List<Function>();
+        public virtual List<Function> Functions { get; set; } = new();
 
     }
 }

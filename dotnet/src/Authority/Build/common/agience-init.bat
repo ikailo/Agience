@@ -35,9 +35,11 @@ IF NOT EXIST .env.%ENVIRONMENT% (
 )
 
 cd ..\Stream
-IF NOT EXIST icecast.%ENVIRONMENT%.xml (    
+IF NOT EXIST icecast.%ENVIRONMENT%.secrets.xml (    
     copy icecast.sample.secrets.xml icecast.%ENVIRONMENT%.secrets.xml
+    cd ..\Build\common
     call update-stream-env.bat %ENVIRONMENT%
+    cd ..
 )
 
 cd ..\Build\common
@@ -48,8 +50,8 @@ call docker-up.bat %ENVIRONMENT% database
 
 call ef-migrate.bat
 
-docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
-docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "SELECT * FROM pg_extension WHERE extname = 'pg_trgm';"
+REM docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
+REM docker exec -it database-%ENVIRONMENT% psql -U agience_db_root -d agience_authority -c "SELECT * FROM pg_extension WHERE extname = 'pg_trgm';"
 
 echo Configuring manage host...
 

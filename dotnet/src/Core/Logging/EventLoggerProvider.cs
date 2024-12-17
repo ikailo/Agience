@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging;
+using Agience.Core.Interfaces;
 
 namespace Agience.Core.Logging
 {
@@ -19,22 +20,22 @@ namespace Agience.Core.Logging
             return NullLogger.Instance;
         }
 
-        public ILogger CreateLogger(string categoryName, string agencyId, string? agentId)
+        public ILogger CreateLogger(string categoryName, string? agentId)
         {
-            return CreateLoggerInternal(typeof(object), agencyId, agentId);
+            return CreateLoggerInternal(typeof(object), agentId);
         }
 
-        public ILogger<T> CreateLogger<T>(string agencyId, string? agentId)
+        public ILogger<T> CreateLogger<T>(string? agentId)
         {
-            return (ILogger<T>)CreateLoggerInternal(typeof(T), agencyId, agentId);            
+            return (ILogger<T>)CreateLoggerInternal(typeof(T), agentId);            
         }
 
-        private ILogger CreateLoggerInternal(Type loggerType, string agencyId, string? agentId)
+        private ILogger CreateLoggerInternal(Type loggerType, string? agentId)
         {
             var logger = loggerType != typeof(object)
-                ? (Activator.CreateInstance(typeof(EventLogger<>).MakeGenericType(loggerType), agencyId, agentId)
+                ? (Activator.CreateInstance(typeof(EventLogger<>).MakeGenericType(loggerType), agentId)
                     ?? throw new InvalidOperationException("Failed to create logger instance."))
-                : new AgienceEventLogger(agencyId, agentId);
+                : new AgienceEventLogger(agentId);
 
             if (logger is AgienceEventLoggerBase agienceEventLogger)
             {

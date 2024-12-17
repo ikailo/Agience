@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-SET ASPNETCORE_ENVIRONMENT=Design
+SET EF_MIGRATION=TRUE
 
 :: Change directory to the project
 cd ..\..\Identity

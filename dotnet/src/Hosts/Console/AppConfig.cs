@@ -7,5 +7,6 @@ namespace Agience.Hosts._Console
         public string? OpenAiApiKey { get; set; }
         public string? OpenAIApiUrl { get; set; }
         public string? CustomNtpHost { get; set; }
+        public string? WorkspacePath { get; set; }
     }
 }

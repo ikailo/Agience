@@ -1,73 +1,162 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Agience.Authority.Identity.Data.Adapters;
-using Agience.Authority.Models.Manage;
+﻿using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
+using Agience.Authority.Identity.Data.Repositories;
+using Agience.Authority.Identity.Models;
+using ManageModel = Agience.Authority.Models.Manage;
 
 namespace Agience.Authority.Identity.Controllers.Manage
 {
     [Route("manage")]
     [ApiController]
-    public partial class AuthorizerController : ManageControllerBase
+    public class AuthorizerController : ManageControllerBase
     {
+        private readonly RecordsRepository _repository;
         private readonly IMapper _mapper;
 
-        public AuthorizerController(IAgienceDataAdapter dataAdapter, ILogger<CallbackController> logger, IMapper mapper)
-            : base(dataAdapter, logger)
+        public AuthorizerController(ILogger<AuthorizerController> logger, RecordsRepository repository, IMapper mapper)
+            : base(logger)
         {
+            _repository = repository;
             _mapper = mapper;
         }
 
-        [HttpGet("authorizers")]
-        public async Task<ActionResult<IEnumerable<Authorizer>>> GetAuthorizers()
-        {
-            return await HandleGet(async () =>
-            {
-                return _mapper.Map<IEnumerable<Authorizer>>(await _dataAdapter.GetRecordsAsPersonAsync<Models.Authorizer>(PersonId));
-            });
-        }
-
-        [HttpGet("authorizer/{id}")]
-        public async Task<ActionResult<Authorizer>> GetAuthorizer(string id)
-        {
-            return await HandleGet(async () =>
-            {
-                return _mapper.Map<Authorizer>(await _dataAdapter.GetRecordByIdAsPersonAsync<Models.Authorizer>(id, PersonId));
-            });
-        }
-
+        // Create a new authorizer
         [HttpPost("authorizer")]
-        public async Task<ActionResult> PostAuthorizer([FromBody] Authorizer authorizer)
+        public async Task<ActionResult<ManageModel.Authorizer>> CreateAuthorizer([FromBody] Authorizer authorizer)
         {
             return await HandlePost(async () =>
-            {
-                return await _dataAdapter.CreateRecordAsPersonAsync(_mapper.Map<Models.Authorizer>(authorizer), PersonId);
-            },
-                nameof(GetAuthorizer)
-            );
+            {   
+                authorizer = await _repository.CreateRecordAsPersonAsync(authorizer, PersonId);
+
+                return _mapper.Map<ManageModel.Authorizer>(authorizer);
+            }, nameof(GetAuthorizerById), "authorizerId");
         }
 
-        [HttpPut("authorizer")]
-        public async Task<IActionResult> PutAuthorizer([FromBody] Authorizer authorizer)
+        // Retrieve a list of all authorizers
+        [HttpGet("authorizers")]
+        public async Task<ActionResult<IEnumerable<ManageModel.Authorizer>>> GetAuthorizers([FromQuery] string? search = null)
+        {
+            return await HandleGet(async () =>
+            {
+                if (search == null)
+                {
+                    var authorizers = await _repository.GetRecordsAsPersonAsync<Authorizer>(PersonId);
+                    return _mapper.Map<IEnumerable<ManageModel.Authorizer>>(authorizers);
+                }
+                
+                var searchResults = await _repository.SearchRecordsAsPersonAsync<Authorizer>(
+                    new[] { "Name", "Description" }, search, PersonId);
+
+                return _mapper.Map<IEnumerable<ManageModel.Authorizer>>(searchResults);
+            });
+        }
+
+        [HttpGet("authorizer/{authorizerId}")]
+        public async Task<ActionResult<ManageModel.Authorizer>> GetAuthorizerById(string authorizerId)
+        {
+            return await HandleGet(async () =>
+            {
+                var authorizer = await _repository.GetRecordByIdAsPersonAsync<Authorizer>(authorizerId, PersonId);
+
+                if (authorizer == null)
+                    throw new KeyNotFoundException("Authorizer not found.");
+
+                return _mapper.Map<ManageModel.Authorizer>(authorizer);
+            });
+        }
+
+        [HttpPut("authorizer/{authorizerId}")]
+        public async Task<IActionResult> UpdateAuthorizer(string authorizerId, [FromBody] Authorizer authorizer)
         {
             return await HandlePut(async () =>
             {
-                await _dataAdapter.UpdateRecordAsPersonAsync(_mapper.Map<Models.Authorizer>(authorizer), PersonId);
+                if (authorizer?.Id == null)
+                    throw new ArgumentNullException("Authorizer Id is required.");
+
+                if (authorizer.Id != null && !authorizer.Id.Equals(authorizerId))
+                {
+                    throw new InvalidOperationException("If an Id is provided in the body, it must match the Id in the URL.");
+                }
+
+                authorizer.Id = authorizerId;
+
+                await _repository.UpdateRecordAsPersonAsync(authorizer, PersonId);
             });
         }
 
-        [HttpDelete("authorizer/{id}")]
-        public async Task<IActionResult> DeleteAuthorizer(string id)
+        [HttpDelete("authorizer/{authorizerId}")]
+        public async Task<IActionResult> DeleteAuthorizer(string authorizerId)
         {
             return await HandleDelete(async () =>
             {
-                await _dataAdapter.DeleteRecordAsPersonAsync<Models.Authorizer>(id, PersonId);
+                var success = await _repository.DeleteRecordAsPersonAsync<Authorizer>(authorizerId, PersonId);
+
+                if (!success)
+                    throw new KeyNotFoundException("Authorizer not found or could not be deleted.");
             });
         }
-         
-        [HttpGet("authorizer/{id}/activate")]
-        public async Task<IActionResult> GetAuthorizerActivate(string id, [FromQuery] string state)
+
+        // *** CONNECTIONS *** //
+
+        [HttpGet("authorizer/{authorizerId}/connections")]
+        public async Task<ActionResult<IEnumerable<ManageModel.Connection>>> GetConnectionsForAuthorizer(string authorizerId, [FromQuery] bool all = false)
         {
-            throw new NotImplementedException();
+            return await HandleGet(async () =>
+            {
+                var connections = await _repository.GetChildRecordsWithJoinAsPersonAsync<Authorizer, Connection, ConnectionAuthorizer>("AuthorizerId", "ConnectionId", authorizerId, PersonId, all);
+                return _mapper.Map<IEnumerable<ManageModel.Connection>>(connections);
+            });
+        }
+
+
+        [HttpPost("authorizer/{authorizerId}/connection/{connectionId}")]
+        public async Task<IActionResult> AddConnectionToAuthorizer( string authorizerId, string connectionId, [FromQuery] bool all = false)
+        {
+            return await HandleLink(async () =>
+            {
+                var authorizer = await _repository.GetRecordByIdAsPersonAsync<Authorizer>(authorizerId, PersonId);
+
+                if (authorizer == null)
+                    throw new KeyNotFoundException("Authorizer not found.");
+
+                var connection = await _repository.GetRecordByIdAsPersonAsync<Connection>(connectionId, PersonId, all);
+
+                if (connection == null)
+                    throw new KeyNotFoundException("Connection not found.");
+
+                await _repository.CreateRecordAsSystemAsync(new ConnectionAuthorizer()
+                {                    
+                    AuthorizerId = authorizerId,
+                    ConnectionId = connectionId
+                });
+            });
+        }
+
+        [HttpDelete("authorizer/{authorizerId}/connection/{connectionId}")]
+        public async Task<IActionResult> RemoveConnectionFromAuthorizer(string authorizerId, string connectionId, [FromQuery] bool all = false)
+        {
+            return await HandleDelete(async () =>
+            {
+                var authorizer = await _repository.GetRecordByIdAsPersonAsync<Authorizer>(authorizerId, PersonId);
+
+                if (authorizer == null)
+                    throw new KeyNotFoundException("Authorizer not found.");
+
+                var connection = await _repository.GetRecordByIdAsPersonAsync<Connection>(connectionId, PersonId, all);
+
+                if (connection == null)
+                    throw new KeyNotFoundException("Connection not found.");
+
+                var connectionAuthorizers = await _repository.QueryRecordsAsSystemAsync<ConnectionAuthorizer>(new()                {                    
+                    {"AuthorizerId", authorizerId },
+                    {"ConnectionId", connectionId }
+                });
+
+                if (connectionAuthorizers.Count() != 1)
+                    throw new InvalidDataException("ConnectionAuthorizer not found.");
+
+                await _repository.DeleteRecordAsSystemAsync<ConnectionAuthorizer>(connectionAuthorizers.First().Id!);
+            });
         }
     }
 }

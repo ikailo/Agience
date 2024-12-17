@@ -1,37 +1,30 @@
 ﻿using Agience.Core.Mappings;
-using Agience.Core.Models.Entities;
+using Agience.Core.Models.Enums;
 using Agience.Core.Models.Messages;
 using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using System.ComponentModel;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
 
 namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Host), ReverseMap = true)]
-    public class Host
+    public class Host : Models.Entities.Host
     {
         public event Func<Agent, Task>? AgentConnected;
-        public event Func<Agency, Task>? AgencyConnected;
-
         public event Func<string, Task>? AgentDisconnected;
-        public event Func<string, Task>? AgencyDisconnected;
-
         public Func<string, string, Task>? AgentLogEntryReceived;
-        public Func<string, string, Task>? AgencyLogEntryReceived;
 
-
-        public string Id => _id;
         public bool IsConnected { get; private set; }
+        public new IReadOnlyDictionary<string, Agent> Agents => _agents;
 
-        public IReadOnlyDictionary<string, Agent> Agents => _agents;
-        public IReadOnlyDictionary<string, Agency> Agencies => _agencies;
-
-        private readonly string _id;
         private readonly string _hostSecret;
         private readonly Authority _authority;
         private readonly Broker _broker;
@@ -41,10 +34,10 @@ namespace Agience.Core
         private readonly IMapper _mapper;
 
         private readonly Dictionary<string, Agent> _agents = new();
-        private readonly Dictionary<string, Agency> _agencies = new();
+        private readonly TopicGenerator _topicGenerator;
 
-        public ServiceCollection Services { get; } = new();
-        
+        internal readonly Dictionary<string, object> PluginInstances = new();
+
         internal Host(
             string hostId,
             string hostSecret,
@@ -54,14 +47,16 @@ namespace Agience.Core
             //PluginRuntimeLoader pluginRuntimeLoader,
             ILogger<Host> logger)
         {
-            _id = !string.IsNullOrEmpty(hostId) ? hostId : throw new ArgumentNullException(nameof(hostId));
+            Id = !string.IsNullOrEmpty(hostId) ? hostId : throw new ArgumentNullException(nameof(hostId));
             _hostSecret = !string.IsNullOrEmpty(hostSecret) ? hostSecret : throw new ArgumentNullException(nameof(hostSecret));
             _authority = authority ?? throw new ArgumentNullException(nameof(authority));
             _broker = broker ?? throw new ArgumentNullException(nameof(broker));
             _agentFactory = agentFactory ?? throw new ArgumentNullException(nameof(agentFactory));
-            // _pluginRuntimeLoader = pluginRuntimeLoader;
+            //_pluginRuntimeLoader = pluginRuntimeLoader;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mapper = AutoMapperConfig.GetMapper();
+
+            _topicGenerator = new TopicGenerator(_authority.Id, Id);
         }
 
         public async Task RunAsync()
@@ -115,14 +110,16 @@ namespace Agience.Core
 
             if (_broker.IsConnected)
             {
-                await _broker.Subscribe(_authority.HostTopic("+", "0"), _broker_ReceiveMessage); // Hosts Broadcast
+                //await _broker.Subscribe(_authority.HostTopic("+", "0"), _broker_ReceiveMessage); // Hosts Broadcast
 
-                await _broker.Subscribe(_authority.HostTopic("+", Id), _broker_ReceiveMessage); // This Host
+                await _broker.Subscribe(_topicGenerator.SubscribeAsHost(), _broker_ReceiveMessage); // This Host
+
+                
 
                 await _broker.PublishAsync(new BrokerMessage()
                 {
                     Type = BrokerMessageType.EVENT,
-                    Topic = _authority.AuthorityTopic(Id!),
+                    Topic = _topicGenerator.PublishToAuthority(),
                     Data = new Data
                 {
                     { "type", "host_connect" },
@@ -150,8 +147,8 @@ namespace Agience.Core
                     await agent.Disconnect();
                 }
 
-                await _broker.Unsubscribe(_authority.HostTopic("+", "0"));
-                await _broker.Unsubscribe(_authority.HostTopic("+", Id));
+                //await _broker.Unsubscribe(_authority.HostTopic("+", "0"));
+                await _broker.Unsubscribe(_topicGenerator.SubscribeAsHost());
 
                 await _broker.Disconnect();
 
@@ -187,21 +184,187 @@ namespace Agience.Core
             }
         }
 
-        public void AddPluginFromType<T>(string name) where T : class
+        public void AddPlugin<T>(T instance) where T : class
         {
-            _agentFactory.AddHostPluginFromType<T>(name);
-        }
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
 
-        private async Task ReceiveHostWelcome(Models.Entities.Host modelHost, IEnumerable<Models.Entities.Plugin> modelPlugins, IEnumerable<Models.Entities.Agent> modelAgents)
-        {
-            foreach (var modelPlugin in modelPlugins)
+            var type = instance.GetType();
+            var pluginName = type.FullName ?? type.Name;
+
+            // Ensure the instance is unique (optional: overwrite existing instances)
+            if (PluginInstances.ContainsKey(pluginName))
             {
-                _agentFactory.AddHostPlugin(modelPlugin);
+                throw new InvalidOperationException($"A plugin with the name '{pluginName}' already exists.");
             }
 
-            foreach (var modelAgent in modelAgents)
+            // Store the instance
+            PluginInstances[pluginName] = instance;
+
+            // Initialize a new plugin instance
+            var plugin = new Models.Entities.Plugin
             {
-                await ReceiveAgentConnect(modelAgent);
+                Name = type.Name,
+                UniqueName = type.FullName,
+                Description = string.Empty,
+                PluginProvider = PluginProvider.SKPlugin,
+                PluginSource = PluginSource.HostDefined,
+                Type = type
+            };
+
+            // Retrieve all methods decorated with KernelFunctionAttribute
+            var decoratedMethods = type
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.GetCustomAttributes(typeof(KernelFunctionAttribute), false).Any())
+                .ToList();
+
+            // Map methods to Function objects
+            foreach (var method in decoratedMethods)
+            {
+                var function = new Models.Entities.Function
+                {
+                    Name = method.Name,
+                    Description = method.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+                    Inputs = method.GetParameters().Select(param => new Models.Entities.Parameter
+                    {
+                        Name = param.Name ?? string.Empty,
+                        Description = param.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+                        Type = GetFriendlyTypeName(param.ParameterType)
+                    }).ToList(),
+                    Outputs = new List<Models.Entities.Parameter>
+                    {
+                        new Models.Entities.Parameter
+                        {
+                            Name = "result",
+                            Description = method.ReturnParameter.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+                            Type = GetFriendlyTypeName(method.ReturnType)
+                        }
+                    }
+                };
+
+                plugin.Functions.Add(function);
+            }
+
+            // Add the plugin to the list
+            Plugins.Add(plugin);
+        }
+
+        private string GetFriendlyTypeName(Type type)
+        {
+            if (type.IsGenericType)
+            {
+                var typeName = type.Name.Split('`')[0];
+                var genericArgs = string.Join(", ", type.GetGenericArguments().Select(GetFriendlyTypeName));
+                return $"{typeName}<{genericArgs}>";
+            }
+
+            return type.Name;
+        }
+    
+
+        public void AddPluginFromType<T>() where T : class
+        {
+            // Initialize a new plugin instance
+            var plugin = new Models.Entities.Plugin
+            {
+                Name = typeof(T).Name,
+                UniqueName = typeof(T).FullName,
+                Description = string.Empty,
+                PluginProvider = PluginProvider.SKPlugin,
+                PluginSource = PluginSource.HostDefined
+            };
+
+            // Retrieve all methods decorated with KernelFunctionAttribute
+            var decoratedMethods = typeof(T)
+                .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(m => m.GetCustomAttributes(typeof(KernelFunctionAttribute), false).Any())
+                .ToList();
+
+            // Map methods to Function objects
+            foreach (var method in decoratedMethods)
+            {
+                var function = new Models.Entities.Function
+                {
+                    Name = method.Name,
+
+                    Description = method.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+
+                    Inputs = method.GetParameters().Select(param => new Models.Entities.Parameter
+                    {
+                        Name = param.Name ?? string.Empty,
+                        Description = param.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+                        // Ensure the type name for parameters is clear
+                        Type = param.ParameterType.IsGenericType
+                            ? $"{param.ParameterType.Name.Split('`')[0]}<{string.Join(", ", param.ParameterType.GetGenericArguments().Select(arg => arg.Name))}>"
+                            : param.ParameterType.Name
+                    }).ToList(),
+
+                    Outputs = new List<Models.Entities.Parameter>
+                        {
+                            new Models.Entities.Parameter
+                            {
+                                Name = "result",
+                                Description = method.ReturnParameter.GetCustomAttribute<DescriptionAttribute>()?.Description ?? string.Empty,
+                                // Ensure the type name for the return type is clear
+                                Type = method.ReturnType.IsGenericType
+                                    ? $"{method.ReturnType.Name.Split('`')[0]}<{string.Join(", ", method.ReturnType.GetGenericArguments().Select(arg => arg.Name))}>"
+                                    : method.ReturnType.Name
+                            }
+                        }
+                };
+
+                plugin.Functions.Add(function);
+            }
+
+            plugin.Type = typeof(T);
+
+            Plugins.Add(plugin);
+
+        }
+
+        private async Task ReceiveHostWelcome(Models.Entities.Host host, IEnumerable<Models.Entities.Plugin> plugins, IEnumerable<Models.Entities.Agent> agents)
+        {
+            foreach (var plugin in plugins)
+            {
+                // Reconcile Plugin IDs
+                var existingPlugin = Plugins.FirstOrDefault(p => p.UniqueName == plugin.UniqueName)
+                                     ?? Plugins.FirstOrDefault(p => p.Name == plugin.Name);
+
+                if (existingPlugin != null)
+                {
+                    // Update Plugin ID
+                    existingPlugin.Id = plugin.Id;
+
+                    // Reconcile Function IDs within the existing plugin
+                    foreach (var function in plugin.Functions)
+                    {
+                        var existingFunction = existingPlugin.Functions.FirstOrDefault(f => f.Name == function.Name);
+                        if (existingFunction != null)
+                        {
+                            // Update Function ID
+                            existingFunction.Id = function.Id;
+                        }
+                        else
+                        {
+                            // Add new function
+                            //existingPlugin.Functions.Add(function);
+                        }
+                    }
+
+                    // Remove extra functions from the existing plugin that are not in the current plugin
+                    //var functionNames = plugin.Functions.Select(f => f.Name).ToHashSet();
+                    //existingPlugin.Functions.RemoveAll(f => !functionNames.Contains(f.Name));
+                }
+                else
+                {
+                    // Add the entire plugin, including its functions
+                    Plugins.Add(plugin);
+                }
+            }
+
+
+            foreach (var agent in agents)
+            {
+                await ReceiveAgentConnect(agent);
             }
         }
 
@@ -209,24 +372,8 @@ namespace Agience.Core
         {
             // Creates an Agent configured with the plugins and functions.
             // Agent instantiation is initiated from Authority. The Host does not have control.
-            // Agent has an Agency which connects them directly to other Agents in the Agency.
 
             var agent = _agentFactory.CreateAgent(modelAgent);
-
-            // Connect the Agency first
-            if (!_agencies.ContainsKey(agent.Agency.Id))
-            {
-                _agencies.Add(agent.Agency.Id, agent.Agency);
-
-                await agent.Agency.Connect();
-
-                _logger.LogInformation($"{agent.Agency.Name} Connected");
-            }
-
-            if (AgencyConnected != null)
-            {
-                await AgencyConnected.Invoke(agent.Agency);
-            }
 
             // Connect the Agent now
             _agents[agent.Id!] = agent;
@@ -234,6 +381,9 @@ namespace Agience.Core
             await agent.Connect();
 
             _logger.LogInformation($"{agent.Name} Connected");
+
+            // TODO: Auto Start Function?
+
 
             if (AgentConnected != null)
             {
@@ -264,20 +414,6 @@ namespace Agience.Core
                 await AgentDisconnected.Invoke(agentId);
             }
 
-            // Disconnect the Agency if no more of its local Agents are connected
-            if (_agents.Values.All(a => a.Agency.Id != agent.Agency.Id) && _agencies.ContainsKey(agent.Agency.Id))
-            {
-                await agent.Agency.Disconnect();
-                _agencies.Remove(agentId);
-
-                _logger.LogInformation($"{agent.Agency.Name} Disconnected");
-            }
-
-            if (AgencyDisconnected != null)
-            {
-                await AgencyDisconnected.Invoke(agent.Agency.Id);
-            }
-
             _agentFactory.DisposeAgent(agentId);
         }
 
@@ -286,17 +422,6 @@ namespace Agience.Core
         {
             if (message.SenderId == null || message.Data == null) { return; }
 
-            /*
-            // Loading Plugins From External
-            if (message.Type == BrokerMessageType.EVENT &&
-                message.Data?["type"] == "load_plugins") //TODO: Review Message Data
-            {
-                _logger.LogInformation("Loading Plugins for Agent.");
-
-                _pluginRuntimeLoader.SyncPlugins();
-
-                _logger.LogInformation("Agent Plugins Loaded.");
-            }*/
 
             // Incoming Host Welcome Message
             if (message.Type == BrokerMessageType.EVENT &&
@@ -313,7 +438,7 @@ namespace Agience.Core
                 }
                 else
                 {
-                    _logger.LogInformation($"Received Host Welcome Message from {host.Name}");
+                    _logger.LogInformation($"Received Host Welcome Message for {host.Name}");
 
                     await ReceiveHostWelcome(host, plugins, agents);
                 }
@@ -333,13 +458,6 @@ namespace Agience.Core
                     _logger.LogError("Invalid Agent");
                     return;
                 }
-
-                if (string.IsNullOrWhiteSpace(agent.Agency?.Id))
-                {
-                    _logger.LogError("Agent has an invalid Agency");
-                    return;
-                }
-
                 await ReceiveAgentConnect(agent);
 
             }

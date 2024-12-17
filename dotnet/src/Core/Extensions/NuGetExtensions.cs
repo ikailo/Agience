@@ -12,14 +12,14 @@ using NuGet.Frameworks;
 
 namespace Agience.Core.Extensions
 {
-    internal static class NuGetExtensions
+    public static class NuGetExtensions
     {
 
         /// <summary>
         /// Checks that the exceptions type is about a missing Nuget dependency.
         /// </summary>
         /// <param name="ex"></param>
-        internal static bool IsMissingNugetException(this Exception ex)
+        public static bool IsMissingNugetException(this Exception ex)
         {
             return ex is ReflectionTypeLoadException && ex.Message.Contains("Could not load file or assembly");
         }
@@ -28,7 +28,7 @@ namespace Agience.Core.Extensions
         /// Captures the package info in the exception details from a missing Nuget dependency needed.
         /// </summary>
         /// <param name="ex"></param>
-        internal static (string PackageName, string Version) GetNugetPackageInfo(this Exception ex)
+        public static (string PackageName, string Version) GetNugetPackageInfo(this Exception ex)
         {
             var errorIndexText = "Could not load file or assembly '";
             var messagePartOne = ex.Message.Substring(ex.Message.IndexOf(errorIndexText) + errorIndexText.Length);
@@ -39,7 +39,7 @@ namespace Agience.Core.Extensions
             return (packageName, version);
         }
 
-        internal static async Task InstallNugetPackage(string packageName, string version)
+        public static async Task InstallNugetPackage(string packageName, string version)
         {
             try
             {

@@ -1,6 +1,4 @@
-﻿using Agience.Authority.Identity.Data.Adapters;
-using Agience.Authority.Identity.Exceptions;
-using Agience.Core.Models.Entities;
+﻿using Agience.Core.Models.Entities.Abstract;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,28 +7,35 @@ using System.Security.Claims;
 namespace Agience.Authority.Identity.Controllers.Manage
 {
     [Authorize(AuthenticationSchemes = $"Bearer,{GoogleDefaults.AuthenticationScheme}", Roles = "user", Policy = "manage")]
-    public class ManageControllerBase : ControllerBase
+    public abstract class ManageControllerBase : ControllerBase
     {
-        protected readonly IAgienceDataAdapter _dataAdapter;
         protected readonly ILogger _logger;
 
-        protected string PersonId { get { return HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? throw new HttpRequestException("No personId found."); } }
-
-        public ManageControllerBase(IAgienceDataAdapter dataAdapter, ILogger logger)
+        protected string PersonId
         {
-            _dataAdapter = dataAdapter;
+            get
+            {
+                return HttpContext.User.Claims
+                    .FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                    ?? throw new HttpRequestException("No personId found.");
+            }
+        }
+
+        protected ManageControllerBase(ILogger logger)
+        {
             _logger = logger;
         }
 
-        protected async Task<ActionResult> HandleRequest(Func<Task<ActionResult>> action)
+        private async Task<ActionResult<T>> HandleRequest<T>(Func<Task<ActionResult<T>>> action)
         {
             try
             {
                 return await action();
             }
-            catch (NotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound();
+                _logger.LogError(ex, $"Not Found: {ex.Message}");
+                return NotFound(ex.Message);
             }
             catch (InvalidOperationException ex)
             {
@@ -44,9 +49,9 @@ namespace Agience.Authority.Identity.Controllers.Manage
             }
         }
 
-        protected async Task<ActionResult> HandleGet<T>(Func<Task<T>> action)
+        protected async Task<ActionResult<T>> HandleGet<T>(Func<Task<T?>> action) where T : class
         {
-            return await HandleRequest(async () =>
+            return await HandleRequest<T>(async () =>
             {
                 var result = await action();
 
@@ -54,58 +59,92 @@ namespace Agience.Authority.Identity.Controllers.Manage
                 {
                     return NotFound();
                 }
+
                 return Ok(result);
             });
         }
 
-        protected async Task<IActionResult> HandleRedirect(Func<Task<string?>> action)
+        protected async Task<ActionResult<IEnumerable<T>>> HandleGet<T>(Func<Task<IEnumerable<T>?>> action)
         {
-            return await HandleRequest(async () =>
-            {
-                var redirectUrl = await action();
-
-                if (string.IsNullOrEmpty(redirectUrl))
-                {
-                    return NotFound();
-                }
-
-                return Redirect(redirectUrl);
-            });
-        }
-
-        protected async Task<ActionResult> HandlePost<T>(Func<Task<T?>> action, string getActionName) where T : AgienceEntity
-        {
-            return await HandleRequest(async () =>
+            return await HandleRequest<IEnumerable<T>>(async () =>
             {
                 var result = await action();
 
-                if (result == null)
+                return Ok(result);
+            });
+        }
+
+        protected async Task<ActionResult<T>> HandlePost<T>(
+            Func<Task<T?>> action,
+            string getActionName,
+            string getActionIdParameterName = "id",
+            string? getActionControllerName = null
+            
+        ) where T : BaseEntity
+        {
+            return await HandleRequest<T>(async () =>
+            {
+                var result = await action();
+
+                if (result?.Id == null)
                 {
                     return NotFound();
                 }
 
-                return CreatedAtAction(getActionName, result , result);
+                var routeValues = new Dictionary<string, object>
+                {
+                    { getActionIdParameterName, result.Id }
+                };
+
+                if (getActionControllerName == null)
+                {
+                    return CreatedAtAction(getActionName, routeValues, result);
+                }
+                else
+                {
+                    return CreatedAtAction(getActionName, getActionControllerName.Replace("Controller", ""), routeValues, result);
+                }
             });
         }
 
-        private async Task<IActionResult> HandlePutOrDelete(Func<Task> action)
+        private async Task<IActionResult> HandlePutOrDeleteOrLink(Func<Task> action)
         {
-            return await HandleRequest(async () =>
+            try
             {
                 await action();
-
-                return new NoContentResult();
-            });
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex, $"Not Found: {ex.Message}");
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, $"Bad Request: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Server Error: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred.");
+            }
         }
+
 
         protected async Task<IActionResult> HandlePut(Func<Task> action)
         {
-            return await HandlePutOrDelete(action);
+            return await HandlePutOrDeleteOrLink(action);
         }
 
         protected async Task<IActionResult> HandleDelete(Func<Task> action)
         {
-            return await HandlePutOrDelete(action);
+            return await HandlePutOrDeleteOrLink(action);
+        }
+
+        protected async Task<IActionResult> HandleLink(Func<Task> action)
+        {
+            return await HandlePutOrDeleteOrLink(action);
         }
     }
 }

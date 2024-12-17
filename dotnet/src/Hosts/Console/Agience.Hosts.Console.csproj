@@ -15,12 +15,14 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
-    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.15.1-alpha" />
+    <PackageReference Include="Microsoft.SemanticKernel.Plugins.Core" Version="1.18.1-alpha" />
+    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\Agience.Core.csproj" />
-    <ProjectReference Include="..\..\..\Plugins\Core\Agience.Plugins.Core.csproj" />
+    <ProjectReference Include="..\..\Core\Agience.Core.csproj" />
+    <ProjectReference Include="..\..\Plugins\Core\Agience.Plugins.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

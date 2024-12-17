@@ -1,22 +1,18 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Agience.Core.Models.Entities;
+using Agience.Core.Models.Entities.Abstract;
 
 namespace Agience.Authority.Models.Manage;
 
-public class Key : AgienceEntity
+public class Key : NamedEntity
 {
-    [JsonPropertyName("name")]
-    public string? Name { get; set; }
 
     [JsonPropertyName("host_id")]
-    public string HostId { get; set; } = string.Empty;
+    public string? HostId { get; set; }
 
     [JsonPropertyName("is_active")]
     public bool IsActive { get; set; } = true;
-
-    [JsonPropertyName("created_date")]
-    public DateTime? CreatedDate { get; set; } = null;
 
     [NotMapped]
     [JsonPropertyName("value")]

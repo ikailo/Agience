@@ -1,39 +1,26 @@
 ﻿using Agience.Authority.Identity.Data.Adapters;
+using Agience.Authority.Identity.Data.Repositories;
 using Agience.Authority.Identity.Models;
 using Microsoft.AspNetCore.Identity;
-using System;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
+
 
 namespace Agience.Authority.Identity.Data
 {
     public class AgiencePersonStore : IUserStore<Person>
     {
-        private IAgienceDataAdapter _dataAdapter;
+        private RecordsRepository _repository;
 
-        public AgiencePersonStore(IAgienceDataAdapter dataAdapter)
+        public AgiencePersonStore(RecordsRepository repository)
         {
-            _dataAdapter = dataAdapter;
+            _repository = repository;
         }
 
         public async Task<IdentityResult> CreateAsync(Person person, CancellationToken cancellationToken)
         {
-            var createdRecord = await _dataAdapter.CreateRecordAsync(person);
+            var createdRecord = await _repository.CreateRecordAsSystemAsync(person);
             return createdRecord != null
                 ? IdentityResult.Success
                 : IdentityResult.Failed(new IdentityError { Description = "Could not create Person" });
-        }
-
-        public Task<IdentityResult> DeleteAsync(Person user, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        // Modify Dispose to be a no-op, allowing DI to handle disposal
-        public void Dispose()
-        {
-            // No-op to allow DI to manage the lifecycle of dependencies
         }
 
         public async Task<Person?> FindByIdAsync(string userId, CancellationToken cancellationToken)
@@ -42,9 +29,35 @@ namespace Agience.Authority.Identity.Data
             if (extracted.HasValue)
             {
                 var (provider, providerPersonId) = extracted.Value;
-                return await _dataAdapter.GetPersonByExternalProviderIdAsync(provider, providerPersonId, cancellationToken);
+
+                var result = await _repository.QueryRecordsAsSystemAsync<Person>(new() { 
+                    { "ProviderId", provider }, 
+                    { "ProviderPersonId", providerPersonId } 
+                });
+
+                return result.FirstOrDefault();
+
+                
             }
             return null;
+        }
+
+        public async Task<IdentityResult> UpdateAsync(Person person, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _repository.UpdateRecordAsSystemAsync(person);
+                return IdentityResult.Success;
+            }
+            catch
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Could not update Person" });
+            }
+        }
+
+        public Task<IdentityResult> DeleteAsync(Person user, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
 
         public Task<Person?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
@@ -77,17 +90,10 @@ namespace Agience.Authority.Identity.Data
             throw new NotImplementedException();
         }
 
-        public async Task<IdentityResult> UpdateAsync(Person person, CancellationToken cancellationToken)
+        // Modify Dispose to be a no-op, allowing DI to handle disposal
+        public void Dispose()
         {
-            try
-            {
-                await _dataAdapter.UpdateRecordAsync(person, cancellationToken);
-                return IdentityResult.Success;
-            }
-            catch
-            {
-                return IdentityResult.Failed(new IdentityError { Description = "Could not update Person" });
-            }
+            // No-op to allow DI to manage the lifecycle of dependencies
         }
     }
 }

@@ -13,11 +13,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Core\Agience.Core.csproj" />
-    <ProjectReference Include="..\..\..\Plugins\Core\Agience.Plugins.Core.csproj" />
+    <ProjectReference Include="..\..\Core\Agience.Core.csproj" />
+    <ProjectReference Include="..\..\Plugins\Core\Agience.Plugins.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

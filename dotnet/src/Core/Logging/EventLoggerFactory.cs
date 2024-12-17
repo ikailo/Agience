@@ -5,36 +5,32 @@ namespace Agience.Core.Logging
     public class EventLoggerFactory : ILoggerFactory
     {
         private readonly List<ILoggerProvider> _providers = new();
-        private readonly string _agencyId;
         private readonly string? _agentId;
 
-        public EventLoggerFactory(string agencyId, string? agentId)
+        public EventLoggerFactory(string? agentId)
         {
-            _agencyId = agencyId;
             _agentId = agentId;
         }
 
         public ILogger CreateLogger(string categoryName)
         {
-            string? agentId = IsAgencyLogger(categoryName) ? null : _agentId;
-            return CreateScopedLogger<ILogger>(categoryName, agentId);
+            return CreateScopedLogger<ILogger>(categoryName, _agentId);
         }
 
         public ILogger<T> CreateLogger<T>()
         {
-            string? agentId = typeof(T) == typeof(Agency) ? null : _agentId;
-            return CreateScopedLogger<ILogger<T>>(typeof(T).FullName ?? typeof(T).Name, agentId);
+            return CreateScopedLogger<ILogger<T>>(typeof(T).FullName ?? typeof(T).Name, _agentId);
         }
 
         private TLogger CreateScopedLogger<TLogger>(string categoryName, string? agentId) where TLogger : ILogger
         {
             var loggers = _providers.Select<ILoggerProvider, ILogger>(provider =>
                 provider is EventLoggerProvider agienceProvider
-                    ? agienceProvider.CreateLogger<TLogger>(_agencyId, agentId)
+                    ? agienceProvider.CreateLogger<TLogger>(agentId)
                     : (TLogger)provider.CreateLogger(categoryName)
             ).ToList();
 
-            var scopeData = new Dictionary<string, object> { { "AgencyId", _agencyId } };
+            var scopeData = new Dictionary<string, object>();
 
             if (!string.IsNullOrEmpty(agentId))
             {
@@ -42,12 +38,6 @@ namespace Agience.Core.Logging
             }
 
             return (TLogger)Activator.CreateInstance(typeof(ScopedCompositeLogger<TLogger>), loggers, scopeData)!;
-        }
-
-        private bool IsAgencyLogger(string categoryName)
-        {
-            var agencyFullName = typeof(Agency).FullName ?? typeof(Agency).Name;
-            return agencyFullName == categoryName;
         }
 
         public void AddProvider(ILoggerProvider provider)

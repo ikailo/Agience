@@ -1,0 +1,221 @@
+﻿@using Agience.Authority.Manage.Models
+@using Agience.Core.Models.Entities.Abstract
+
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+
+@typeparam TChild where TChild : BaseEntity, new()
+
+@foreach (var field in Fields)
+{
+
+    <MudTd>
+        @if (Mode == "EDIT" || (Mode == "SELECT" && IsDrivingField(field)))
+        {
+            @switch (field.Type)
+            {
+                case FieldType.Checkbox:
+                    <MudCheckBox
+                                 T="bool"
+                                 Label="@field.Label"
+                                 Value="@(GetFieldValue(field.FieldName, Record) as bool? ?? false)"
+                                 ValueChanged="(bool value) => SetFieldValue(field.FieldName, Record, value)" />                    
+                    break;
+
+                case FieldType.Text:
+                    <MudTextField
+                                  T="string"
+                                  Label="@field.Label"
+                                  Value="@(GetFieldValue(field.FieldName, Record)?.ToString() ?? string.Empty)"
+                                  ValueChanged="(string value) => SetFieldValue(field.FieldName, Record, value)"
+                                  KeyDownPreventDefault="@field.ReadOnly" />
+                    break;
+
+                case FieldType.DropDown:
+                    <MudSelect
+                               T="string"
+                               Label="@field.Label"
+                               Value="@(GetFieldValue(field.FieldName, Record)?.ToString() ?? string.Empty)"
+                               ValueChanged="(string value) => SetFieldValue(field.FieldName, Record, value)"
+                               Disabled="@field.ReadOnly">
+                        @foreach (var option in field.DropDownOptions)
+                        {
+                            <MudSelectItem Value="@option.Key">@option.Value</MudSelectItem>
+                        }
+                    </MudSelect>
+                    break;
+
+                case FieldType.Lookup:
+                    <LookupField 
+                                 Field="@field"
+                                 Record="Record"
+                                 ExcludedValues="ExcludedValues"
+                                 OnRecordChanged="NotifyRowUpdated"
+                                 SearchSuggestionsDataSource="SearchSuggestionDataSource" />
+                    
+                    break;
+
+                case FieldType.Button:
+                    <MudButton 
+                               Class="mr-2 btn-primary" 
+                               Variant="Variant.Filled"
+                               Disabled="@GetDisabled(field, Record)"
+                               OnClick="() => HandleButtonClick(field, Record)">@GetLabel(field, Record)</MudButton>
+
+                    break;
+
+                default:
+                    <MudTextField
+                                  T="string"
+                                  KeyDownPreventDefault="true" />
+                    break;
+            }            
+        }
+        else
+        {
+            <MudTextField  T="string" KeyDownPreventDefault="true" Value="@(field.GetText(Record)?.ToString() ?? string.Empty)" />
+        }        
+    </MudTd>
+}
+@if (ShowActionButtons)
+{
+    <MudTd>
+        @if (Mode != "READONLY")
+        {
+            <MudButton Class="mr-2 btn-primary" Variant="Variant.Filled"
+                       OnClick="() => SaveRecord()">@(Mode == "EDIT" ? "Save" : "Add")</MudButton>
+        }
+        @if (Mode != "SELECT" && Record?.Id != "new")
+        {
+            <MudButton Class="mr-2 btn-danger" Variant="Variant.Filled"
+                       OnClick="() => DeleteRecord(Record)">@(Mode == "EDIT" ? "Delete" : "Remove")</MudButton>
+        }
+    </MudTd>
+}
+
+@code {
+    [Parameter] public TChild Record { get; set; } = default!;
+    [Parameter] public List<FieldDefinition> Fields { get; set; } = new();
+    [Parameter] public FieldDefinition? DrivingField { get; set; }
+    [Parameter] public EventCallback<TChild> OnSave { get; set; }
+    [Parameter] public EventCallback<TChild> OnDelete { get; set; }
+    [Parameter] public string Mode { get; set; } = "EDIT";
+    [Parameter] public HashSet<string> SelectedValues { get; set; } = new();
+    [Parameter] public Func<TChild,Task>? OnRowUpdated { get; set; }
+    [Parameter] public HashSet<string> ExcludedValues { get; set; } = new();
+    [Parameter] public Func<FieldDefinition, TChild, Task<IEnumerable<DescribedEntity>>> SearchSuggestionDataSource { get; set; } = null!;
+    [Parameter] public bool ShowActionButtons { get; set; } = true;
+    [Parameter] public Func<FieldDefinition, TChild, Task>? OnButtonClicked { get; set; }
+    [Inject] private IDialogService _dialogService { get; set; } = null!;
+
+    private bool IsEditable { get; set; } = true;
+
+    private string GetLabel(FieldDefinition field, TChild record)
+    {
+        if (record.Metadata.ContainsKey($"{field.FieldName}_Label"))
+        {
+            return record.Metadata[$"{field.FieldName}_Label"] as string;
+        }   
+        return field.Label;
+    }
+
+    private bool GetDisabled(FieldDefinition field, TChild record)
+     {
+        if (record.Metadata.ContainsKey($"{field.FieldName}_Disabled"))
+        {
+            return bool.TryParse(record.Metadata[$"{field.FieldName}_Disabled"] as string, out var result) ? result : false;
+        }
+        return false;
+     }
+
+
+    private bool IsDrivingField(FieldDefinition field)
+    {
+        return DrivingField != null && field == DrivingField;
+    }
+
+    private async Task HandleButtonClick(FieldDefinition field, TChild record)
+    {
+        if (OnButtonClicked != null)
+            await OnButtonClicked.Invoke(field, record);
+    }
+
+    private async Task NotifyRowUpdated()
+    {
+        if (OnRowUpdated != null)
+        {
+            // Pass the record and component references to the subscriber
+            await OnRowUpdated.Invoke(Record);
+        }
+    }
+
+    private async Task SaveRecord()
+    {
+        // Only transition to READONLY after saving the record successfully
+        await OnSave.InvokeAsync(Record);
+
+        if (Mode == "SELECT")
+        {
+            Mode = "READONLY";
+        }
+        StateHasChanged();
+    }
+
+    private async Task DeleteRecord(TChild? record)
+    {
+
+        if (Mode == "EDIT" && await ShowDeleteConfirmationDialog())
+        {
+            await OnDelete.InvokeAsync(record);
+            StateHasChanged();
+        }
+        else if (Mode == "READONLY")
+        {
+            await OnDelete.InvokeAsync(record);
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task<bool> ShowDeleteConfirmationDialog()
+    {
+        var parameters = new DialogParameters
+            {
+                ["Content"] = "Are you sure you want to delete this record?",
+                ["Title"] = "Confirm Delete"
+            };
+
+        var options = new DialogOptions
+            {
+                CloseButton = true
+            };
+
+        var dialog = _dialogService.Show<ConfirmationDialog>("Confirm", parameters, options);
+
+        var canceled = (await dialog.Result)?.Canceled;
+
+        return !canceled ?? false;
+    }
+
+
+    private object? GetFieldValue(string? fieldName, TChild record)
+    {
+        if (string.IsNullOrEmpty(fieldName))
+            return null;
+
+        var property = typeof(TChild).GetProperty(fieldName);
+        return property?.GetValue(record);
+    }
+
+    private void SetFieldValue(string? fieldName, TChild record, object value)
+    {
+        if (string.IsNullOrEmpty(fieldName))
+            return;
+
+        var property = typeof(TChild).GetProperty(fieldName);
+        if (property == null || !property.CanWrite)
+            return;
+
+        var convertedValue = Convert.ChangeType(value, property.PropertyType);
+        property.SetValue(record, convertedValue);
+    }
+}

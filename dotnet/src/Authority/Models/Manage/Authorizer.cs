@@ -1,6 +1,6 @@
 ﻿namespace Agience.Authority.Models.Manage
 {
-    public class Authorizer : Core.Authorizer
+    public class Authorizer : Core.Models.Entities.Authorizer
     {        
 
     }

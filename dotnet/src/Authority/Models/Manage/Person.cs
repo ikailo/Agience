@@ -1,15 +1,16 @@
 ﻿using System.Text.Json.Serialization;
-using Agience.Core.Models.Entities;
+using Agience.Core.Models.Entities.Abstract;
 
 namespace Agience.Authority.Models.Manage
 {
-    public class Person : AgienceEntity
+    public class Person : BaseEntity
     {
+
         [JsonPropertyName("provider_id")]
-        public string ProviderId { get; set; } = string.Empty;
+        public string? ProviderId { get; set; }
 
         [JsonPropertyName("provider_person_id")]
-        public string ProviderPersonId { get; set; } = string.Empty;
+        public string? ProviderPersonId { get; set; }
 
         [JsonPropertyName("last_login")]
         public DateTime? LastLogin { get; set; }

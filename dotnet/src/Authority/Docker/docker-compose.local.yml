@@ -23,22 +23,6 @@ services:
       - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Identity.dll"
 
-  manage:
-    container_name: manage-local  
-    image: manage:local  
-    restart: always
-    build:
-      context: ../..
-      dockerfile: Authority/Manage/Dockerfile
-      args:
-        BUILD_ENVIRONMENT: local  
-    env_file:
-      - ../Manage/.env.local
-    volumes:
-      - ../Build/certs/agience-local.pfx:/app/https/agience-local.pfx
-      - ../Build/certs/agience-local.crt:/usr/local/share/ca-certificates/agience-local.crt
-    entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
-      
   database:
     container_name: database-local  
     image: database:local    

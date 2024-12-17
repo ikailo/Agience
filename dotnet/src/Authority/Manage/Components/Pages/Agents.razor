@@ -1,0 +1,247 @@
+﻿@page "/agents"
+@using Agience.Core.Models.Entities.Abstract
+@using Agience.Core.Models.Enums
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using Agience.Authority.Models.Manage
+@using System.Text.Json
+@implements IDisposable
+
+<EntityPage @key="typeof(Agent)" TEntity="Agent" Icon="@Icons.Material.Filled.Memory">
+    <EntityDetailPanel TEntity="Agent" Fields="AgentFields" />
+    <EntityListPanel TParent="Agent" TChild="Plugin" TabName="Plugins" Fields="PluginFields" />
+    <EntityListPanel TParent="Agent" TChild="Topic" TabName="Topics" Fields="TopicFields" />
+    <EntityListPanel TParent="Agent" TChild="Credential" TabName="Credentials" Fields="CredentialFields" AddPlaceholder="false" ShowActionButtons="false"
+    SearchSuggestionDataSource="async (field, record) => await HandleAuthorizerSearchSuggestion(field,record)"
+    OnButtonClicked="async (field, record) => await HandleAuthorizeButtonClick(field, record)"
+    OnRowUpdated="async (record) => await HandleCredentialRowUpdated(record)" />
+</EntityPage>
+
+@code {
+    [Inject] private ILogger<Agents> _logger { get; set; } = null!;
+    [Inject] private ContextService _contextService { get; set; } = null!;
+    [Inject] private RecordHandler _recordHandler { get; set; } = null!;
+    [Inject] private IDialogService _dialogService { get; set; } = null!;
+    [Inject] private AppConfig _appConfig { get; set; } = null!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+
+
+    // Agent Fields
+    public List<FieldDefinition> AgentFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Persona", Label = "Persona" },
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "HostId", Label = "Host", RelatedEntityApiName = "host",  RelatedEntityFieldName = "Host" },
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "ExecutiveFunctionId", Label = "Executive Function", RelatedEntityApiName = "function", RelatedEntityFieldName = "ExecutiveFunction" },
+        new FieldDefinition { Type = FieldType.Checkbox, FieldName = "IsEnabled", Label = "Enabled" }
+    };
+
+    // Plugin Fields
+    public List<FieldDefinition> PluginFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "Id", Label = "Plugin", RelatedEntityApiName = "plugin",  RelatedEntityFieldName = "this" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true }
+    };
+
+    // Topic Fields
+    public List<FieldDefinition> TopicFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "Id", Label = "Topic", RelatedEntityApiName = "topic",  RelatedEntityFieldName = "this" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true},
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Address", Label = "Address", ReadOnly = true}
+    };
+
+    public List<FieldDefinition> CredentialFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "ConnectionId", Label = "Connection", RelatedEntityFieldName = "Connection", RelatedEntityApiName = "connection", ReadOnly = true},
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "AuthorizerId", Label = "Authorizer", RelatedEntityFieldName = "Authorizer" },
+        new FieldDefinition { Type = FieldType.Button, FieldName="Authorize", Label = "Authorize" },
+        new FieldDefinition { Type = FieldType.DropDown, FieldName = "Status", Label = "Status",  ReadOnly = true, DropDownOptions = new() {
+           { CredentialStatus.NoAuthorizer.ToString(), "No Authorizer" },
+           { CredentialStatus.NoCredential.ToString(), "No Credential" },
+           { CredentialStatus.Complete.ToString(), "Complete" },
+           { CredentialStatus.Authorized.ToString(), "Authorized" }
+        } }
+    };
+
+    private bool _initializing;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        _contextService.ContextRecordIdChanged += OnContextRecordIdChanged;
+        _contextService.ChildRecordsUpdated += OnChildRecordsUpdated;
+
+        CredentialFields.First(f => f.FieldName == "AuthorizerId").OnValueChanged = HandleAuthorizerValueChanged;
+
+        await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _contextService.ContextRecordIdChanged -= OnContextRecordIdChanged;
+        _contextService.ChildRecordsUpdated -= OnChildRecordsUpdated;
+    }
+
+    private async Task OnChildRecordsUpdated() {
+
+        foreach (var credential in _contextService.ContextChildRecords[typeof(Credential)].Cast<Credential>())
+        {
+            await HandleCredentialRowUpdated(credential);
+        }
+    }
+
+    private async Task OnContextRecordIdChanged(string? recordId)
+    {        
+        /* foreach (var credential in _contextService.ContextChildRecords[typeof(Credential)].Cast<Credential>())
+             {
+             await HandleCredentialRowUpdated(credential);
+         }
+
+         await InvokeAsync(StateHasChanged);*/
+
+    }
+
+    private async Task HandleCredentialRowUpdated(Credential credential)
+    {
+        string authorizeButtonLabel = "Authorize";
+        string authorizeButtonDisabled = "false";
+
+        if (credential.AuthorizerId == null || credential.Authorizer == null)
+        {
+            authorizeButtonDisabled = "true";
+            authorizeButtonLabel = "No Auth";
+            credential.Status = CredentialStatus.NoAuthorizer;
+        }
+        else
+        {
+            var authorizer = credential.Authorizer;
+
+            if (!credential.HasRefreshToken && !credential.HasAccessToken)
+            {
+                credential.Status = CredentialStatus.NoCredential;
+            }
+            else if (credential.HasRefreshToken)
+            {
+                credential.Status = CredentialStatus.Authorized;
+                authorizeButtonLabel = "Re-Authorize";
+            }
+            else if (credential.HasAccessToken)
+            {
+                credential.Status = CredentialStatus.Complete;
+                authorizeButtonLabel = "Re-Enter";
+            }            
+
+            switch (authorizer.AuthType)
+            {
+                case AuthorizationType.Public:
+                    authorizeButtonDisabled = "true";
+                    authorizeButtonLabel = "Public";
+                    credential.Status = CredentialStatus.Complete;
+                    break;
+                case AuthorizationType.ApiKey:
+                    if (!credential.HasAccessToken)
+                    {
+                        authorizeButtonLabel = "Enter";
+                    }
+                    break;
+                case AuthorizationType.OAuth2:
+                    if (!credential.HasRefreshToken)
+                    {
+                        authorizeButtonLabel = "Authorize";
+                    }
+                    break;
+            }
+
+        }
+
+        credential.Metadata["Authorize_Label"] = authorizeButtonLabel;
+        credential.Metadata["Authorize_Disabled"] = authorizeButtonDisabled;
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleAuthorizeButtonClick(FieldDefinition field, Credential record)
+    {
+        var authorizer = record.Authorizer;
+
+        switch (authorizer.AuthType)
+        {
+            case AuthorizationType.Public:
+                // Nothing. Should not be clickable.
+                break;
+            case AuthorizationType.ApiKey:
+                // Open a modal dialog and collect the ApiKey.
+                var dialogParameters = new DialogParameters
+            {
+                { "Title", "Enter API Key" },
+                { "Description", "Please provide the API key for authorization." }
+            };
+
+                var dialog = await _dialogService.ShowAsync<CredentialDialog>("Enter API Key", dialogParameters);
+
+                var dialogResult = await dialog.Result;
+
+                if (dialogResult != null && !dialogResult.Canceled && dialogResult.Data is string apiKey)
+                {
+                    // Set the AccessToken field with the provided API Key.
+                    record.AccessToken = apiKey;
+                    record.HasAccessToken = true;
+
+                    // Save the updated record.
+                    await _recordHandler.SaveChildRecordAsync<Agent, Credential>(_contextService.ContextRecordId, record);
+
+                    // Update the status.
+                    await HandleCredentialRowUpdated(record);
+                }
+                break;
+            case AuthorizationType.OAuth2:
+                // Retrieve the current URI
+                var currentUri = NavigationManager.Uri;
+
+                // Construct the return URL (e.g., the current page)
+                var returnUrl = currentUri;
+
+                // Construct the authorization URI
+                var authUri = $"{_appConfig.AuthorityUriInternal ?? _appConfig.AuthorityUri}/oauth/credential/{record.Id}/start?returnUrl={Uri.EscapeDataString(returnUrl)}";
+
+                // Navigate the user to the authorization URI
+                NavigationManager.NavigateTo(authUri);
+                break;
+
+        }
+    }
+
+
+    private async Task HandleAuthorizerValueChanged(BaseEntity record, object? value)
+    {
+        var credential = record as Credential;
+
+        if (credential == null) return;
+
+        await _recordHandler.SaveChildRecordAsync<Agent, Credential>(_contextService.ContextRecordId, credential);
+
+        //InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<IEnumerable<DescribedEntity>?> HandleAuthorizerSearchSuggestion(FieldDefinition field, Credential record)
+    {
+
+        if (field.FieldName == "AuthorizerId")
+        {
+            return (await FetchAuthorizers(record.ConnectionId));
+        }
+
+        return null;
+    }
+
+
+    private async Task<IEnumerable<Authorizer>> FetchAuthorizers(string connectionId)
+    {
+
+        return await _recordHandler.FetchChildRecordsAsync<Connection, Authorizer>(connectionId);
+    }
+
+
+}

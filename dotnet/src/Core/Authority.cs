@@ -4,21 +4,28 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using Agience.Core.Mappings;
-using Agience.Core.Models.Entities;
 using Agience.Core.Models.Messages;
 using Microsoft.Extensions.DependencyInjection;
+using Agience.Core.Interfaces;
+using CoreModel=Agience.Core.Models.Entities;
+using Microsoft.IdentityModel.Tokens;
+using Agience.Core.Extensions;
 
 namespace Agience.Core
 {
     public class Authority
     {
         private const string BROKER_URI_KEY = "broker_uri";
+        private const string FILES_URI_KEY = "files_uri";
         private const string OPENID_CONFIG_PATH = "/.well-known/openid-configuration";
 
+
         private readonly IServiceScopeFactory _serviceScopeFactory;
+               
         public string Id => _authorityUri.Host;
-        public string? BrokerUri { get; private set; }
         public string? TokenEndpoint { get; private set; }
+        public string? BrokerUri { get; private set; }
+        public string? FilesUri { get; private set; }
         public bool IsConnected { get; private set; }
         public string Timestamp => _broker.Timestamp;
 
@@ -26,7 +33,8 @@ namespace Agience.Core
         private readonly Uri? _authorityUriInternal; // For internal connections
         private readonly Broker _broker;
         private readonly ILogger<Authority> _logger;
-        private readonly IMapper _mapper;
+        //private readonly IMapper _mapper;
+        private readonly TopicGenerator _topicGenerator;
 
         public Authority() { }
 
@@ -37,9 +45,14 @@ namespace Agience.Core
             _broker = broker ?? throw new ArgumentNullException(nameof(broker));
             _serviceScopeFactory = serviceScopeFactory;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));            
-            _mapper = AutoMapperConfig.GetMapper();
+            //_mapper = AutoMapperConfig.GetMapper();
             BrokerUri = brokerUriInternal;
+
+            _topicGenerator = new TopicGenerator(Id, Id);
         }
+
+        private IAuthorityRecordsRepository GetAuthorityRecordsRepository() => 
+            _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<IAuthorityRecordsRepository>();
 
         internal async Task InitializeWithBackoff(double maxDelaySeconds = 16)
         {
@@ -67,6 +80,7 @@ namespace Agience.Core
                     var configuration = await configurationManager.GetConfigurationAsync();
                     
                     BrokerUri ??= configuration?.AdditionalData[BROKER_URI_KEY].ToString(); // Don't reset it if it's already set
+                    FilesUri ??= configuration?.AdditionalData[FILES_URI_KEY].ToString(); // Don't reset it if it's already set
 
                     // TODO: Better way needed to handle overrides/internal endpoints
 
@@ -120,7 +134,7 @@ namespace Agience.Core
 
                 if (_broker.IsConnected)
                 {
-                    await _broker.Subscribe(AuthorityTopic("+"), async message => await _broker_ReceiveMessage(message));
+                    await _broker.Subscribe(_topicGenerator.SubscribeAsAuthority(), async message => await _broker_ReceiveMessage(message));
                     IsConnected = true;
                 }                
             }
@@ -130,7 +144,7 @@ namespace Agience.Core
         {
             if (IsConnected)
             {
-                await _broker.Unsubscribe(AuthorityTopic("+"));
+                await _broker.Unsubscribe(_topicGenerator.SubscribeAsAuthority());
                 await _broker.Disconnect();
                 IsConnected = false;
             }
@@ -138,39 +152,91 @@ namespace Agience.Core
 
         private async Task _broker_ReceiveMessage(BrokerMessage message)
         {
+            _logger.LogInformation($"MessageReceived: sender:{message.SenderId}, destination:{message.Destination}");
+
             if (message.SenderId == null || message.Data == null) { return; }
 
             if (message.Type == BrokerMessageType.EVENT &&
                 message.Data?["type"] == "host_connect" &&
                 message.Data?["host"] != null)
             {
-                var host = JsonSerializer.Deserialize<Models.Entities.Host>(message.Data?["host"]!);
+                //_logger.LogDebug($"received host_connect: {message.Data?["host"]}");
+
+                var host = JsonSerializer.Deserialize<CoreModel.Host>(message.Data?["host"]!);
+
 
                 if (host?.Id == message.SenderId)
                 {
-                    await OnHostConnected(host.Id);
+                    await OnHostConnected(host);
                 }
+            }
+
+            if (message.Type == BrokerMessageType.EVENT &&
+                message.Data?["type"] == "credential_request" &&
+                message.Data?["credential_name"] != null &&
+                message.Data?["jwk"] != null &&
+                message.Data?["agent_id"] == message.SenderId
+                )
+            {
+                var credentialName = message.Data?["credential_name"];
+                var agentId = message.Data?["agent_id"];
+                var jwk = JsonSerializer.Deserialize<JsonWebKey>(message.Data?["jwk"]);
+
+                await HandleCredentialRequestAsync(agentId, credentialName, jwk);
             }
         }
 
-        private async Task OnHostConnected(string hostId)
+        private async Task HandleCredentialRequestAsync(string agentId, string credentialName, JsonWebKey jwk)
         {
-            using var scope = _serviceScopeFactory.CreateScope();
-            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();
+            var authorityRecordsRepository = GetAuthorityRecordsRepository();
 
-            _logger.LogInformation($"Received host_connect from: {hostId}");
+            var credential = await authorityRecordsRepository.GetCredentialForAgentByName(agentId, credentialName);
 
-            var host = await authorityDataAdapter.GetHostByIdNoTrackingAsync(hostId);
+            if (credential == null)
+            {
+                // Log and exit if the credential is not found or unavailable
+                Console.WriteLine($"Credential '{credentialName}' not found for Agent '{agentId}'.");
+                return;
+            }
+
+            // Encrypt the credential
+            var encryptedCredential = jwk.EncryptWithJwk(credential);
+
+            // Send the response back to the Agent
+            await _broker.PublishAsync(new BrokerMessage
+            {
+                Type = BrokerMessageType.EVENT,
+                Topic = _topicGenerator.PublishToAgent(agentId),
+                Data = new Data
+                {
+                    { "type", "credential_response" },
+                    { "credential_name", credentialName },
+                    { "encrypted_credential", encryptedCredential }
+                }
+            });
+
+            Console.WriteLine($"Credential response sent for '{credentialName}' to Agent '{agentId}'.");
+        }
+
+
+        private async Task OnHostConnected(CoreModel.Host modelHost)
+        {
+
+            var authorityRecordsRepository = GetAuthorityRecordsRepository();
+
+            _logger.LogInformation($"Received host_connect from: {modelHost.Id}");
+
+            var host = await authorityRecordsRepository.GetHostById(modelHost.Id);
 
             _logger.LogInformation($"Found Host {host.Name}");
             _logger.LogDebug($"Host: {JsonSerializer.Serialize(host)}");
 
-            var plugins = await authorityDataAdapter.GetPluginsForHostIdNoTrackingAsync(hostId);
+            var plugins = await authorityRecordsRepository.SyncPluginsForHostById(modelHost.Id, modelHost.Plugins);
 
             _logger.LogInformation($"Found {plugins.Count()} Plugins");
             _logger.LogDebug($"Plugins: {JsonSerializer.Serialize(plugins)}");
 
-            var agents = await authorityDataAdapter.GetAgentsForHostIdNoTrackingAsync(hostId);
+            var agents = await authorityRecordsRepository.GetAgentsForHostById(modelHost.Id);
 
             _logger.LogInformation($"Found {agents.Count()} Agents");
             _logger.LogDebug($"Agents: {JsonSerializer.Serialize(agents)}");
@@ -185,10 +251,12 @@ namespace Agience.Core
 
             _logger.LogInformation($"Publishing Host Welcome Event: {host.Name}");
 
+           // _logger.LogInformation($"Topic: {HostTopic(Id, host.Id)}");
+
             _broker.Publish(new BrokerMessage()
             {
                 Type = BrokerMessageType.EVENT,
-                Topic = HostTopic(Id, host.Id),
+                Topic = _topicGenerator.PublishToHost(host.Id),
                 Data = new Data
                 {
                     { "type", "host_welcome" },
@@ -204,19 +272,17 @@ namespace Agience.Core
         {   
             if (!IsConnected) { throw new InvalidOperationException("Not Connected"); }
 
-            using var scope = _serviceScopeFactory.CreateScope();
-            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();
+            var authorityRecordsRepository = GetAuthorityRecordsRepository();
 
-            var hostId = await authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
+            var hostId = await authorityRecordsRepository.GetHostIdForAgentById(agent.Id);
 
             _logger.LogInformation($"Sending Agent Connect Event: {agent.Name}");
             _logger.LogDebug($"Agent: {JsonSerializer.Serialize(agent)}");
-            _logger.LogDebug($"Agency: {JsonSerializer.Serialize(agent.Agency)}");
 
             _broker.Publish(new BrokerMessage()
             {
                 Type = BrokerMessageType.EVENT,
-                Topic = HostTopic(Id, hostId),
+                Topic = _topicGenerator.PublishToHost(hostId),
                 Data = new Data
                 {
                     { "type", "agent_connect" },
@@ -230,15 +296,14 @@ namespace Agience.Core
         {
             if (!IsConnected) { throw new InvalidOperationException("Not Connected"); }
 
-            using var scope = _serviceScopeFactory.CreateScope();
-            var authorityDataAdapter = scope.ServiceProvider.GetRequiredService<IAuthorityDataAdapter>();            
+            var authorityRecordsRepository = GetAuthorityRecordsRepository();
 
-            var hostId = await authorityDataAdapter.GetHostIdForAgentIdNoTrackingAsync(agent.Id);
+            var hostId = await authorityRecordsRepository.GetHostIdForAgentById(agent.Id);
 
             _broker!.Publish(new BrokerMessage()
             {
                 Type = BrokerMessageType.EVENT,
-                Topic = HostTopic(Id, hostId),
+                Topic = _topicGenerator.PublishToHost(hostId),
                 Data = new Data
                 {
                     { "type", "agent_disconnect" },
@@ -246,55 +311,6 @@ namespace Agience.Core
                     { "agent_id", agent.Id }
                 }
             });
-        }
-
-        internal string Topic(string senderId, string? hostId, string? agencyId, string? agentId)
-        {
-            var result = $"{(senderId != Id ? senderId : "-")}/{Id}/{hostId ?? "-"}/{agencyId ?? "-"}/{agentId ?? "-"}";
-            return result;
-        }
-
-        internal string AuthorityTopic(string senderId)
-        {
-            return Topic(senderId, null, null, null);
-        }
-
-        internal string HostTopic(string senderId, string? hostId)
-        {
-            return Topic(senderId, hostId, null, null);
-        }
-
-        internal string AgencyTopic(string senderId, string agencyId)
-        {
-            return Topic(senderId, null, agencyId, null);
-        }
-
-        internal string AgentTopic(string senderId, string agentId)
-        {
-            return Topic(senderId, null, null, agentId);
-        }
-
-        public async Task AgentCreated(Models.Entities.Agent agent)
-        {
-            if (agent.IsEnabled)
-            {
-                await SendAgentConnectEvent(agent);
-            }
-        }
-
-        public async Task AgentUpdated(Models.Entities.Agent agent)
-        {
-            await SendAgentDisconnectEvent(agent);
-
-            if (agent.IsEnabled)
-            {
-                await SendAgentConnectEvent(agent);
-            }
-        }
-
-        public async Task AgentDeleted(Models.Entities.Agent agent)
-        {
-            await SendAgentDisconnectEvent(agent);
         }
     }
 }
