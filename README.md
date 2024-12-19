@@ -52,11 +52,12 @@ To see it in action, you will an Agience Host. The Host is a lightweight applica
 
 Currently, there is only one Host app available [here](https://github.com/ikailo/Agience/tree/main/dotnet/src/Hosts/Console) and it can be created using Visual Studio by cloning and building the source code. In the future, we will provide a standalone installer for this Host.
 
-**Build instructions**
+**Host Build Instructions**
 
-Prerequsite:
+Prerequsites:
   - [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
-
+  - An OpenAI API Key
+	
 1. **Clone the Repository**: Start by cloning the Agience repository.
    ```bash
    git clone https://github.com/ikailo/Agience.git
@@ -109,7 +110,7 @@ You'll need to escape the backslashes in the `WorkspacePath` value, like this: `
 	- Select the Authorizer you created. Click "ENTER"
 	- Enter a valid API Key for OpenAI. Click "SAVE".
 
-**IMPORTANT NOTE: The API KEY is NOT currently stored encrypted at rest. Even though the preview instance is secure, I strongly recommend you delete and disable it after you test. This is a high priority bug.**
+**IMPORTANT NOTE: The API Key is NOT currently stored encrypted at rest. Even though the preview instance is secure, I strongly recommend you delete (overwrite) and disable it after you test. This is a high priority bug.**
 
 **All the above steps are a bit cumbersome and will be made easier in the future.**
 
