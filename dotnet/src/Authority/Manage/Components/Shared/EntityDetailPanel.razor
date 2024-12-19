@@ -42,6 +42,20 @@
                             </MudSelect>
                             break;
 
+                        case FieldType.MultiSelect:
+                            <MudSelect Label="@field.Label"
+                                       T="string"
+                                       MultiSelection="true"
+                                       SelectedValues="@(field.GetValue(_record) as List<string> ?? new List<string>())"
+                                       SelectedValuesChanged="values => OnFieldValueChanged(field, values)"
+                                       Disabled="@field.ReadOnly">
+                                @foreach (var option in field.DropDownOptions)
+                                {
+                                    <MudSelectItem Value="@option.Key">@option.Value</MudSelectItem>
+                                }
+                            </MudSelect>
+                            break;
+
                         case FieldType.Lookup:
                             <LookupField Field="@field"
                                          Record="@_record"

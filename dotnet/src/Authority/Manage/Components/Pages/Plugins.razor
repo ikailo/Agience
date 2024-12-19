@@ -69,8 +69,8 @@
         _pluginFields.Add(new FieldDefinition
             {
                 Type = FieldType.DropDown,
-                FieldName = "PluginType",
-                Label = "Type",
+                FieldName = "PluginProvider",
+                Label = "Provider",
                 OnValueChanged = OnPluginTypeValueChanged,
                 DropDownOptions = new() {
                     { PluginProvider.Collection.ToString(), "Collection" },
@@ -137,26 +137,7 @@
 
             }
 
-            /*
-            if (plugin?.PluginSource == PluginSource.PublicRepository)
-            {
-                // Build a .DLL from the linked csproj and then open the import wizard.
-                // Create Functions and Plugin_Functions where IsRoot=true
-
-                _pluginFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Metadata.RepositoryUri", Label = "URL of .csproj file" });
-                _pluginFields.Add(new FieldDefinition { Type = FieldType.Button, FieldName="RepositoryUriButton", Label = "Start Import"});
-
-            }
-
-            if (plugin?.PluginSource == PluginSource.UploadDirectory)
-            {
-                // Import the plugin package library and then open the import wizard.
-                // Create Functions and Plugin_Functions where IsRoot=true
-
-                _pluginFields.Add(new FieldDefinition { Type = FieldType.Upload, FieldName="Metadata.PackageUpload", Label = ".zip file of package directory" });
-                _pluginFields.Add(new FieldDefinition { Type = FieldType.Button, FieldName = "PackageUploadButton", Label = "Start Upload" });
-            }*/
-
+           
 
         }
 
@@ -177,7 +158,11 @@
 
             if (plugin?.PluginSource == PluginSource.UserDefined)
             {
-                // Use Existing functions. Create Plugin_Functions where IsRoot=false                
+                // Use Existing functions. Create Plugin_Functions where IsRoot=false     
+                _functionFields.Clear();
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Lookup, FieldName = "PluginId", Label = "Plugin", RelatedEntityFieldName = "Plugin" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Lookup, FieldName = "FunctionId", Label = "Function", RelatedEntityFieldName = "Function" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true });
             }
         }    
         await InvokeAsync(StateHasChanged);
@@ -191,11 +176,11 @@
             {
                 plugin.PluginSource = PluginSource.UserDefined;
             }
-            if (plugin.PluginProvider == PluginProvider.SKPlugin)
+            else if (plugin.PluginProvider == PluginProvider.SKPlugin)
             {
                 plugin.PluginSource = PluginSource.HostDefined;
             }
-            if (plugin.PluginProvider == PluginProvider.Collection)
+            else if (plugin.PluginProvider == PluginProvider.Collection)
             {
                 plugin.PluginSource = PluginSource.UserDefined;
             }

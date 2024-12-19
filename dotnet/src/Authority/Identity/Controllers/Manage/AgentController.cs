@@ -268,61 +268,90 @@ namespace Agience.Authority.Identity.Controllers.Manage
 
         [HttpPost("agent/{agentId}/credential")]
         [HttpPost("agent/{agentId}/credential/{credentialId}")]
-        public async Task<ActionResult<ManageModel.Credential>> UpsertCredentialForAgent(string agentId, string? credentialId, [FromBody] Credential credential, bool all = false)
+        public async Task<ActionResult<ManageModel.Credential>> UpsertCredentialForAgent(
+     string agentId, string? credentialId, [FromBody] Credential credential, bool all = false)
         {
             return await HandlePost(async () =>
             {
+                // Validation: Check for conflicts in CredentialId
                 if (credentialId == null && credential.Id != null)
                     throw new InvalidOperationException("Credential.Id not allowed in a create call.");
 
                 if (credential.Id != null && credentialId != null && credential.Id != credentialId)
-                    throw new InvalidOperationException("If CredentialId is provided in the body it must match the URL.");
+                    throw new InvalidOperationException("If CredentialId is provided in the body, it must match the URL.");
 
                 if (credential.AgentId != null && credential.AgentId != agentId)
-                    throw new InvalidOperationException("If AgentId is provided in the body it must match the URL.");
+                    throw new InvalidOperationException("If AgentId is provided in the body, it must match the URL.");
 
+                // Validate Agent existence
                 var agent = await _repository.GetRecordByIdAsPersonAsync<Agent>(agentId, PersonId);
-
                 if (agent == null)
                     throw new KeyNotFoundException("Agent not found.");
 
+                // Validate Connection existence
                 if (credential.ConnectionId != null)
                 {
-                    var connection = _repository.GetRecordByIdAsPersonAsync<Connection>(credential.ConnectionId, PersonId, all);
-
+                    var connection = await _repository.GetRecordByIdAsPersonAsync<Connection>(credential.ConnectionId, PersonId, all);
                     if (connection == null)
                         throw new KeyNotFoundException("Connection not found.");
                 }
 
-                if (credential.AuthorizerId != null)
+                // Check for existing credential for Agent and Connection
+                Credential? existingCredential = null;
+                if (credential.ConnectionId != null)
                 {
-                    var authorizer = _repository.GetRecordByIdAsPersonAsync<Authorizer>(credential.AuthorizerId, PersonId, all);
-
-                    if (authorizer == null)
-                        throw new KeyNotFoundException("Authorizer not found.");
+                    existingCredential = (await _repository.QueryRecordsAsSystemAsync<Credential>(
+                        new Dictionary<string, object> { { "AgentId", agentId }, { "ConnectionId", credential.ConnectionId } }
+                    )).FirstOrDefault();
                 }
 
-                
+                if (existingCredential != null)
+                {
+                    // Update the existing credential instead of throwing an error
+                    existingCredential.AccessToken = credential.AccessToken ?? existingCredential.AccessToken;
+                    existingCredential.RefreshToken = credential.RefreshToken ?? existingCredential.RefreshToken;
+                    existingCredential.ConnectionId = credential.ConnectionId;
+                    existingCredential.AgentId = agentId;
+                    existingCredential.CreatedDate = null;
+
+                    var updatedResult = await _repository.UpdateRecordAsSystemAsync(existingCredential);
+
+                    var responseCredential = new Credential
+                    {
+                        Id = updatedResult.Id,
+                        ConnectionId = updatedResult.ConnectionId,
+                        AgentId = updatedResult.AgentId,
+                        HasAccessToken = !string.IsNullOrEmpty(updatedResult.AccessToken),
+                        HasRefreshToken = !string.IsNullOrEmpty(updatedResult.RefreshToken),
+                        AccessToken = null,
+                        RefreshToken = null
+                    };
+
+                    return _mapper.Map<ManageModel.Credential>(responseCredential);
+                }
+
                 if (credentialId != null)
                 {
-                    if (await _repository.GetRecordByIdAsSystemAsync<Credential>(credentialId) == null)
+                    // Update credential by ID if it exists
+                    var credentialToUpdate = await _repository.GetRecordByIdAsSystemAsync<Credential>(credentialId);
+                    if (credentialToUpdate == null)
                         throw new KeyNotFoundException("Credential not found.");
 
-                    var result = await _repository.UpdateRecordAsSystemAsync(credential);
+                    credentialToUpdate.AccessToken = credential.AccessToken ?? credentialToUpdate.AccessToken;
+                    credentialToUpdate.RefreshToken = credential.RefreshToken ?? credentialToUpdate.RefreshToken;
+                    credentialToUpdate.ConnectionId = credential.ConnectionId;
+                    credentialToUpdate.AgentId = agentId;
 
-                    result.HasAccessToken = !string.IsNullOrEmpty(result.AccessToken);
-                    result.HasRefreshToken = !string.IsNullOrEmpty(result.RefreshToken);
-                    result.RefreshToken = null;
-                    result.AccessToken = null;
+                    var updatedResult = await _repository.UpdateRecordAsSystemAsync(credentialToUpdate);
 
-                    return _mapper.Map<ManageModel.Credential>(result);                    
+                    return _mapper.Map<ManageModel.Credential>(updatedResult);
                 }
-                
 
-                credential.Id = (await _repository.CreateRecordAsSystemAsync(credential))?.Id ??
-                    throw new InvalidOperationException("Unable to create credential");
+                // Create a new credential
+                credential.Id = (await _repository.CreateRecordAsSystemAsync(credential))?.Id
+                    ?? throw new InvalidOperationException("Unable to create credential");
 
-                credential.AccessToken = null; // We don't provide secrets in results.
+                credential.AccessToken = null; // Mask sensitive data
                 credential.RefreshToken = null;
 
                 return _mapper.Map<ManageModel.Credential>(credential);
@@ -330,54 +359,88 @@ namespace Agience.Authority.Identity.Controllers.Manage
             }, nameof(GetCredentialById), "credentialId");
         }
 
+
+
         [HttpGet("agent/{agentId}/credentials")]
         public async Task<ActionResult<IEnumerable<ManageModel.Credential>>> GetCredentialsForAgent(string agentId)
         {
             return await HandleGet(async () =>
             {
                 // Step 1: Fetch committed credentials for the agent
-                var committedCredentials = await _repository.GetChildRecordsAsPersonAsync<Agent, Credential>("AgentId", agentId, PersonId);
+                var committedCredentials = await _repository.GetChildRecordsAsPersonAsync<Agent, Credential>(
+                    "AgentId", agentId, PersonId
+                );
 
-                foreach (var credential in committedCredentials)
-                {
-                    credential.HasAccessToken = !string.IsNullOrEmpty(credential.AccessToken);
-                    credential.HasRefreshToken = !string.IsNullOrEmpty(credential.RefreshToken);
-                    credential.RefreshToken = null;
-                    credential.AccessToken = null;
-                }
+                // Create a lookup dictionary for quick access
+                var committedCredentialsLookup = committedCredentials.ToDictionary(c => c.ConnectionId, c => c);
 
                 // Step 2: Fetch all plugin IDs associated with the agent
                 var pluginIds = (await _repository.GetChildRecordsWithJoinAsPersonAsync<Agent, Plugin, AgentPlugin>(
                     "AgentId", "PluginId", agentId, PersonId
-                )).Select(p => p.Id);
+                ))?.Select(p => p.Id) ?? Enumerable.Empty<string>();
 
                 // Step 3: Fetch all function IDs associated with the plugins
                 var functionIds = (await _repository.GetChildRecordsByIdsWithJoinAsSystemAsync<Plugin, Function, PluginFunction>(
-                    parentForeignKey: "PluginId",
-                    childForeignKey: "FunctionId",
-                    parentIds: pluginIds
-                )).Select(f => f.Id);
+                    "PluginId", "FunctionId", pluginIds
+                ))?.Select(f => f.Id) ?? Enumerable.Empty<string>();
 
                 // Step 4: Fetch all connections associated with the functions
                 var allConnections = await _repository.GetChildRecordsByIdsWithJoinAsSystemAsync<Function, Connection, FunctionConnection>(
-                    parentForeignKey: "FunctionId",
-                    childForeignKey: "ConnectionId",
-                    parentIds: functionIds
-                );
+                    "FunctionId", "ConnectionId", functionIds
+                ) ?? Enumerable.Empty<Connection>();
 
-                // Step 5: Merge committed credentials with placeholders for incomplete ones
+                // Step 5: Merge committed credentials with placeholders
                 var allCredentials = allConnections.Select(connection =>
                 {
-                    var existingCredential = committedCredentials.FirstOrDefault(c => c.ConnectionId == connection.Id);
-                    return existingCredential ?? new Credential
+                    return committedCredentialsLookup.TryGetValue(connection.Id, out var existingCredential)
+                        ? existingCredential
+                        : new Credential
+                        {
+                            Connection = connection,
+                            ConnectionId = connection.Id,
+                            AgentId = agentId
+                        };
+                }).ToList();
+
+                // Step 6: Fetch executive credentials if ExecutiveFunctionId exists
+                var agent = await _repository.GetRecordByIdAsSystemAsync<Agent>(agentId);
+                if (agent?.ExecutiveFunctionId != null)
+                {
+                    var executiveConnections = await _repository.GetChildRecordsByIdsWithJoinAsSystemAsync<Function, Connection, FunctionConnection>(
+                        "FunctionId", "ConnectionId", new List<string> { agent.ExecutiveFunctionId }
+                    ) ?? Enumerable.Empty<Connection>();
+
+                    foreach (var executiveConnection in executiveConnections)
                     {
-                        Connection = connection,
-                        ConnectionId = connection.Id,
-                        AgentId = agentId
-                    };
+                        if (!allCredentials.Any(c => c.ConnectionId == executiveConnection.Id))
+                        {
+                            // Fetch the existing executive credential for the connection
+                            var executiveCredential = (await _repository.QueryRecordsAsSystemAsync<Credential>(
+                                   new Dictionary<string, object> { { "AgentId", agentId }, { "ConnectionId", executiveConnection.Id } }
+                               )).FirstOrDefault();
+
+                            var newCredential = executiveCredential ?? new Credential
+                            {
+                                Connection = executiveConnection,
+                                ConnectionId = executiveConnection.Id,
+                                AgentId = agentId
+                            };
+
+                            allCredentials.Add(newCredential);
+                        }
+                    }
+                }
+
+                // Step 7: Set token flags and nullify sensitive data
+                allCredentials.ForEach(c =>
+                {
+                    c.HasAccessToken = !string.IsNullOrEmpty(c.AccessToken);
+                    c.HasRefreshToken = !string.IsNullOrEmpty(c.RefreshToken);
+                    c.AccessToken = null;
+                    c.RefreshToken = null;
                 });
 
-                // Step 6: Map and return the results
+                // Map and return the results
                 return _mapper.Map<IEnumerable<ManageModel.Credential>>(allCredentials);
             });
         }

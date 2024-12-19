@@ -237,7 +237,8 @@ namespace Agience.Authority.Identity.Data
                         LastName = lastName,
                         Email = email,
                         ProviderId = providerId,
-                        ProviderPersonId = providerPersonId
+                        ProviderPersonId = providerPersonId,
+                        CreatedDate = DateTime.UtcNow
                     }
                 );
 
@@ -254,7 +255,9 @@ namespace Agience.Authority.Identity.Data
                     RedirectUris = string.Join(' ', redirectUris),
                     PostLogoutUris = string.Join(' ', postLogoutUris),
                     Scopes = new List<string> { "openid", "profile", "email", "manage", "connect" }, // TODO: Allow Configuration
-                    Visibility = Core.Models.Enums.Visibility.Public
+                    Visibility = Core.Models.Enums.Visibility.Public,
+                    CreatedDate = DateTime.UtcNow
+
                 });
 
                 Keys.AddRange(new Key

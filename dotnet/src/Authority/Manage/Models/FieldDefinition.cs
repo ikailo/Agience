@@ -9,6 +9,7 @@ namespace Agience.Authority.Manage.Models
         Lookup,
         Checkbox,
         DropDown,
+        MultiSelect,
         Button,
         Upload
     }
@@ -206,7 +207,6 @@ namespace Agience.Authority.Manage.Models
                     baseEntity.Metadata = new Dictionary<string, object?>();
                 }
 
-                // Access or create the Metadata dictionary key
                 var metadataKey = string.Join(".", parts.Skip(1));
                 baseEntity.Metadata[metadataKey] = value;
                 return;
@@ -223,26 +223,33 @@ namespace Agience.Authority.Manage.Models
                 if (property == null || currentObject == null)
                     return;
 
-                if (i == parts.Length - 1)
+                if (i == parts.Length - 1) // Last part of the path
                 {
-                    // Last part, set the value
                     if (property.CanWrite)
                     {
-                        if (property.PropertyType.IsEnum)
+                        if (property.PropertyType == typeof(List<string>) && value is IEnumerable<string> listValue)
                         {
-                            if (Enum.TryParse(property.PropertyType, value.ToString(), out var convertedValue))
+                            // Directly set the value for List<string>
+                            property.SetValue(currentObject, listValue.ToList());
+                        }
+                        else if (property.PropertyType.IsEnum)
+                        {
+                            if (Enum.TryParse(property.PropertyType, value?.ToString(), out var convertedValue))
                             {
                                 property.SetValue(currentObject, convertedValue);
                             }
                             else
                             {
-                                // Handle invalid enum value
                                 throw new ArgumentException($"Cannot convert '{value}' to {property.PropertyType}");
                             }
                         }
                         else
                         {
-                            var convertedValue = Convert.ChangeType(value, property.PropertyType);
+                            // Fallback to Convert.ChangeType for other types
+                            var convertedValue = value != null
+                                ? Convert.ChangeType(value, property.PropertyType)
+                                : null;
+
                             property.SetValue(currentObject, convertedValue);
                         }
                     }
@@ -254,6 +261,7 @@ namespace Agience.Authority.Manage.Models
                 }
             }
         }
+
 
     }
 }

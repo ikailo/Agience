@@ -17,7 +17,18 @@
     public List<FieldDefinition> HostFields { get; set; } = new()
     {
         new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
-        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" }
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "RedirectUris", Label = "Redirect URIs" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "PostLogoutUris", Label = "Post Logout URIs" },
+        new FieldDefinition { Type = FieldType.MultiSelect, FieldName = "Scopes", Label = "Scopes",
+            DropDownOptions = new Dictionary<string, string>
+            {
+                { "openid", "openid" },
+                { "profile", "profile" },
+                { "email", "email" },
+                { "manage", "manage" },
+                { "connect", "connect" }
+            }}
     };
 
     public List<FieldDefinition> KeyFields { get; set; } = new()
