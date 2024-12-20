@@ -1,0 +1,248 @@
+﻿@page "/plugins"
+@using Agience.Authority.Models.Manage
+@using Agience.Authority.Manage.Components.Shared
+@using Agience.Authority.Manage.Services
+@using Agience.Authority.Manage.Models
+@using Agience.Core.Models.Entities.Abstract
+@using Agience.Core.Models.Enums
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using System.Text.Json
+@implements IDisposable
+
+<EntityPage @key="typeof(Plugin)" TEntity="Plugin" Icon="@Icons.Material.Filled.Extension">
+    <EntityDetailPanel TEntity="Plugin" Fields="_pluginFields" OnButtonClicked="HandleDetailButtonClicked" />
+    <EntityListPanel TParent="Plugin" TChild="Function" TabName="Functions" Fields="_functionFields" />
+    <EntityListPanel TParent="Plugin" TChild="FunctionConnection" TabName="Connections" Fields="ConnectionFields" />
+</EntityPage>
+
+@code {
+    [Inject] private ILogger<Plugins> _logger { get; set; } = null!;
+    [Inject] private ContextService _contextService { get; set; } = null!;
+    [Inject] private RecordHandler _recordHandler { get; set; } = null!;
+    [Inject] private IDialogService _dialogService { get; set; } = null!;
+
+    public List<FieldDefinition> _pluginFields { get; set; } = new();
+
+    public List<FieldDefinition> _functionFields { get; set; } = new();    
+
+    public List<FieldDefinition> ConnectionFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "FunctionId", Label = "Function", RelatedEntityFieldName = "Function"},
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "ConnectionId", Label = "Connection", RelatedEntityApiName = "connection",  RelatedEntityFieldName = "Connection" },
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        _contextService.ContextRecordIdChanged += OnContextRecordIdChanged;
+
+        ConnectionFields.First(f => f.FieldName == "FunctionId").RelatedEntityDataSource = FetchConectionFunctions;
+        await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _contextService.ContextRecordIdChanged -= OnContextRecordIdChanged;
+    }
+
+    private async Task<IEnumerable<DescribedEntity>> FetchConectionFunctions()
+    {
+        await Task.CompletedTask;
+        return _contextService.ContextChildRecords[typeof(Function)].Where(f => f.Id != "new").Cast<DescribedEntity>();
+    }
+
+    public async Task OnContextRecordIdChanged(string? contextRecordId)
+    {
+        await HandleFieldUpdates();
+    }
+
+    public async Task HandleFieldUpdates()
+    {
+        var plugin = _contextService.ContextRecord as Plugin;
+
+        _pluginFields.Clear();
+
+        _pluginFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" });
+
+        _pluginFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" });
+
+        _pluginFields.Add(new FieldDefinition
+            {
+                Type = FieldType.DropDown,
+                FieldName = "PluginProvider",
+                Label = "Provider",
+                OnValueChanged = OnPluginTypeValueChanged,
+                DropDownOptions = new() {
+                    { PluginProvider.Collection.ToString(), "Collection" },
+                    { PluginProvider.Prompt.ToString(), "Prompts" },
+                    { PluginProvider.SKPlugin.ToString(), "Semantic Kernel Plugin" }
+                }
+            });
+
+
+        if (plugin?.PluginProvider == PluginProvider.Prompt)
+        {
+            _pluginFields.Add(new FieldDefinition
+                {
+                    Type = FieldType.DropDown,
+                    FieldName = "PluginSource",
+                    Label = "Plugin Source",
+                    OnValueChanged = OnPluginSourceValueChanged,
+                    DropDownOptions = new() {
+                        { PluginSource.UserDefined.ToString(), "Define in the User Interface" },
+                       // { PluginSource.UploadDirectory.ToString(), "Upload a Directory .zip File" }
+                    }
+                });
+
+            if (plugin?.PluginSource == PluginSource.UserDefined)
+            {   
+                // Create functions and Plugin_Functions in the user interface with IsRoot=true
+                _functionFields.Clear();
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Instruction", Label = "Instruction" });                
+            }
+
+            if (plugin?.PluginSource == PluginSource.UploadPackage)
+            {
+                // Upload a directory zip file and open the import wizard.
+                // Create Functions and Plugin_Functions with IsRoot=true
+
+                _pluginFields.Add(new FieldDefinition { Type = FieldType.Upload, Label = ".zip file of directory", });
+            }
+        }
+
+        else if (plugin?.PluginProvider == PluginProvider.SKPlugin)
+        {                        
+            _pluginFields.Add(new FieldDefinition
+                {
+                    Type = FieldType.DropDown,
+                    FieldName = "PluginSource",
+                    Label = "Plugin Source",
+                    OnValueChanged = OnPluginSourceValueChanged,
+                    DropDownOptions = new() {
+                        //{ PluginSource.PublicRepository.ToString(), "Build from a Public Repository" },      
+                        //{ PluginSource.UploadDirectory.ToString(), "Upload a Plugin Library .zip Package" }
+                        { PluginSource.HostDefined.ToString(), "Defined by a Host" }
+                    }
+                });
+
+            if (plugin?.PluginSource == PluginSource.HostDefined)
+            {
+                _functionFields.Clear();
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name", ReadOnly = true});
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" });
+
+                // TODO: Remove buttons.
+
+            }
+
+           
+
+        }
+
+        else if (plugin?.PluginProvider == PluginProvider.Collection)
+        {
+            _pluginFields.Add(new FieldDefinition
+                {
+                    Type = FieldType.DropDown,
+                    FieldName = "PluginSource",
+                    Label = "Source",
+                    OnValueChanged = OnPluginSourceValueChanged,
+                    DefaultValue = PluginSource.UserDefined.ToString(),
+                    DropDownOptions = new() {
+                        { PluginSource.UserDefined.ToString(), "Select From Existing Functions" }
+                    }
+
+                });
+
+            if (plugin?.PluginSource == PluginSource.UserDefined)
+            {
+                // Use Existing functions. Create Plugin_Functions where IsRoot=false     
+                _functionFields.Clear();
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Lookup, FieldName = "PluginId", Label = "Plugin", RelatedEntityFieldName = "Plugin" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Lookup, FieldName = "FunctionId", Label = "Function", RelatedEntityFieldName = "Function" });
+                _functionFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true });
+            }
+        }    
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task OnPluginTypeValueChanged(BaseEntity record, object? value)
+    {
+        if (record is Plugin plugin)
+        {
+            if (plugin.PluginProvider == PluginProvider.Prompt)
+            {
+                plugin.PluginSource = PluginSource.UserDefined;
+            }
+            else if (plugin.PluginProvider == PluginProvider.SKPlugin)
+            {
+                plugin.PluginSource = PluginSource.HostDefined;
+            }
+            else if (plugin.PluginProvider == PluginProvider.Collection)
+            {
+                plugin.PluginSource = PluginSource.UserDefined;
+            }
+        }
+
+        await HandleFieldUpdates();
+    }
+
+    public async Task OnPluginSourceValueChanged(BaseEntity record, object? value)
+    {
+        await HandleFieldUpdates();
+
+    }
+
+
+    
+    private async Task HandleDetailButtonClicked(FieldDefinition field, Plugin record)
+    {
+    /*    if (field.FieldName == "PackageUploadButton" && record.PluginType == PluginType.SKPlugin && record.PluginSource == PluginSource.UploadDirectory)
+        {
+
+            var record1 = record;
+
+            // Open the file dialog for upload
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+            var dialog = _dialogService.Show<PluginLibraryDialog>("Upload Plugin Library", new DialogParameters
+        {
+            { "Record", record }
+        }, options);
+
+            var result = await dialog.Result;
+
+            if (!result.Canceled && result.Data is PluginLibrary pluginLibrary)
+            {
+                // Handle the result, e.g., update the UI or log success
+                _logger.LogInformation("Plugin Library uploaded: {LibraryName}", pluginLibrary.Name);
+            }
+        }*/
+
+        /*
+        if (field.FieldName == "RepositoryUriButton" && record.PluginType == PluginType.SKPlugin && record.PluginSource == PluginSource.PublicRepository)
+        {
+            if (record.Metadata == null || !record.Metadata.ContainsKey("RepositoryUri"))
+            {
+                return;
+            }
+
+            var repositoryUri = record.Metadata["RepositoryUri"];
+
+            // Open the PluginLibraryDialog modal
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+            var dialog = _dialogService.Show<PluginLibraryDialog>("Import Plugin Library", new DialogParameters
+        {
+            { "RepositoryUri", repositoryUri }
+        }, options);
+
+            var result = await dialog.Result;
+            if (!result.Canceled && result.Data is PluginLibrary pluginLibrary)
+            {
+                // Handle the PluginLibrary result (e.g., allow user to select plugins or display success)
+                _logger.LogInformation("Plugin Library imported: {LibraryName}", pluginLibrary.Name);
+            }
+        }*/
+    }
+}

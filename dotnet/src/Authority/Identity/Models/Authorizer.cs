@@ -5,12 +5,15 @@ using System.Text.Json.Serialization;
 
 namespace Agience.Authority.Identity.Models
 {
-    [AutoMap(typeof(Core.Authorizer), ReverseMap = true)]
+    [AutoMap(typeof(Core.Models.Entities.Authorizer), ReverseMap = true)]
     [AutoMap(typeof(Authority.Models.Manage.Authorizer), ReverseMap = true)]
     public class Authorizer : Authority.Models.Manage.Authorizer
     {
-        [ForeignKey(nameof(ManagerId))]
+        [ForeignKey(nameof(OwnerId))]
         [JsonIgnore]
-        public virtual Person? Manager { get; set; }
+        public virtual new Person? Owner { get; set; }
+
+        [JsonPropertyName("connections")]
+        public virtual List<Connection> Connections { get; set; } = new();
     }
 }

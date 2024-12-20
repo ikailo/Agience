@@ -12,8 +12,8 @@
     {
         public BrokerMessageType Type { get; set; } = BrokerMessageType.UNKNOWN;
         public string? Topic { get; set; }
-        public string? SenderId => Topic?.Split('/')[0];
-        public string? Destination => Topic?.Substring(Topic.IndexOf('/') + 1);
+        public string? SenderId => Topic?.Split('/')[1];
+        public string? Destination => string.Join("/", Topic.Split('/')[2..]); // TODO: Hacky
         //public string? Payload { get; set; }
 
         private object? _content;

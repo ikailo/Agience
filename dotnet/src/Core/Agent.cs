@@ -1,78 +1,63 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using System.Collections.Concurrent;
-using Timer = System.Timers.Timer;
 using AutoMapper;
 using Agience.Core.Mappings;
 using Agience.Core.Models.Messages;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using Agience.Core.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Agience.Core.Models.Entities;
 
 namespace Agience.Core
 {
     [AutoMap(typeof(Models.Entities.Agent), ReverseMap = true)]
     public class Agent : Models.Entities.Agent, IDisposable
     {
-        private const int JOIN_WAIT = 5000;
         public bool IsConnected { get; private set; }
+        public ChatHistory ChatHistory => _chatHistory;
 
-        public event Func<AgienceChatMessageArgs, Task>? ChatMessageReceived;
-        public ChatHistory ChatHistory => _chatHistory;        
-        public new Agency Agency => _agency;
-        public Kernel Kernel => _kernel;
-        public string Timestamp => _broker.Timestamp;
+        private readonly OpenAIPromptExecutionSettings _promptExecutionSettings;
+        private readonly ChatHistory _chatHistory = new();        
 
-
-        private readonly ChatHistory _chatHistory = new();
-        private readonly ConcurrentDictionary<string, Runner> _informationCallbacks = new();
-        private readonly Timer _representativeClaimTimer = new Timer(JOIN_WAIT);
         private readonly Authority _authority;
-        private readonly Agency _agency;
-
-
-        // TODO: Use Messenger instead of Broker. Abstrct MQTT Connection to a Messaging Service
         private readonly Broker _broker;
         private readonly ILogger _logger;
         private readonly Kernel _kernel;
-        private readonly IMapper _mapper;
+
+        private readonly TopicGenerator _topicGenerator;
+
+
         private bool _disposed;
-
-        private PromptExecutionSettings? _promptExecutionSettings;
-        private string _persona;
-
 
         internal Agent(
             string id,
             string name,
             Authority authority,
             Broker broker,
-            Agency agency,
             string persona,
             Kernel kernel,
             ILogger<Agent> logger
-            )
+            ) 
 
         {
             Id = id;
             Name = name;
-
+            Persona = persona;
             _authority = authority;
-            _broker = broker;
-            _agency = agency;
-            _persona = persona;
+            _broker = broker;            
             _kernel = kernel;
             _logger = logger;
-            _mapper = AutoMapperConfig.GetMapper();
+
+            _topicGenerator = new TopicGenerator(_authority.Id, Id);
 
             _promptExecutionSettings = new OpenAIPromptExecutionSettings
             {
                 ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
             };
 
-            _representativeClaimTimer.AutoReset = false;
-            _representativeClaimTimer.Elapsed += (s, e) => SendRepresentativeClaim();
-
             
+
         }
 
         internal async Task Connect()
@@ -81,10 +66,13 @@ namespace Agience.Core
 
             if (!IsConnected)
             {
-                await _broker.Subscribe(_authority.AgentTopic("+", Id!), _broker_ReceiveMessage);
+                await _broker.Subscribe(_topicGenerator.SubscribeAsAgent(), _broker_ReceiveMessage);
 
-                SendJoin();
-                _representativeClaimTimer.Start();
+                // Subscribe to the Agent's topic
+                foreach (Topic topic in Topics)
+                {
+                    await _broker.Subscribe(_topicGenerator.ConnectTo(topic.Name), _broker_ReceiveMessage);
+                }
 
                 IsConnected = true;
             }
@@ -92,7 +80,19 @@ namespace Agience.Core
 
         private async Task _broker_ReceiveMessage(BrokerMessage message)
         {
-            throw new NotImplementedException();
+            // Incoming Credential
+            if (message.Type == BrokerMessageType.EVENT &&
+                message.Data?["type"] == "credential_response" &&
+                message.Data?["credential_name"] != null &&
+                message.Data?["encrypted_credential"] != null
+                )
+            {
+                var name = message.Data?["credential_name"];
+                var credential = message.Data["encrypted_credential"];
+
+                var credentialService = _kernel.Services.GetRequiredService<AgienceCredentialService>();
+                credentialService.AddEncryptedCredential(name, credential);
+            }
         }
 
         internal async Task Disconnect()
@@ -102,99 +102,35 @@ namespace Agience.Core
 
             if (IsConnected)
             {
-                SendRepresentativeResign();
-                SendLeave();
-                await _broker.Unsubscribe(_authority.AgentTopic("+", Id!));
+
+                await _broker.Unsubscribe(_topicGenerator.SubscribeAsAgent());
                 IsConnected = false;
             }
         }
 
-        private void SendJoin()
+
+        public async Task<string?> PromptAsync(string userMessage, CancellationToken cancellationToken = default)
         {
-            _logger.LogDebug("SendJoin");
-
-            _broker.Publish(new BrokerMessage()
-            {
-                Type = BrokerMessageType.EVENT,
-                Topic = _authority.AgencyTopic(Id!, _agency.Id!),
-                Data = new Data
-                {
-                    { "type", "join" },
-                    { "timestamp", _broker.Timestamp},
-                    { "agent_id" , Id }
-                }
-            });
-        }
-
-        private void SendLeave()
-        {
-            _logger.LogDebug("SendLeave");
-
-            _broker.Publish(new BrokerMessage()
-            {
-                Type = BrokerMessageType.EVENT,
-                Topic = _authority.AgencyTopic(Id!, _agency.Id!),
-                Data = new Data
-                {
-                    { "type", "leave" },
-                    { "timestamp", _broker.Timestamp},
-                    { "agent_id", Id }
-                }
-            });
-        }
-
-        private void SendRepresentativeClaim()
-        {
-            if (_agency.RepresentativeId != null) { return; } // Was set by another agent
-
-            _logger.LogDebug("SendRepresentativeClaim");
-
-            _broker.Publish(new BrokerMessage()
-            {
-                Type = BrokerMessageType.EVENT,
-                Topic = _authority.AgencyTopic(Id!, _agency.Id!),
-                Data = new Data
-                {
-                    { "type", "representative_claim" },
-                    { "timestamp", _broker.Timestamp},
-                    { "agent_id", Id },
-                }
-            });
-        }
-
-        private void SendRepresentativeResign()
-        {
-            if (_agency.RepresentativeId != Id) { return; } // Only the current representative can resign
-
-            _logger.LogDebug("SendRepresentativeResign");
-            
-            _broker.Publish(new BrokerMessage()
-            {
-                Type = BrokerMessageType.EVENT,
-                Topic = _authority.AgencyTopic(Id!, _agency.Id!),
-                Data = new Data
-                {
-                    { "type", "representative_resign" },
-                    { "timestamp", _broker.Timestamp},
-                    { "agent_id", Id },
-                }
-            });
-        }
-
-        public async Task PromptAsync(string userMessage, CancellationToken cancellationToken = default)
-        {
+            // Add the user's message to the chat history
             _chatHistory.AddUserMessage(userMessage);
 
+            // Get the response from the chat completion service
             var chatMessageContent = await _kernel.GetRequiredService<IChatCompletionService>()
                 .GetChatMessageContentAsync(_chatHistory, _promptExecutionSettings, _kernel, cancellationToken);
 
             if (chatMessageContent?.Items.Last().ToString() is string assistantMessage)
             {
+                // Add the assistant's message to the chat history
                 _chatHistory.AddAssistantMessage(assistantMessage);
 
-                ChatMessageReceived?.Invoke(new AgienceChatMessageArgs() { AgentId = Id, Message = chatMessageContent });
+                // Return the assistant's message directly
+                return assistantMessage;
             }
+
+            // Return null if no assistant message is generated
+            return null;
         }
+
 
         public void Dispose()
         {

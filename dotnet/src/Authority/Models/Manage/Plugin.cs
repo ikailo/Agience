@@ -4,7 +4,9 @@ namespace Agience.Authority.Models.Manage
 {
     public class Plugin : Core.Models.Entities.Plugin
     {
-        [JsonPropertyName("connections")]
-        public virtual List<PluginConnection> Connections { get; set; } = new List<PluginConnection>();
+        //[JsonPropertyName("plugin_library_id")]
+        //public string PluginLibraryId { get; set; } = string.Empty;
+        
+
     }    
 }

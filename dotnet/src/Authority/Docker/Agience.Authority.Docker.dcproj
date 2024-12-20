@@ -7,20 +7,20 @@
     <ProjectGuid>1a78e214-56f6-4f21-aafd-7973c6cdc913</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="docker-compose.debug.yml">
+      <DependentUpon>docker-compose.yml</DependentUpon>
+    </None>
     <None Include="docker-compose.development.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
     <None Include="docker-compose.local.yml">
       <DependentUpon>docker-compose.yml</DependentUpon>
     </None>
-    <None Include="docker-compose.preview.yml">
-      <DependentUpon>docker-compose.yml</DependentUpon>
-    </None>
     <None Include="docker-compose.yml" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DockerComposeProjectName>agience-development</DockerComposeProjectName>
-    <AdditionalComposeFilePaths>docker-compose.development.yml</AdditionalComposeFilePaths>
+    <AdditionalComposeFilePaths>docker-compose.debug.yml</AdditionalComposeFilePaths>
     <DockerTargetOS>Linux</DockerTargetOS>
     <DockerDevelopmentMode>Regular</DockerDevelopmentMode>
   </PropertyGroup>

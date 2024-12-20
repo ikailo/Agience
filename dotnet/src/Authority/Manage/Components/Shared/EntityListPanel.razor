@@ -1,0 +1,202 @@
+﻿@using Agience.Authority.Manage.Models
+@using Agience.Core.Models.Entities.Abstract
+@using Agience.Authority.Manage.Services
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@implements IDisposable
+
+@typeparam TParent where TParent : BaseEntity, new()
+@typeparam TChild where TChild : BaseEntity, new()
+
+<MudTabPanel Text="@TabName">
+    <MudTable Items="_childRecords" Bordered="true" Hover="true">
+        <HeaderContent>
+            @foreach (var field in Fields)
+            {
+                <MudTh>@field.Label</MudTh>
+            }
+            @if (ShowActionButtons) {
+                <MudTh>Actions</MudTh>
+            }
+        </HeaderContent>
+        <RowTemplate Context="record">
+            <EntityListRow TChild="TChild"
+                           Record="record"
+                           Fields="Fields"
+                           DrivingField="_drivingField"
+                           Mode="@(GetMode(record))"
+                           ExcludedValues="_excludedValues"
+                           OnRowUpdated="HandleOnRowUpdated"
+                           OnSave="OnSave"
+                           OnDelete="OnDelete"
+                           SearchSuggestionDataSource="SearchSuggestionDataSource"
+                           ShowActionButtons="@ShowActionButtons" 
+                           OnButtonClicked="@OnButtonClicked"
+                           />
+        </RowTemplate>
+    </MudTable>
+</MudTabPanel>
+
+@code {
+    [Parameter] public string TabName { get; set; } = string.Empty;
+    [Parameter] public List<FieldDefinition> Fields { get; set; } = new();
+    [Parameter] public Func<TChild, Task>? OnSavePostHook { get; set; }
+    [Parameter] public Func<IEnumerable<TChild>, Task>? OnFetchPostHook { get; set; }
+    [Parameter] public Func<FieldDefinition, TChild, Task<IEnumerable<DescribedEntity>>> SearchSuggestionDataSource { get; set; } = null!;
+    [Parameter] public bool AddPlaceholder { get; set; } = true;
+    [Parameter] public bool ShowActionButtons { get; set; } = true; 
+    [Parameter] public Func<FieldDefinition, TChild, Task>? OnButtonClicked { get; set; }
+    [Parameter] public Func<TChild, Task>? OnRowUpdated { get; set; }
+
+
+    [Inject] private ContextService _contextService { get; set; } = null!;
+
+    private List<TChild> _childRecords = new();
+    private FieldDefinition? _drivingField;
+    private HashSet<string> _excludedValues = new();
+    private HashSet<string> _dirtyRows = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contextService.ContextRecordIdChanged += OnContextRecordIdChanged;
+        _contextService.ChildRecordsUpdated += OnChildRecordsUpdated;
+
+        // Identify the driving field
+        _drivingField = Fields.FirstOrDefault(f => f.RelatedEntityFieldName == "this");
+
+        await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _contextService.ContextRecordIdChanged -= OnContextRecordIdChanged;
+        _contextService.ChildRecordsUpdated -= OnChildRecordsUpdated;
+    }
+
+    private async Task OnContextRecordIdChanged(string? contextRecordId)
+    {
+        _excludedValues.Clear();
+
+        if (contextRecordId == null || contextRecordId == "new")
+        {
+            _childRecords.Clear();
+        }
+        else
+        {
+            await _contextService.FetchChildRecordsAsync<TParent, TChild>(OnFetchPostHook, AddPlaceholder);
+            _childRecords = _contextService.GetChildRecords<TChild>(contextRecordId);
+
+            // Populate _excludedValues with records from the database
+            foreach (var record in _childRecords)
+            {
+                var existingRecord = _drivingField?.GetValue(record) as DescribedEntity;
+
+                var existingValue = existingRecord?.Id;
+
+                if (!string.IsNullOrEmpty(existingValue) && existingValue != "new")
+                {
+                    _excludedValues.Add(existingValue);
+                }
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleOnRowUpdated(TChild updatedRecord)
+    {
+        var existingRecord = _drivingField?.GetValue(updatedRecord) as DescribedEntity;
+        var selectedValue = existingRecord?.Id;
+
+        if (!string.IsNullOrEmpty(selectedValue))
+        {
+            _dirtyRows.Add(selectedValue); // Mark as dirty (unsaved)
+            _excludedValues.Add(selectedValue); // Exclude from suggestions immediately
+        }
+
+        if (OnRowUpdated != null)
+            await OnRowUpdated.Invoke(updatedRecord); 
+
+        await InvokeAsync(StateHasChanged); // Refresh the UI
+    }
+
+
+    private async Task OnDelete(TChild record)
+    {
+        if (record?.Id != null && record.Id != "new")
+        {
+
+            var existingRecord = _drivingField?.GetValue(record) as DescribedEntity;
+
+            var valueToRemove = existingRecord?.Id;
+
+            if (!string.IsNullOrEmpty(valueToRemove))
+            {
+                _excludedValues.Remove(valueToRemove);
+            }
+
+            await _contextService.DeleteChildRecordAsync<TParent, TChild>(record.Id);
+            _childRecords.Remove(record);
+
+            await InvokeAsync(StateHasChanged);
+
+
+
+        }
+    }
+
+    private string GetMode(TChild record)
+    {
+        if (_drivingField != null)
+        {
+            // If the record is in DirtyRows, it is unsaved but selected
+            if (_dirtyRows.Contains(record.Id) || record.Id == "new")
+            {
+                return "SELECT";
+            }
+
+            // If the record is in excluded values, it is saved
+            if (_excludedValues.Contains(record.Id))
+            {
+                return "READONLY";
+            }
+
+            // If the driving field exists but is not set, mark as SELECT
+            var drivingFieldValue = _drivingField.GetValue(record);
+            if (drivingFieldValue == null)
+            {
+                return "SELECT";
+            }
+        }
+
+        // Default to EDIT for records without a driving field
+        return "EDIT";
+    }
+
+    private async Task OnChildRecordsUpdated()
+    {
+        if (_contextService.ContextRecordId != null && _contextService.ContextRecordId != "new")
+        {
+            _childRecords = _contextService.GetChildRecords<TChild>(_contextService.ContextRecordId);
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task OnSave(TChild record)
+    {
+        await _contextService.SaveChildRecordAsync<TParent, TChild>(record, null, OnSavePostHook);
+
+        // Remove from dirty rows and ensure it's in excluded values
+        _dirtyRows.Remove(record.Id);
+        if (!_excludedValues.Contains(record.Id))
+        {
+            _excludedValues.Add(record.Id); // Mark as saved
+        }
+
+        await InvokeAsync(StateHasChanged); // Refresh to update mode
+    }
+
+
+
+
+}

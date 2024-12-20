@@ -44,7 +44,6 @@ services:
       - ../Build/certs/agience-development.pfx:/app/https/agience-development.pfx
       - ../Build/certs/agience-development.crt:/usr/local/share/ca-certificates/agience-development.crt
     entrypoint: /bin/bash -c "update-ca-certificates && exec dotnet Agience.Authority.Manage.dll"
-    
       
   database:  
     container_name: database-development  

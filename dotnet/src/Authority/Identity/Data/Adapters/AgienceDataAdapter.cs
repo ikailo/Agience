@@ -1,991 +1,648 @@
-﻿using AutoMapper;
-using Agience.Authority.Identity.Models;
-using Host = Agience.Authority.Identity.Models.Host;
+﻿using Agience.Core.Models.Entities.Abstract;
+using Agience.Core.Models.Enums;
+using LinqKit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Agience.Authority.Identity.Validators;
-using System.Text.Json;
 
 
 namespace Agience.Authority.Identity.Data.Adapters
 {
-    public class AgienceDataAdapter : IAgienceDataAdapter, Core.Models.Entities.IAuthorityDataAdapter
+    /// <summary>
+    /// Represents a data adapter for Agience, responsible for managing data operations 
+    /// such as retrieval, insertion, and updates for Agience-related data sources.
+    /// </summary>
+    public class AgienceDataAdapter //: IAgienceDataAdapter
     {
-        private readonly AgienceDbContext _context;
+        private readonly AgienceDbContext _dbContext;
         private readonly AgienceIdProvider _idProvider;
-        private readonly IMapper _mapper;
         private readonly ILogger<AgienceDataAdapter> _logger;
 
-        public AgienceDataAdapter(AgienceDbContext context, AgienceIdProvider idProvider, IMapper mapper, ILogger<AgienceDataAdapter> logger)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AgienceDataAdapter"/> class.
+        /// </summary>
+        /// <param name="dbContext">The database context used for data operations.</param>
+        /// <param name="idProvider">The provider responsible for generating identifiers.</param>
+        /// <param name="logger">The logger used for logging information and errors.</param>
+        /// <returns>
+        /// A new instance of <see cref="AgienceDataAdapter"/>.
+        /// </returns>
+        public AgienceDataAdapter(AgienceDbContext dbContext, AgienceIdProvider idProvider, ILogger<AgienceDataAdapter> logger)
         {
-            _context = context;
-            _idProvider = idProvider;
-            _mapper = mapper;
-            _logger = logger;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _idProvider = idProvider ?? throw new ArgumentNullException(nameof(idProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IEnumerable<T>> GetRecordsAsPersonAsync<T>(string personId, bool includePublic = false) where T : Core.Models.Entities.AgienceEntity
+        // *** HELPER METHODS *** //
+
+        /// <summary>
+        /// Determines whether the specified entity type is a 
+        private static bool IsPublic<T>() where T : BaseEntity => typeof(PublicEntity).IsAssignableFrom(typeof(T));
+
+
+        /// <summary>
+        /// Applies pagination to the provided IQueryable by skipping a specified number of records 
+        /// and taking a defined number of records from the query.
+        /// </summary>
+        /// <param name="query">The IQueryable sequence to apply pagination on.</param>
+        /// <param name="skip">The number of records to skip. Pass null to skip no records.</param>
+        /// <param name="take">The maximum number of records to take. Pass null to take all remaining records.</param>
+        /// <returns>
+        /// An IQueryable<T> that represents the paginated result of the original query.
+        /// </returns>
+        private IQueryable<T> ApplyPagination<T>(IQueryable<T> query, int? skip, int? take)
         {
-            if (string.IsNullOrWhiteSpace(personId))
+            if (skip.HasValue)
             {
-                throw new InvalidOperationException("personId is invalid");
+                query = query.Skip(skip.Value);
             }
 
-            if (typeof(T) == typeof(Agency))
+            if (take.HasValue)
             {
-                return await _context.Set<Agency>().Include(a => a.Agents).Where(a => a.DirectorId == personId).ToListAsync() as IEnumerable<T> ?? [];
+                query = query.Take(take.Value);
             }
 
-            else if (typeof(T) == typeof(Agent))
-            {
-                return await _context.Set<Agent>()
-                    .Include(a => a.Agency)
-                    .Include(a => a.Connections)
-                        .ThenInclude(c => c.Authorizer) // TODO: SECURITY: Handle clientSecret correctly
-                    .Include(a => a.Connections)
-                        .ThenInclude(c => c.PluginConnection)
-                    .Where(a => a.Agency != null && a.Agency.DirectorId == personId)
-                    .ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            else if (typeof(T) == typeof(Authorizer))
-            {
-                return await _context.Set<Authorizer>().Where(a => a.ManagerId == personId).ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            else if (typeof(T) == typeof(PluginConnection))
-            {
-                return await _context.Set<PluginConnection>().Include(c => c.Plugin).Where(c => c.Plugin.CreatorId == personId).ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            else if (typeof(T) == typeof(Function))
-            {
-                return await _context.Set<Function>().Where(f => f.PluginFunctions.Any(pf => pf.IsRoot && pf.Plugin != null && pf.Plugin.CreatorId == personId)).ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            else if (typeof(T) == typeof(Host))
-            {
-                if (includePublic)
-                {
-                    return await _context.Set<Host>().Where(h => h.Visibility == Core.Models.Entities.Visibility.Public || h.OperatorId == personId).ToListAsync() as IEnumerable<T> ?? [];
-                }
-                else
-                {
-                    return await _context.Set<Host>().Include(h => h.Keys).Include(h => h.Plugins).Where(h => h.OperatorId == personId).ToListAsync() as IEnumerable<T> ?? []; // TODO: SECURITY: Confirm correct Key secrets handling.
-                }
-                
-            }
-
-            else if (typeof(T) == typeof(Key))
-            {
-                return await _context.Set<Key>().Include(k => k.Host).Where(k => k.Host != null && k.Host.OperatorId == personId).ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            else if (typeof(T) == typeof(Person))
-            {
-                return await _context.Set<Person>().Where(p => p.Id == personId).ToListAsync() as IEnumerable<T> ?? []; // NOTE: This returns only one value.
-            }
-
-            else if (typeof(T) == typeof(Plugin))
-            {
-                return await _context.Plugins.Include(p => p.Connections).Include(p => p.PluginFunctions).ThenInclude(pf => pf.Function).Where(p => p.CreatorId == personId).ToListAsync() as IEnumerable<T> ?? [];
-            }
-            else if (typeof(T) == typeof(Log))
-            {
-                return await _context.Logs.Include(p => p.Agent).Where(l=>l.AgentId==personId).OrderByDescending(lg=>lg.CreatedDate).ToListAsync() as IEnumerable<T> ?? [];
-            }
-
-            throw new InvalidOperationException("unsupported type");
+            return query;
         }
 
-        public async Task<T?> GetRecordByIdAsPersonAsync<T>(string recordId, string personId) where T : Core.Models.Entities.AgienceEntity
+        public IQueryable<T> GetQueryable<T>() where T : class
         {
-            if (string.IsNullOrWhiteSpace(recordId))
-            {
-                throw new InvalidOperationException("recordId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            if (typeof(T) == typeof(Agency))
-            {
-                return await _context.Set<Agency>().Include(a => a.Agents).FirstOrDefaultAsync(a => a.Id == recordId && a.DirectorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(Agent))
-            {
-                return await _context.Set<Agent>().Include(a => a.Agency).FirstOrDefaultAsync(a => a.Id == recordId && a.Agency != null && a.Agency.DirectorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(AgentConnection))
-            {
-                return await _context.Set<AgentConnection>().Include(ac => ac.Agent).ThenInclude(a => a.Agency).FirstOrDefaultAsync(a => a.Id == recordId && a.Agent != null && a.Agent.Agency != null && a.Agent.Agency.DirectorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(Authorizer))
-            {
-                return await _context.Set<Authorizer>().FirstOrDefaultAsync(a => a.Id == recordId && a.ManagerId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(PluginConnection))
-            {
-                return await _context.Set<PluginConnection>().Include(c => c.Plugin).FirstOrDefaultAsync(c => c.Id == recordId && c.Plugin.CreatorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(Function))
-            {
-                return await _context.Functions.Where(f => f.Id == recordId && f.PluginFunctions.Any(pf => pf.IsRoot && pf.Plugin != null && pf.Plugin.CreatorId == personId)).FirstOrDefaultAsync() as T;
-            }
-
-            else if (typeof(T) == typeof(Host))
-            {
-                return await _context.Set<Host>().FirstOrDefaultAsync(h => h.Id == recordId && h.OperatorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(Key))
-            {
-                return await _context.Set<Key>().Include(k => k.Host).FirstOrDefaultAsync(k => k.Id == recordId && k.Host != null && k.Host.OperatorId == personId) as T;
-            }
-
-            else if (typeof(T) == typeof(Person))
-            {
-                return recordId == personId ? await _context.Set<Person>().FindAsync(recordId) as T : null;
-            }
-
-            else if (typeof(T) == typeof(Plugin))
-            {
-                return await _context.Set<Plugin>().FirstOrDefaultAsync(p => p.Id == recordId && p.CreatorId == personId) as T;
-            }
-
-            throw new InvalidOperationException("unsupported type");
+            return _dbContext.Set<T>().AsQueryable(); // Assuming _dbContext is the DbContext instance in AgienceDataAdapter
         }
 
-        public async Task<T?> CreateRecordAsPersonAsync<T>(T record, string parentId, string personId) where T : Core.Models.Entities.AgienceEntity
+        // *** CREATE OPERATIONS *** //
+
+        /// <summary>
+        /// Asynchronously creates a collection of records of type T in the database.
+        /// Each record's ID is generated using an ID provider if it is not already set.
+        /// </summary>
+        /// <typeparam name="T">The type of the records to be created, which must inherit from BaseEntity and have a parameterless constructor.</typeparam>
+        /// <param name="records">The collection of records to be created.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the created records.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the records collection is null or empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when any record has a non-null ID.</exception>
+        public async Task<IEnumerable<T>> CreateRecordsAsync<T>(IEnumerable<T> records) where T : BaseEntity, new()
         {
-            if (record == null)
+            if (records == null || !records.Any()) throw new ArgumentNullException(nameof(records));
+
+            foreach (var record in records)
             {
-                throw new InvalidOperationException("record is null");
+                if (!string.IsNullOrWhiteSpace(record.Id)) throw new InvalidOperationException("Record IDs must be null.");
+                record.Id = _idProvider.GenerateId(typeof(T).Name);
+                record.CreatedDate = DateTime.UtcNow;
             }
 
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(parentId))
-            {
-                throw new InvalidOperationException("parentId is invalid");
-            }
-
-            if (!string.IsNullOrEmpty(record.Id))
-            {
-                throw new InvalidOperationException("recordId must not be set");
-            }
-
-            if (record is PluginConnection connection)
-            {
-                var plugin = await GetRecordByIdAsPersonAsync<Plugin>(parentId, personId);
-
-                if (plugin == null)
-                {
-                    throw new InvalidOperationException("plugin not found");
-                }
-
-                connection.Id = _idProvider.GenerateId(typeof(T).Name);
-
-                connection.PluginId = plugin.Id;
-
-                _context.Set<PluginConnection>().Add(_mapper.Map<PluginConnection>(connection));
-
-            }
-
-            else if (record is Function function)
-            {
-                var plugin = await GetRecordByIdAsPersonAsync<Plugin>(parentId, personId);
-
-                if (plugin == null)
-                {
-                    throw new InvalidOperationException("plugin not found");
-                }
-
-                function.Id = _idProvider.GenerateId(typeof(T).Name);
-
-                _context.Set<Function>().Add(_mapper.Map<Function>(function));
-
-                var pluginFunction = new PluginFunction
-                {
-                    PluginId = plugin.Id,
-                    FunctionId = function.Id,
-                    IsRoot = true
-                };
-
-                _context.PluginFunctions.Add(pluginFunction);
-            }
-
-            else
-            {
-                throw new InvalidOperationException("unsupported type");
-            }
-
-            await _context.SaveChangesAsync();
-
-            return record;
-
+            await _dbContext.SaveEntitiesAsync(records, true);
+            _logger.LogInformation($"Created {records.Count()} {typeof(T).Name} records.");
+            return records;
         }
 
-        public async Task<T?> CreateRecordAsPersonAsync<T>(T record, string personId) where T : Core.Models.Entities.AgienceEntity
+        /// <summary>
+        /// Asynchronously creates a new record of type T in the database.
+        /// The record's ID is generated if it is not already set.
+        /// </summary>
+        /// <typeparam name="T">The type of the record, which must inherit from BaseEntity.</typeparam>
+        /// <param name="record">The record to create. Must not be null and must not have an existing ID.</param>
+        /// <returns>A task representing the asynchronous operation, with the created record upon completion.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the record parameter is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the record ID is already set.</exception>
+        public async Task<T> CreateRecordAsync<T>(T record) where T : BaseEntity, new()
         {
-            if (record == null)
-            {
-                throw new InvalidOperationException("record is null");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            if (!string.IsNullOrEmpty(record.Id))
-            {
-                throw new InvalidOperationException("recordId must not be set");
-            }
-
-            if (record is Agency agency)
-            {
-                agency.DirectorId = string.IsNullOrEmpty(agency.DirectorId) ? personId : throw new InvalidOperationException("DirectorId must not be set");
-            }
-
-            else if (record is Agent agent)
-            {
-
-                if (string.IsNullOrWhiteSpace(agent.AgencyId))
-                {
-                    throw new InvalidOperationException("agencyId is invalid");
-                }
-
-                if (await GetRecordByIdAsPersonAsync<Agency>(agent.AgencyId, personId) == null)
-                {
-                    throw new InvalidOperationException("agency not found");
-                }
-            }
-
-            else if (record is AgentConnection agentConnection)
-            {
-                if (string.IsNullOrWhiteSpace(agentConnection.AgentId))
-                {
-                    throw new InvalidOperationException("agentId is invalid");
-                }
-
-                if (string.IsNullOrWhiteSpace(agentConnection.PluginConnectionId))
-                {
-                    throw new InvalidOperationException("pluginConnectionId is invalid");
-                }
-
-                if (await GetRecordByIdAsPersonAsync<Agent>(agentConnection.AgentId, personId) == null)
-                {
-                    throw new InvalidOperationException("agent not found");
-                }
-
-                var pluginConnection = await _context.PluginConnections.FirstOrDefaultAsync(pc => pc.Id == agentConnection.PluginConnectionId && (pc.Plugin.CreatorId == personId || pc.Plugin.Visibility == Core.Models.Entities.Visibility.Public));
-
-                if (pluginConnection == null)
-                {
-                    throw new InvalidOperationException("pluginConnection not found");
-                }
-            }
-
-            else if (record is Authorizer authorizer)
-            {
-                authorizer.ManagerId = string.IsNullOrEmpty(authorizer.ManagerId) ? personId : throw new InvalidOperationException("ManagerId must not be set");
-            }
-
-            else if (record is Credential credential)
-            {
-                // nothing to check
-            }                       
-
-            else if (record is Function)
-            {
-                throw new InvalidOperationException("pluginId must be provided");
-            }
-
-            else if (record is Host host)
-            {
-                host.OperatorId = string.IsNullOrEmpty(host.OperatorId) ? personId : throw new InvalidOperationException("OperatorId must not be set");
-            }
-
-            else if (record is Key key)
-            {
-                if (string.IsNullOrWhiteSpace(key.HostId))
-                {
-                    throw new InvalidOperationException("hostId is invalid");
-                }
-
-                if (await GetRecordByIdAsPersonAsync<Host>(key.HostId, personId) == null)
-                {
-                    throw new InvalidOperationException("host not found");
-                }
-            }
-
-            else if (record is Person)
-            {
-                throw new InvalidOperationException("Person records cannot be created through the Manage API.");
-            }
-
-            else if (record is Plugin plugin)
-            {
-                plugin.CreatorId = string.IsNullOrEmpty(plugin.CreatorId) ? personId : throw new InvalidOperationException("CreatorId must not be set");
-            }
-
-            else if (record is PluginConnection connection)
-            {
-                throw new NotImplementedException();
-            }
-
-            else if (record is Log log)
-            {
-                // nothing to check
-            }
-
-            else
-            {
-                throw new InvalidOperationException("unsupported type");
-            }
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            if (!string.IsNullOrWhiteSpace(record.Id)) throw new InvalidOperationException("Record ID must be null.");
 
             record.Id = _idProvider.GenerateId(typeof(T).Name);
+            record.CreatedDate = DateTime.UtcNow;
 
-            _context.Set<T>().Add(record);
-
-            await _context.SaveChangesAsync();
-
+            await _dbContext.SaveEntityAsync(record, true);
+            _logger.LogInformation($"Created {typeof(T).Name} record with ID: {record.Id}");
             return record;
         }
+        // *** GET OPERATIONS *** //
 
-        public async Task UpdateRecordAsPersonAsync<T>(T newRecord, string personId) where T : Core.Models.Entities.AgienceEntity
+
+        /// <summary>
+        /// Asynchronously retrieves a collection of owned records of type T based on specified criteria for a given personId.
+        /// </summary>
+        /// <typeparam name="T">The type of records to retrieve, constrained to be a subclass of BaseEntity.</typeparam>
+        /// <param name="criteria">A dictionary containing the criteria for filtering the records.</param>
+        /// <param name="personId">The identifier of the owner whose records are to be queried.</param>
+        /// <param name="includePublic">Indicates whether to include public records in the results.</param>
+        /// <param name="skip">An optional parameter to specify the number of records to skip.</param>
+        /// <param name="take">An optional parameter to specify the maximum number of records to retrieve.</param>
+        /// <returns>A task that represents the asynchronous operation, containing an enumerable collection of records of type T.</returns>
+        public async Task<IEnumerable<T>> QueryOwnedRecordsAsync<T>(
+            Dictionary<string, object> criteria,
+            string personId,
+            bool includePublic = false,
+            int? skip = null,
+            int? take = null) where T : OwnedEntity, new()
         {
-            if (newRecord == null)
+            if (criteria == null || !criteria.Any())
+                throw new ArgumentException("Criteria cannot be null or empty.", nameof(criteria));
+            if (string.IsNullOrWhiteSpace(personId))
+                throw new ArgumentException("Person ID cannot be null or empty.", nameof(personId));           
+
+            var query = _dbContext.Set<T>().AsQueryable();
+            var predicate = PredicateBuilder.New<T>(true); // Start with 'true' for building AND conditions
+
+            // Apply criteria
+            foreach (var kvp in criteria)
             {
-                throw new InvalidOperationException("record is null");
+                var property = typeof(T).GetProperty(kvp.Key);
+                if (property == null)
+                    throw new InvalidOperationException($"Property '{kvp.Key}' does not exist on type '{typeof(T).Name}'.");
+
+                var value = kvp.Value;
+                predicate = predicate.And(x => EF.Property<object>(x, kvp.Key).Equals(value));
             }
 
-            if (string.IsNullOrWhiteSpace(newRecord.Id))
+            // Apply ownership filter
+            if (includePublic && typeof(PublicEntity).IsAssignableFrom(typeof(T)))
             {
-                throw new InvalidOperationException("recordId is invalid");
+                predicate = predicate.And(x =>
+                    EF.Property<string>(x, "OwnerId") == personId ||
+                    EF.Property<Visibility>(x, "Visibility") == Visibility.Public);
             }
-
-            var oldRecord = await GetRecordByIdAsPersonAsync<T>(newRecord.Id, personId);
-
-            // TODO: Here we need to check if the person has the right to update the record, not just query it.
-
-            if (oldRecord == null) // Currently we only return the record if the person owns it. Maybe we should change the name to GetRecordByIdAsOwnerAsync.
-            {
-                throw new InvalidOperationException("record not found");
-            }
-
-            if (newRecord is Agency newAgency && oldRecord is Agency oldAgency)
-            {
-                newAgency.DirectorId = oldAgency.DirectorId;
-            }
-
-            else if (newRecord is Agent newAgent && oldRecord is Agent oldAgent)
-            {
-                newAgent.AgencyId = oldAgent.AgencyId;                
-            }
-
-            else if (newRecord is AgentConnection newAgentConnection && oldRecord is AgentConnection oldAgentConnection)
-            {
-                if (newAgentConnection.AgentId != null && newAgentConnection.AgentId != oldAgentConnection.AgentId)
-                {
-                    throw new InvalidOperationException("AgentId cannot be changed");
-                }
-                if (newAgentConnection.PluginConnectionId != null && newAgentConnection.PluginConnectionId != oldAgentConnection.PluginConnectionId)
-                {
-                    throw new InvalidOperationException("PluginConnectionId cannot be changed");
-                }
-
-                newAgentConnection.AgentId = oldAgentConnection.AgentId;
-                newAgentConnection.PluginConnectionId = oldAgentConnection.PluginConnectionId;
-            }
-
-            else if (newRecord is Authorizer newAuthorizer && oldRecord is Authorizer oldAuthorizer)
-            {
-                newAuthorizer.ManagerId = oldAuthorizer.ManagerId;
-            }
-
-            else if (newRecord is PluginConnection newConnection && oldRecord is PluginConnection oldConnection)
-            {
-                newConnection.PluginId = oldConnection.PluginId;
-            }
-
-            else if (newRecord is Function newFunction && oldRecord is Function oldFunction)
-            {
-                // Nothing to update
-            }
-
-            else if (newRecord is Host newHost && oldRecord is Host oldHost)
-            {
-                newHost.OperatorId = oldHost.OperatorId;
-            }
-
-            else if (newRecord is Key newKey && oldRecord is Key oldKey)
-            {
-                newKey.HostId = oldKey.HostId;
-                newKey.CreatedDate = oldKey.CreatedDate;
-                newKey.SaltedValue = oldKey.SaltedValue;
-            }
-
-            else if (newRecord is Person newPerson && oldRecord is Person oldPerson)
-            {
-                throw new NotImplementedException();
-            }
-
-            else if (newRecord is Plugin newPlugin && oldRecord is Plugin oldPlugin)
-            {
-                newPlugin.CreatorId = oldPlugin.CreatorId;
-            }
-
             else
             {
-                throw new InvalidOperationException("unsupported type");
+                predicate = predicate.And(x => EF.Property<string>(x, "OwnerId") == personId);
             }
 
-            _context.Entry(oldRecord).CurrentValues.SetValues(newRecord);
+            query = query.Where(predicate);
 
-            await _context.SaveChangesAsync();
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                 .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            //_logger.LogDebug($"QueryOwnedRecords query for {typeof(T).Name}: {query.Expression}");
+            return await query.ToListAsync();
         }
 
-        public async Task DeleteRecordAsPersonAsync<T>(string recordId, string personId) where T : Core.Models.Entities.AgienceEntity
+
+        /// <summary>
+        /// Asynchronously queries records from the database based on specified criteria, with optional pagination.
+        /// </summary>
+        /// <typeparam name="T">The entity type to query, which must inherit from <c>BaseEntity</c>.</typeparam>
+        /// <param name="criteria">A dictionary of property names and their corresponding values to filter the records.</param>
+        /// <param name="skip">The number of records to skip (for pagination purposes).</param>
+        /// <param name="take">The maximum number of records to take (for pagination purposes).</param>
+        /// <returns>A task that represents the asynchronous operation, containing a collection of records that match the specified criteria.</returns>
+        public async Task<IEnumerable<T>> QueryRecordsAsync<T>(Dictionary<string, object> criteria, int? skip = null, int? take = null) where T : BaseEntity, new()
+        {
+            if (criteria == null || !criteria.Any())
+            {
+                throw new ArgumentException("Criteria cannot be null or empty.", nameof(criteria));
+            }
+
+            var query = _dbContext.Set<T>().AsQueryable();
+            var predicate = PredicateBuilder.New<T>(true); // Start with 'true' to allow 'And' conditions
+
+            foreach (var kvp in criteria)
+            {
+                var property = typeof(T).GetProperty(kvp.Key);
+                if (property == null)
+                {
+                    throw new InvalidOperationException($"Property '{kvp.Key}' does not exist on type '{typeof(T).Name}'.");
+                }
+
+                var value = kvp.Value;
+                predicate = predicate.And(x => EF.Property<object>(x, kvp.Key).Equals(value));
+            }
+
+            query = query.Where(predicate);
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                 .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            //_logger.LogDebug($"QueryRecords query for {typeof(T).Name}: {query.Expression}");
+            return await query.ToListAsync();
+        }
+
+
+        /// <summary>
+        /// Asynchronously searches for owned records of type T based on the provided search fields and term.
+        /// </summary>
+        /// <typeparam name="T">The type of the entity that derives from BaseEntity.</typeparam>
+        /// <param name="searchFields">The fields to search against within the entity.</param>
+        /// <param name="searchTerm">The term to search for within the specified fields.</param>
+        /// <param name="personId">The ID of the person whose records are being searched.</param>
+        /// <param name="includePublic">Indicates whether to include 
+        public async Task<IEnumerable<T>> SearchOwnedRecordsAsync<T>(
+            IEnumerable<string> searchFields,
+            string searchTerm,
+            string personId,
+            bool includePublic = false,
+            int? skip = null,
+            int? take = null) where T : OwnedEntity, new()
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+                throw new ArgumentException("Search term cannot be null or empty.", nameof(searchTerm));
+            if (string.IsNullOrWhiteSpace(personId))
+                throw new ArgumentException("Person ID cannot be null or empty.", nameof(personId));
+                      
+
+            var query = _dbContext.Set<T>().AsQueryable();
+            var predicate = PredicateBuilder.New<T>(false);
+
+            foreach (var field in searchFields)
+            {
+                var property = typeof(T).GetProperty(field);
+                if (property == null || property.PropertyType != typeof(string))
+                    throw new InvalidOperationException($"Invalid search field: {field}");
+
+                predicate = predicate.Or(x => EF.Functions.Like(EF.Property<string>(x, field), $"%{searchTerm}%"));
+            }
+
+            query = query.Where(predicate);
+
+            if (includePublic && typeof(PublicEntity).IsAssignableFrom(typeof(T)))
+            {
+                query = query.Where(x =>
+                    EF.Property<string>(x, "OwnerId") == personId ||
+                    EF.Property<Visibility>(x, "Visibility") == Visibility.Public);
+            }
+            else
+            {
+                query = query.Where(x => EF.Property<string>(x, "OwnerId") == personId);
+            }
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                 .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+            //_logger.LogDebug($"SearchOwnedRecords query for {typeof(T).Name}: {query.Expression}");
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Asynchronously searches for records of type T in the database based on specified search fields and a search term.
+        /// The search is conducted by applying a "like" filter to the fields, and results can be paginated.
+        /// </summary>
+        /// <typeparam name="T">The type of the records to search, constrained to BaseEntity.</typeparam>
+        /// <param name="searchFields">A collection of field names to search within the entity.</param>
+        /// <param name="searchTerm">The term to search for within the specified fields.</param>
+        /// <param name="skip">The number of records to skip for pagination (optional).</param>
+        /// <param name="take">The number of records to take for pagination (optional).</param>
+        /// <returns>A task that represents the asynchronous operation, containing a collection of records that match the search criteria.</returns>
+        /// <exception cref="ArgumentException">Thrown when the search term is null or empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when an invalid search field is specified.</exception>
+        public async Task<IEnumerable<T>> SearchRecordsAsync<T>(
+            IEnumerable<string> searchFields,
+            string searchTerm,
+            int? skip = null,
+            int? take = null) where T : BaseEntity, new()
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                throw new ArgumentException("Search term cannot be empty.", nameof(searchTerm));
+            }
+
+            var query = _dbContext.Set<T>().AsQueryable();
+            var predicate = PredicateBuilder.New<T>(false);
+
+            foreach (var field in searchFields)
+            {
+                var property = typeof(T).GetProperty(field);
+                if (property == null || property.PropertyType != typeof(string))
+                {
+                    throw new InvalidOperationException($"Invalid search field: {field}");
+                }
+
+                predicate = predicate.Or(x => EF.Functions.Like(EF.Property<string>(x, field), $"%{searchTerm}%"));
+            }
+
+            query = query.Where(predicate);
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                 .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            //_logger.LogDebug($"Search query for {typeof(T).Name}: {query.Expression}");
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Retrieves all records of type T from the database asynchronously, 
+        /// applying optional pagination parameters for skipping and taking a specified number of records.
+        /// </summary>
+        /// <typeparam name="T">The type of the records to retrieve, which must inherit from BaseEntity.</typeparam>
+        /// <param name="skip">The number of records to skip (optional).</param>
+        /// <param name="take">The maximum number of records to take (optional).</param>
+        /// <returns>A task that represents the asynchronous operation, containing a collection of records of type T.</returns>
+        public async Task<IEnumerable<T>> GetAllRecordsAsync<T>(int? skip = null, int? take = null) where T : BaseEntity, new()
+        {
+            var query = _dbContext.Set<T>().AsQueryable();
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                 .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Asynchronously retrieves a collection of records of type T from the database based on the specified record IDs.
+        /// The method throws an exception if the provided record IDs are null or empty.
+        /// </summary>
+        /// <typeparam name="T">The type of the records to retrieve, which must inherit from BaseEntity and have a parameterless constructor.</typeparam>
+        /// <param name="recordIds">The collection of record IDs to filter the records by.</param>
+        /// <returns>A task that represents the asynchronous operation, with a value of an enumerable collection of records of type T.</returns>
+        public async Task<IEnumerable<T>> GetRecordsByIdsAsync<T>(IEnumerable<string> recordIds) where T : BaseEntity, new()
+        {
+            if (recordIds == null || !recordIds.Any())
+                throw new ArgumentException("Record IDs cannot be null or empty.", nameof(recordIds));
+
+            return await _dbContext.Set<T>()
+                .Where(x => recordIds.Contains(x.Id))
+                .OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null) // Nulls first
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate")) // Sort ascending by CreatedDate
+                .ToListAsync();
+        }
+
+
+
+        /// <summary>
+        /// Retrieves all records owned by the specified owner ID, with an option to include 
+        public async Task<IEnumerable<T>> GetAllOwnedRecordsAsync<T>(
+            string ownerId,
+            bool includePublic = false,
+            int? skip = null,
+            int? take = null) where T : OwnedEntity, new()
+        {
+            if (string.IsNullOrWhiteSpace(ownerId)) throw new ArgumentException("Owner ID cannot be null or whitespace.", nameof(ownerId));
+
+            var query = _dbContext.Set<T>().AsQueryable();
+
+            if (includePublic && IsPublic<T>())
+            {
+                query = query.Where(x => EF.Property<string>(x, "OwnerId") == ownerId || EF.Property<Visibility>(x, "Visibility") == Visibility.Public);
+            }
+            else
+            {
+                query = query.Where(x => EF.Property<string>(x, "OwnerId") == ownerId);
+            }
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Asynchronously retrieves a record of type <typeparamref name="T"/> by its identifier.
+        /// </summary>
+        /// <typeparam name="T">The type of the record that inherits from <see cref="BaseEntity"/>.</typeparam>
+        /// <param name="recordId">The identifier of the record to be retrieved.</param>
+        /// <returns>A task that represents the asynchronous operation, containing the record of type <typeparamref name="T"/> if found; otherwise, null.</returns>
+
+        public async Task<T?> GetRecordByIdAsync<T>(string id) where T : BaseEntity
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentException("The record ID cannot be null or whitespace.", nameof(id));
+            }
+
+            return await _dbContext.Set<T>().FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        /// <summary>
+        /// Asynchronously retrieves an owned record by its ID and the owner's person ID.
+        /// Validates the provided record ID and person ID, and checks for ownership of the entity type.
+        /// If specified, it can include 
+        public async Task<T?> GetOwnedRecordByIdAsync<T>(
+        string recordId,
+        string personId,
+        bool includePublic = false) where T : OwnedEntity, new()
         {
             if (string.IsNullOrWhiteSpace(recordId))
-            {
-                throw new InvalidOperationException("recordId is invalid");
-            }
-
-            var record = await GetRecordByIdAsPersonAsync<T>(recordId, personId);
-
-            if (record == null)
-            {
-                throw new InvalidOperationException("record not found");
-            }
-
-            if (record is Function function)
-            {
-                // Cascade delete
-                // TODO: Handle scenarios where a function is shared with other plugins that aren't owned by the person.
-                _context.PluginFunctions.RemoveRange(await _context.PluginFunctions.Where(pf => pf.FunctionId == function.Id).ToListAsync());
-
-            }
-
-            _context.Set<T>().Remove(record);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<Key?> GenerateHostKeyAsPersonAsync(string hostId, string name, JsonWebKey? jsonWebKey, string personId)
-        {
-
+                throw new ArgumentException("Record ID cannot be null or empty.", nameof(recordId));
             if (string.IsNullOrWhiteSpace(personId))
+                throw new ArgumentException("Person ID cannot be null or empty.", nameof(personId));
+
+            var query = _dbContext.Set<T>().AsQueryable();
+
+            if (includePublic && typeof(PublicEntity).IsAssignableFrom(typeof(T)))
             {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(hostId))
-            {
-                throw new InvalidOperationException("hostId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new InvalidOperationException("Name is required");
-            }
-
-            var host = await GetRecordByIdAsPersonAsync<Host>(hostId, personId);
-
-            if (host == null)
-            {
-                throw new InvalidOperationException("host not found");
-            }
-
-            var secret = HostSecretValidator.Random32ByteString();
-
-            var record = new Key
-            {
-                Name = name,
-                HostId = hostId,
-                IsActive = true,
-                CreatedDate = DateTime.UtcNow,
-                SaltedValue = HostSecretValidator.HashSecret(secret, HostSecretValidator.Random32ByteString())
-            };
-
-            record = await CreateRecordAsync(record);
-
-            if (string.IsNullOrWhiteSpace(record?.Id))
-            {
-                throw new InvalidDataException("record not created");
-            }
-
-            if (jsonWebKey == null)
-            {
-                record.Value = secret;
-                record.IsEncrypted = false;
+                query = query.Where(x =>
+                    x.Id == recordId &&
+                    (EF.Property<string>(x, "OwnerId") == personId ||
+                     EF.Property<Visibility>(x, "Visibility") == Visibility.Public));
             }
             else
             {
-                record.Value = HostSecretValidator.EncryptWithJsonWebKey(secret, jsonWebKey);
-                record.IsEncrypted = true;
+                query = query.Where(x =>
+                    x.Id == recordId &&
+                    EF.Property<string>(x, "OwnerId") == personId);
             }
 
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            //_logger.LogDebug($"GetOwnedRecordById query for {typeof(T).Name}: {query.Expression}");
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetOwnedParentIdsAsync<TParent>(
+            string personId,
+            bool includePublic = false
+        ) where TParent : OwnedEntity, new()
+        {
+            var query = _dbContext.Set<TParent>().AsQueryable();
+
+            query = query.Where(p => EF.Property<string>(p, "OwnerId") == personId);
+
+            if (includePublic && typeof(PublicEntity).IsAssignableFrom(typeof(TParent)))
+            {
+                query = query.Where(p => EF.Property<Visibility>(p, "Visibility") == Visibility.Public);
+            }
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            return await query.Select(p => p.Id).Distinct().ToListAsync();
+        }
+
+        public async Task<IEnumerable<string>> GetChildIdsFromJoinAsync<TJoin>(
+            string parentForeignKey,
+            IEnumerable<string> parentIds,
+            string childForeignKey
+        ) where TJoin : BaseEntity, new()
+        {
+            if (parentIds == null || !parentIds.Any())
+                return Enumerable.Empty<string>();
+
+            var query = _dbContext.Set<TJoin>()
+                .Where(j => parentIds.Contains(EF.Property<string>(j, parentForeignKey)));
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            return await query.Select(j => EF.Property<string>(j, childForeignKey)).Distinct().ToListAsync();
+        }
+
+        public async Task<IEnumerable<TChild>> GetFilteredChildrenAsync<TChild>(
+            IEnumerable<string> childIds,
+            string? searchTerm = null,
+            IEnumerable<string>? searchFields = null,
+            int? skip = null,
+            int? take = null
+        ) where TChild : BaseEntity, new()
+        {
+            if (childIds == null || !childIds.Any())
+                return Enumerable.Empty<TChild>();
+
+            var query = _dbContext.Set<TChild>().Where(c => childIds.Contains(c.Id));
+
+            if (!string.IsNullOrEmpty(searchTerm) && searchFields != null && searchFields.Any())
+            {
+                var searchPredicate = PredicateBuilder.New<TChild>(false);
+
+                foreach (var field in searchFields)
+                {
+                    var property = typeof(TChild).GetProperty(field);
+                    if (property == null || property.PropertyType != typeof(string))
+                        throw new InvalidOperationException($"Invalid search field: {field}");
+
+                    searchPredicate = searchPredicate.Or(c =>
+                        EF.Functions.Like(EF.Property<string>(c, field), $"%{searchTerm}%"));
+                }
+
+                query = query.Where(searchPredicate);
+            }
+
+            query = query.OrderBy(x => EF.Property<DateTime?>(x, "CreatedDate") == null)
+                .ThenBy(x => EF.Property<DateTime?>(x, "CreatedDate"));
+
+            query = ApplyPagination(query, skip, take);
+
+            return await query.ToListAsync();
+        }
+
+
+
+        // *** UPDATE OPERATIONS *** //
+
+        /// <summary>
+        /// Asynchronously updates a record in the database.
+        /// </summary>
+        /// <typeparam name="T">The type of the record, constrained to BaseEntity.</typeparam>
+        /// <param name="record">The record to be updated.</param>
+        /// <returns>The updated record.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the record is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when the record ID is null or whitespace.</exception>
+        public async Task<T> UpdateRecordAsync<T>(T record) where T : BaseEntity, new()
+        {
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            
+            if (string.IsNullOrWhiteSpace(record.Id)) throw new InvalidOperationException("Record ID cannot be null or whitespace.");
+
+            if (record.CreatedDate != null) throw new InvalidOperationException("CreatedDate must be null for an update.");
+                        
+            var dbRecord = await GetRecordByIdAsync<T>(record.Id);
+
+            // TODO: Verify we got back the same record
+
+            record.CreatedDate = dbRecord?.CreatedDate;            
+
+            await _dbContext.SaveEntityAsync(record, false);
+            _logger.LogInformation($"Updated {typeof(T).Name} record with ID: {record.Id}");
             return record;
         }
 
-        public async Task<IEnumerable<Plugin>> FindPluginsAsPersonAsync(string searchTerm, bool includePublic, string personId)
+        /// <summary>
+        /// Asynchronously updates a collection of records in the database.
+        /// </summary>
+        /// <typeparam name="T">The type of the records, which must derive from BaseEntity.</typeparam>
+        /// <param name="records">An IEnumerable of records to be updated.</param>
+        /// <returns>An IEnumerable of the updated records.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the records collection is null or empty.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when a record ID is null or whitespace.</exception>
+        public async Task<IEnumerable<T>> UpdateRecordsAsync<T>(IEnumerable<T> records) where T : BaseEntity, new()
         {
-            if (string.IsNullOrWhiteSpace(personId))
+            if (records == null || !records.Any()) throw new ArgumentNullException(nameof(records));
+
+            var recordDict = new Dictionary<string, T>();            
+
+            foreach (var record in records)
             {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(searchTerm) || searchTerm.Length < 3)
-            {
-                throw new InvalidOperationException("searchTerm is invalid");
-            }
-
-            // Trigram similarity search query for the name with the additional filter
-            var trigramQuery = _context.Plugins
-                .Where(p => !string.IsNullOrEmpty(p.Name)
-                            && EF.Functions.TrigramsSimilarity(p.Name, searchTerm) > 0.3
-                            && (p.CreatorId == personId || (includePublic && p.Visibility == Core.Models.Entities.Visibility.Public)));
-
-            var queryResults = await trigramQuery
-                .OrderByDescending(p => EF.Functions.TrigramsSimilarity(p.Name ?? string.Empty, searchTerm))
-                .ToListAsync();
-
-            _logger.LogInformation("FindPluginsAsPersonAsync: Found {0} plugins", queryResults.Count);
-
-            return queryResults;
-        }
-
-
-
-        public async Task AddPluginToHostAsPersonAsync(string hostId, string pluginId, string personId)
-        {
-            if (string.IsNullOrWhiteSpace(hostId))
-            {
-                throw new InvalidOperationException("hostId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginId))
-            {
-                throw new InvalidOperationException("pluginId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            var host = await GetRecordByIdAsPersonAsync<Host>(hostId, personId);
-
-            if (host == null)
-            {
-                throw new InvalidOperationException("Host not found");
-            }
-
-            var plugin = await _context.Plugins
-                .FirstOrDefaultAsync(p => p.Id == pluginId && (p.CreatorId == personId || p.Visibility == Core.Models.Entities.Visibility.Public));
-
-            if (plugin == null)
-            {
-                throw new InvalidOperationException("Plugin not found");
-            }
-
-            var hostPlugin = new HostPlugin
-            {
-                HostId = hostId,
-                PluginId = pluginId
-            };
-
-            _context.HostPlugins.Add(hostPlugin);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task RemovePluginFromHostAsPersonAsync(string hostId, string pluginId, string personId)
-        {
-            if (string.IsNullOrWhiteSpace(hostId))
-            {
-                throw new InvalidOperationException("hostId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginId))
-            {
-                throw new InvalidOperationException("pluginId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            var hostPlugin = await _context.HostPlugins.Include(hp => hp.Host)
-                .FirstOrDefaultAsync(hp =>
-                    hp.Host != null && hp.Host.OperatorId == personId &&
-                    hp.HostId == hostId && hp.PluginId == pluginId
-                );
-
-            if (hostPlugin == null)
-            {
-                throw new InvalidOperationException("HostPlugin not found");
-            }
-
-            _context.HostPlugins.Remove(hostPlugin);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task AddPluginToAgentAsPersonAsync(string agentId, string pluginId, string personId)
-        {
-            if (string.IsNullOrWhiteSpace(agentId))
-            {
-                throw new InvalidOperationException("agentId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginId))
-            {
-                throw new InvalidOperationException("pluginId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            var agent = await GetRecordByIdAsPersonAsync<Agent>(agentId, personId);
-
-            if (agent == null)
-            {
-                throw new InvalidOperationException("Agent not found");
-            }
-
-            var plugin = await _context.Plugins
-                .FirstOrDefaultAsync(p => p.Id == pluginId && (p.CreatorId == personId || p.Visibility == Core.Models.Entities.Visibility.Public));
-
-            if (plugin == null)
-            {
-                throw new InvalidOperationException("Plugin not found");
-            }
-
-            var agentPlugin = new AgentPlugin
-            {
-                AgentId = agentId,
-                PluginId = pluginId
-            };
-
-            _context.AgentPlugins.Add(agentPlugin);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task RemovePluginFromAgentAsPersonAsync(string agentId, string pluginId, string personId)
-        {
-            if (string.IsNullOrWhiteSpace(agentId))
-            {
-                throw new InvalidOperationException("agentId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginId))
-            {
-                throw new InvalidOperationException("pluginId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            var agentPlugin = await _context.AgentPlugins.Include(ap => ap.Agent).ThenInclude(a => a.Agency)
-                .FirstOrDefaultAsync(ap =>
-                    ap.Agent != null && ap.Agent.Agency != null && ap.Agent.Agency.DirectorId == personId &&
-                    ap.AgentId == agentId && ap.PluginId == pluginId
-                );
-
-            if (agentPlugin == null)
-            {
-                throw new InvalidOperationException("AgentPlugin not found");
-            }
-
-            _context.AgentPlugins.Remove(agentPlugin);
-
-            await _context.SaveChangesAsync();
-        }
-
-
-        public async Task<T?> GetRecordByIdAsync<T>(string recordId) where T : Core.Models.Entities.AgienceEntity
-        {
-            if (typeof(T) == typeof(Host))
-            {
-                return await _context.Set<T>().Include("Keys").FirstOrDefaultAsync(h => h.Id == recordId);
-            }
-
-            return await _context.Set<T>().FindAsync(recordId);
-        }
-
-        public async Task<T?> CreateRecordAsync<T>(T record) where T : Core.Models.Entities.AgienceEntity
-        {
-            if (!string.IsNullOrWhiteSpace(record.Id))
-            {
-                throw new InvalidOperationException("recordId is invalid");
-            }
-
-            record.Id = _idProvider.GenerateId(typeof(T).Name);
-
-            _context.Set<T>().Add(record);
-
-            await _context.SaveChangesAsync();
-
-            return record;
-        }
-
-        public async Task UpdateRecordAsync<T>(T record, CancellationToken cancellationToken) where T : Core.Models.Entities.AgienceEntity
-        {
-            if (string.IsNullOrWhiteSpace(record.Id))
-            {
-                throw new InvalidOperationException("recordId is invalid");
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw new TaskCanceledException();
-            }
-
-            _context.Set<T>().Update(record);
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<Person?> GetPersonByExternalProviderIdAsync(string providerId, string providerPersonId, CancellationToken cancellationToken)
-        {
-            return await _context.People.FirstOrDefaultAsync(p => p.ProviderId == providerId && p.ProviderPersonId == providerPersonId, cancellationToken);
-        }
-
-        public async Task<bool> VerifyHostSourceTargetRelationships(string hostId, string? sourceId, string? targetAgencyId, string? targetAgentId)
-        {
-            // hostId is never null
-            // sourceId is null, Agency Id, or Agent Id
-            // An Agency may only connect with an Agent within the same Agency
-            // An Agent may only connect with an Agent within the same Agency or with its Agency
-            // An Agent may not connect with itself
-            // The Host must be related to the sourceId during WRITE
-            // The Host must be related to the target during SUBSCRIBE
-
-            // Validate input parameters
-            if (string.IsNullOrEmpty(hostId) || // Host is always required
-                (string.IsNullOrEmpty(targetAgencyId) && string.IsNullOrEmpty(targetAgentId)) || // Must have a target
-                (!string.IsNullOrEmpty(targetAgencyId) && !string.IsNullOrEmpty(targetAgentId))) // Must not have two targets
-            {
-                return false;
-            }
-
-            IQueryable<Agent> query = _context.Agents
-                .Include(a => a.Agency)
-                .Include(a => a.Host);
-
-            if (!string.IsNullOrEmpty(sourceId))
-            {
-                if (!string.IsNullOrEmpty(targetAgencyId))
+                if (string.IsNullOrWhiteSpace(record.Id))
                 {
-                    // Ensure the source Agent is related to the Host and target Agency
-                    query = query.Where(a =>
-                        a.AgencyId == targetAgencyId &&
-                        a.HostId == hostId &&
-                        a.Id == sourceId);
+                    throw new InvalidOperationException("Record ID must not be null or whitespace.");
                 }
-                else if (!string.IsNullOrEmpty(targetAgentId))
+
+                if (record.CreatedDate == null)
                 {
-                    // Ensure the source and target Agents are in the same Agency and related to the Host
-                    query = query.Where(a =>
-                        (a.Id == targetAgentId && a.HostId == hostId && a.Id != sourceId && a.AgencyId == (a.AgencyId)) ||
-                        (a.HostId == hostId && a.Id == sourceId && a.Agency != null && a.Agency.Agents.Any(ag => ag.Id == targetAgentId && ag.AgencyId == a.AgencyId)));
+                    throw new InvalidOperationException("CreatedDate must be null for an update.");
                 }
+
+                recordDict.Add(record.Id, record);
             }
-            else
+
+            foreach (var dbRecord in await GetRecordsByIdsAsync<T>(recordDict.Keys))
             {
-                if (!string.IsNullOrEmpty(targetAgencyId))
+                // TODO: Verify we got all the same records back.
+
+                if (dbRecord.CreatedDate == null)
                 {
-                    // Ensure the Host is related to the target Agency
-                    query = query.Where(a =>
-                        a.AgencyId == targetAgencyId &&
-                        a.HostId == hostId);
-                }
-                else if (!string.IsNullOrEmpty(targetAgentId))
-                {
-                    // Ensure the Host is related to the target Agent
-                    query = query.Where(a =>
-                        a.Id == targetAgentId &&
-                        a.HostId == hostId);
+                    recordDict[dbRecord.Id].CreatedDate = dbRecord.CreatedDate;
                 }
             }
 
-            var queryResult = await query.ToListAsync();
+            await _dbContext.SaveEntitiesAsync(records, false);
 
-            // If there is exactly one valid relationship, return true
-            if (queryResult.Count == 1)
-            {
-                return true;
-            }
-
-            // If there are multiple relationships, ensure they all belong to the same Agency
-            if (queryResult.Count >= 2)
-            {
-                string? agencyId = null;
-
-                foreach (var record in queryResult)
-                {
-                    if (record.Agency?.Id == null)
-                    {
-                        return false;
-                    }
-                    else if (agencyId == null)
-                    {
-                        agencyId = record.Agency.Id;
-                    }
-                    else if (agencyId != record.Agency.Id)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
-
-            return false;
+            _logger.LogInformation($"Updated {records.Count()} {typeof(T).Name} records.");
+            return records;
         }
 
-        public async Task<Core.Models.Entities.Host> GetHostByIdNoTrackingAsync(string hostId)
+        // *** DELETE OPERATIONS *** //
+
+        /// <summary>
+        /// Asynchronously deletes a record of type T from the database given its record ID.
+        /// </summary>
+        /// <typeparam name="T">The type of the record, which must inherit from BaseEntity.</typeparam>
+        /// <param name="recordId">The ID of the record to be deleted.</param>
+        /// <returns>A task that represents the asynchronous operation, containing a boolean value indicating whether the deletion was successful.</returns>
+        /// <exception cref="ArgumentException">Thrown when the record ID is null or whitespace.</exception>
+        public async Task<bool> DeleteRecordAsync<T>(string recordId) where T : BaseEntity, new()
         {
-            var host = await _context.Hosts.AsNoTracking().FirstOrDefaultAsync(h => h.Id == hostId);
-            return _mapper.Map<Core.Models.Entities.Host>(host);
+            if (string.IsNullOrWhiteSpace(recordId)) throw new ArgumentException("Record ID cannot be null or whitespace.", nameof(recordId));
+
+            var record = await GetRecordByIdAsync<T>(recordId);
+            if (record == null) return false;
+
+            _dbContext.Set<T>().Remove(record);
+            await _dbContext.SaveChangesAsync();
+
+            _logger.LogInformation($"Deleted {typeof(T).Name} record with ID: {recordId}");
+            return true;
         }
 
-        public async Task<IEnumerable<Core.Models.Entities.Plugin>> GetPluginsForHostIdNoTrackingAsync(string hostId)
+        /// <summary>
+        /// Deletes a collection of records identified by their IDs from the database asynchronously.
+        /// </summary>
+        /// <typeparam name="T">The type of the entity that extends BaseEntity.</typeparam>
+        /// <param name="recordIds">An enumerable collection of record IDs to be deleted.</param>
+        /// <returns>Task that represents the asynchronous operation, containing true if records were deleted, otherwise false.</returns>
+        /// <exception cref="ArgumentException">Thrown when the recordIds parameter is null or empty.</exception>
+        public async Task<bool> DeleteRecordsAsync<T>(IEnumerable<string> recordIds) where T : BaseEntity, new()
         {
-            var plugins = await _context.HostPlugins.AsNoTracking().Where(hp => hp.HostId == hostId).Include(hp => hp.Plugin).ThenInclude(p => p.PluginFunctions).ThenInclude(pf => pf.Function).Select(hp => hp.Plugin).ToListAsync();
-            return _mapper.Map<IEnumerable<Core.Models.Entities.Plugin>>(plugins);
-        }
+            if (recordIds == null || !recordIds.Any()) throw new ArgumentException("Record IDs cannot be null or empty.", nameof(recordIds));
 
-        public async Task<IEnumerable<Core.Models.Entities.Agent>> GetAgentsForHostIdNoTrackingAsync(string hostId)
-        {
-            var agents = await _context.Agents.AsNoTracking().Where(a => a.HostId == hostId).Include(a => a.Agency).Include(a => a.Plugins).ThenInclude(p => p.PluginFunctions).ThenInclude(pf => pf.Function).ToListAsync();
-            return _mapper.Map<IEnumerable<Core.Models.Entities.Agent>>(agents);
-        }
+            var records = await GetRecordsByIdsAsync<T>(recordIds);
+            if (!records.Any()) return false;
 
-        public async Task<IEnumerable<PluginConnection>> GetPluginConnectionsForAgentAsPersonAsync(string agentId, string personId)
-        {
-            return await _context.PluginConnections
-                        .Include(pc => pc.Plugin)
-                        .Where(pc => _context.AgentPlugins.Any(ap => ap.AgentId == agentId && ap.PluginId == pc.PluginId))
-                        .ToListAsync();
-        }
+            _dbContext.Set<T>().RemoveRange(records);
+            await _dbContext.SaveChangesAsync();
 
-        public async Task UpsertAgentConnectionAsPersonAsync(string agentId, string pluginConnectionId, string? authorizerId, string? credentialId, string personId)
-        {
-            if (string.IsNullOrWhiteSpace(agentId))
-            {
-                throw new InvalidOperationException("agentId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(pluginConnectionId))
-            {
-                throw new InvalidOperationException("pluginConnectionId is invalid");
-            }
-
-            if (string.IsNullOrWhiteSpace(personId))
-            {
-                throw new InvalidOperationException("personId is invalid");
-            }
-
-            var agent = await GetRecordByIdAsPersonAsync<Agent>(agentId, personId);
-
-            if (agent == null)
-            {
-                throw new InvalidOperationException("Agent not found or access denied.");
-            }
-
-            var pluginConnection = await _context.PluginConnections.FirstOrDefaultAsync(pc => pc.Id == pluginConnectionId && (pc.Plugin.CreatorId == personId || pc.Plugin.Visibility == Core.Models.Entities.Visibility.Public));
-
-            if (pluginConnection == null)
-            {
-                throw new InvalidOperationException("PluginConnection not found or access denied.");
-            }
-
-            var existingConnection = await GetAgentConnectionAsPersonAsync(agentId, pluginConnectionId, personId);
-
-            if (existingConnection == null)
-            {
-                _context.AgentConnections.Add(new AgentConnection
-                {
-                    AgentId = agentId,
-                    PluginConnectionId = pluginConnectionId,
-                    AuthorizerId = authorizerId,
-                    CredentialId = credentialId,
-                    Id = _idProvider.GenerateId(nameof(AgentConnection))
-                });
-            }
-            else
-            {
-                existingConnection.AuthorizerId = authorizerId;
-                existingConnection.CredentialId = credentialId;
-                _context.AgentConnections.Update(existingConnection);
-            }
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<AgentConnection?> GetAgentConnectionAsPersonAsync(string agentId, string pluginConnectionId, string personId)
-        {
-            return await _context.AgentConnections.FirstOrDefaultAsync(ac => ac.AgentId == agentId && ac.PluginConnectionId == pluginConnectionId);
-        }
-
-        public async Task<IEnumerable<Function>> GetFunctionsForAgentAsPersonAsync(string agentId, string personId)
-        {
-            // Ensure the person is the Agent Director
-            var agent = await _context.Agents
-                .Include(a => a.Agency)
-                .FirstOrDefaultAsync(a => a.Id == agentId && a.Agency != null && a.Agency.DirectorId == personId);
-
-            if (agent == null)
-            {
-                _logger.LogWarning("Agent not found or person does not have access. AgentId: {AgentId}, PersonId: {PersonId}", agentId, personId);
-                return Enumerable.Empty<Function>();
-            }
-
-            // Get the functions loaded to the agent via PluginFunction-Plugin-AgentPlugin-Agent
-            var functions = await _context.Functions
-                .Include(f => f.PluginFunctions)
-                .ThenInclude(pf => pf.Plugin)
-                .ThenInclude(p => p.Agents)
-                .Where(f => f.PluginFunctions.Any(pf => pf.Plugin != null && pf.Plugin.Agents.Any(a => a.Id == agentId)))
-                .ToListAsync();
-
-            /*
-            // Unmap the Plugin property for each function
-            foreach (var function in functions)
-            {
-                foreach (var pluginFunction in function.PluginFunctions)
-                {
-                    pluginFunction.Plugin.Functions = null; // Avoid circular reference
-                }
-            }*/
-
-            return functions;
-        }
-
-        public Task<string?> GetHostIdForAgentIdNoTrackingAsync(string agentId)
-        {
-            return _context.Agents.AsNoTracking().Where(a => a.Id == agentId).Select(a => a.HostId).FirstOrDefaultAsync();
-
+            _logger.LogInformation($"Deleted {records.Count()} {typeof(T).Name} records.");
+            return true;
         }
     }
 }

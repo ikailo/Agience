@@ -1,0 +1,192 @@
+﻿@using Agience.Authority.Manage.Models
+@using Agience.Core.Models.Entities.Abstract
+@using Agience.Authority.Manage.Services
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@implements IDisposable
+
+@typeparam TEntity where TEntity : NamedEntity, new()
+
+<MudTabPanel Text="Details">
+    <MudContainer Class="pt-5">
+        <MudGrid>
+            @foreach (var field in Fields)
+            {
+                <MudItem xs="12" sm="6">
+                    @switch (field.Type)
+                    {
+                        case FieldType.Checkbox:
+                            <MudCheckBox Label="@field.Label"
+                                         Value="@(field.GetValue(_record) as bool? ?? false)"
+                                         ValueChanged="(bool value) => OnFieldValueChanged(field, value)"
+                                         Disabled="@field.ReadOnly" />
+                            break;
+
+                        case FieldType.Text:
+                            <MudTextField Label="@field.Label"
+                                          Value="@(field.GetValue(_record)?.ToString() ?? string.Empty)"
+                                          ValueChanged="(string value) => OnFieldValueChanged(field, value)"
+                                          Disabled="@field.ReadOnly"
+                                          Placeholder="@field.Placeholder"
+                                          UserAttributes="@(new(){{"data-lpignore","true"}})" />
+                            break;
+
+                        case FieldType.DropDown:
+                            <MudSelect Label="@field.Label"
+                                       Value="@(field.GetValue(_record)?.ToString() ?? string.Empty)"
+                                       ValueChanged="(string value) => OnFieldValueChanged(field, value)"
+                                       Disabled="@field.ReadOnly">
+                                @foreach (var option in field.DropDownOptions)
+                                {
+                                    <MudSelectItem Value="@option.Key">@option.Value</MudSelectItem>
+                                }
+                            </MudSelect>
+                            break;
+
+                        case FieldType.MultiSelect:
+                            <MudSelect Label="@field.Label"
+                                       T="string"
+                                       MultiSelection="true"
+                                       SelectedValues="@(field.GetValue(_record) as List<string> ?? new List<string>())"
+                                       SelectedValuesChanged="values => OnFieldValueChanged(field, values)"
+                                       Disabled="@field.ReadOnly">
+                                @foreach (var option in field.DropDownOptions)
+                                {
+                                    <MudSelectItem Value="@option.Key">@option.Value</MudSelectItem>
+                                }
+                            </MudSelect>
+                            break;
+
+                        case FieldType.Lookup:
+                            <LookupField Field="@field"
+                                         Record="@_record"
+                                         OnRecordChanged="@StateHasChanged" />
+                            break;
+
+
+                        case FieldType.Button:
+                            <MudButton Class="mr-2 btn-primary"
+                                       Variant="Variant.Filled"
+                                       Disabled="@field.ReadOnly"
+                                       OnClick="() => HandleButtonClick(field, _record)">@field.Label</MudButton>
+                            break;
+
+                        case FieldType.Upload:
+                            <MudFileUpload T="IBrowserFile"
+                                           FilesChanged="(IBrowserFile value) => OnFieldValueChanged(field, value)">
+                                <ActivatorContent>
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               StartIcon="@Icons.Material.Filled.CloudUpload">
+                                        Upload File
+                                    </MudButton>
+                                </ActivatorContent>
+                            </MudFileUpload>
+                            break;
+
+
+
+                    }
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudContainer Class="d-flex justify-left mt-2 no-padding">
+            <MudButton Class="mr-2 btn-primary" Variant="Variant.Filled" OnClick="OnSave">Save</MudButton>
+            @if (_record?.Id != "new")
+            {
+                <MudButton Class="mr-2 btn-primary" Variant="Variant.Filled" OnClick="OnDelete">Delete</MudButton>
+            }
+        </MudContainer>
+    </MudContainer>
+</MudTabPanel>
+
+@code {
+    [Parameter] public List<FieldDefinition> Fields { get; set; } = new();
+    [Parameter] public Func<TEntity, Task<bool>>? OnSaveHook { get; set; }
+    [Parameter] public Func<TEntity, Task<bool>>? OnDeleteHook { get; set; }
+    [Parameter] public Func<FieldDefinition, TEntity, Task>? OnButtonClicked { get; set; }
+
+    [Inject] private ContextService _contextService { get; set; } = null!;
+    [Inject] private IDialogService _dialogService { get; set; } = null!;
+
+    private TEntity? _record;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contextService.ContextRecordIdChanged += OnContextRecordIdChanged;
+
+        await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _contextService.ContextRecordIdChanged -= OnContextRecordIdChanged;
+    }
+
+    private async Task OnContextRecordIdChanged(string? recordId)
+    {
+        _record = _contextService.Records.Cast<TEntity>().FirstOrDefault(r => r.Id == _contextService.ContextRecordId);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSave()
+    {
+        if (_record != null)
+        {
+            await _contextService.SaveRecordAsync(_record);
+            await _contextService.SetContext<TEntity>(_record.Id);
+        }
+    }
+
+    private async Task OnDelete()
+    {
+        if (_record?.Id != null && _record.Id != "new")
+        {
+            if (await ShowDeleteConfirmationDialog())
+            {
+                await _contextService.DeleteRecordAsync<TEntity>(_record.Id);
+                await _contextService.SetContext<TEntity>(_contextService.Records.Cast<TEntity>().FirstOrDefault()?.Id ?? "new");
+            }
+        }
+    }
+
+    private async Task<bool> ShowDeleteConfirmationDialog()
+    {
+        var parameters = new DialogParameters
+            {
+                ["Content"] = "Are you sure you want to delete this record?",
+                ["Title"] = "Confirm Delete"
+            };
+
+        var options = new DialogOptions
+            {
+                CloseButton = true
+            };
+
+        var dialog = _dialogService.Show<ConfirmationDialog>("Confirm", parameters, options);
+
+        var canceled = (await dialog.Result)?.Canceled;
+
+        return !canceled ?? false;
+    }
+
+    private async Task HandleButtonClick(FieldDefinition field, TEntity record)
+    {
+        if (OnButtonClicked != null)
+            await OnButtonClicked.Invoke(field, record);
+    }
+
+    private async Task OnFieldValueChanged(FieldDefinition field, object value)
+    {
+        if (_record != null)
+        {
+            field.SetValue(_record, value);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+
+
+}

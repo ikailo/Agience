@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Host = Agience.Authority.Models.Manage.Host;
-using Agience.Authority.Identity.Data.Adapters;
-using Agience.Authority.Models.Manage;
+using Agience.Authority.Identity.Data.Repositories;
 using AutoMapper;
-using System.Text.Json.Serialization;
+using Agience.Authority.Identity.Models;
+using Host = Agience.Authority.Identity.Models.Host;
+using ManageModel = Agience.Authority.Models.Manage;
+using Agience.Authority.Identity.Validators;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Agience.Authority.Identity.Controllers.Manage
 {
@@ -12,123 +13,305 @@ namespace Agience.Authority.Identity.Controllers.Manage
     [ApiController]
     public class HostController : ManageControllerBase
     {
+        private readonly RecordsRepository _repository;
         private readonly IMapper _mapper;
 
-        public HostController(IAgienceDataAdapter dataAdapter, ILogger<AgentController> logger, IMapper mapper)
-            : base(dataAdapter, logger)
+        public HostController(ILogger<HostController> logger, RecordsRepository repository, IMapper mapper)
+            : base(logger)
         {
+            _repository = repository;
             _mapper = mapper;
         }
 
-        [HttpGet("hosts")]
-        public async Task<ActionResult<IEnumerable<Host>>> GetHosts([FromQuery] bool p = false)
-        {
-            return await HandleGet(async () =>
-            {
-                var hosts = await _dataAdapter.GetRecordsAsPersonAsync<Models.Host>(PersonId, p);
-                return _mapper.Map<IEnumerable<Host>>(hosts);
-            });
-        }
-
-        [HttpGet("host/{id}")]
-        public async Task<ActionResult<Host>> GetHost(string id)
-        {
-            return await HandleGet(async () =>
-            {
-                var host = await _dataAdapter.GetRecordByIdAsPersonAsync<Models.Host>(id, PersonId);
-                return _mapper.Map<Host>(host);
-            });
-        }
+        // *** HOST *** //
 
         [HttpPost("host")]
-        public async Task<ActionResult> PostHost([FromBody] Host host)
+        public async Task<ActionResult<ManageModel.Host>> CreateHost([FromBody] Host host)
         {
             return await HandlePost(async () =>
             {
-                var modelHost = _mapper.Map<Models.Host>(host);
-                return await _dataAdapter.CreateRecordAsPersonAsync(modelHost, PersonId);                
-            }, nameof(GetHost));
+                var createdHost = await _repository.CreateRecordAsPersonAsync(_mapper.Map<Host>(host), PersonId);
+                return _mapper.Map<ManageModel.Host>(createdHost);
+            }, nameof(GetHostById), "hostId");
         }
 
-        [HttpPut("host")]
-        public async Task<IActionResult> PutHost([FromBody] Host host)
+        [HttpGet("hosts")]
+        public async Task<ActionResult<IEnumerable<ManageModel.Host>>> GetHosts([FromQuery] string? search = null, [FromQuery] bool all = false)
         {
-            return await HandlePut(async () =>
+            return await HandleGet(async () =>
             {
-                var modelHost = _mapper.Map<Models.Host>(host);
-                await _dataAdapter.UpdateRecordAsPersonAsync(modelHost, PersonId);
+                if (string.IsNullOrEmpty(search))
+                {
+                    var hosts = await _repository.GetRecordsAsPersonAsync<Host>(PersonId, all);
+                    return _mapper.Map<IEnumerable<ManageModel.Host>>(hosts);
+                }
+
+                var searchResults = await _repository.SearchRecordsAsPersonAsync<Host>(
+                    new[] { "Name", "Description" },
+                    search,
+                    PersonId,
+                    all
+                );
+                return _mapper.Map<IEnumerable<ManageModel.Host>>(searchResults);
             });
         }
 
-        [HttpDelete("host/{id}")]
-        public async Task<IActionResult> DeleteHost(string id)
+        [HttpGet("host/{hostId}")]
+        public async Task<ActionResult<ManageModel.Host>> GetHostById(string hostId)
+        {
+            return await HandleGet(async () =>
+            {
+                var host = await _repository.GetRecordByIdAsPersonAsync<Host>(hostId, PersonId);
+
+                if (host == null)
+                {
+                    throw new KeyNotFoundException("Host not found.");
+                }
+
+                return _mapper.Map<ManageModel.Host>(host);
+            });
+        }
+
+
+
+        [HttpPut("host/{hostId}")]
+        public async Task<IActionResult> UpdateHost(string hostId, [FromBody] Host host)
+        {
+            return await HandlePut(async () =>
+            {
+                if (host?.Id == null)
+                    throw new ArgumentNullException("Host Id is required.");
+
+                if (host.Id != null && !host.Id.Equals(hostId))
+                {
+                    throw new InvalidOperationException("If an Id is provided in the body, it must match the Id in the URL.");
+                }
+
+                await _repository.UpdateRecordAsPersonAsync(host, PersonId);
+            });
+        }
+
+        [HttpDelete("host/{hostId}")]
+        public async Task<IActionResult> DeleteHost(string hostId)
         {
             return await HandleDelete(async () =>
             {
-                await _dataAdapter.DeleteRecordAsPersonAsync<Models.Host>(id, PersonId);
+                var success = await _repository.DeleteRecordAsPersonAsync<Host>(hostId, PersonId);
+                if (!success)
+                {
+                    throw new KeyNotFoundException("Host not found or could not be deleted.");
+                }
             });
         }
 
-        // PLUGINS //
+        // *** HOST_PLUGIN //
 
-        [HttpPut("host/{hostId}/plugin/{pluginId}")]
-        public async Task<IActionResult> PutHostPlugin(string hostId, string pluginId)
+        [HttpGet("host/{hostId}/plugins")]
+        public async Task<ActionResult<IEnumerable<ManageModel.Plugin>>> GetPluginsForHost(string hostId)
+        {
+            return await HandleGet(async () =>
+            {
+                var plugins = await _repository.GetChildRecordsWithJoinAsPersonAsync<Host, Plugin, HostPlugin>("HostId", "PluginId", hostId, PersonId);
+                return _mapper.Map<IEnumerable<ManageModel.Plugin>>(plugins);
+            });
+        }
+
+        [HttpPost("host/{hostId}/plugin/{pluginId}")]
+        public async Task<IActionResult> AddPluginToHost(string hostId, string pluginId, bool all = false)
         {
             return await HandlePut(async () =>
             {
-                await _dataAdapter.AddPluginToHostAsPersonAsync(hostId, pluginId, PersonId);
+                var host = await _repository.GetRecordByIdAsPersonAsync<Host>(hostId, PersonId);
+
+                if (host == null)
+                    throw new KeyNotFoundException("Host not found.");
+
+                var plugin = await _repository.GetRecordByIdAsPersonAsync<Plugin>(pluginId, PersonId, all);
+
+                if (plugin == null)
+                    throw new KeyNotFoundException("Plugin not found.");
+
+                await _repository.CreateRecordAsSystemAsync(new HostPlugin
+                {
+                    HostId = hostId,
+                    PluginId = pluginId
+                });
             });
         }
 
         [HttpDelete("host/{hostId}/plugin/{pluginId}")]
-        public async Task<IActionResult> DeleteHostPlugin(string hostId, string pluginId)
-        {
-            return await HandlePut(async () =>
-            {
-                await _dataAdapter.RemovePluginFromHostAsPersonAsync(hostId, pluginId, PersonId);
-            });
-        }
-
-        // KEYS //
-
-        [HttpPost("host/{hostId}/key/generate")]
-        public async Task<ActionResult<Key>> GenerateHostKey(string hostId, [FromBody] GenerateKeyRequest generateKeyRequest)
-        {
-            _logger.LogInformation("Generating key for host {hostId}", hostId);
-
-            return await HandleGet(async () =>
-            {
-                var modelHostKey = await _dataAdapter.GenerateHostKeyAsPersonAsync(hostId, generateKeyRequest.Name, generateKeyRequest.JsonWebKey, PersonId);
-                return _mapper.Map<Key>(modelHostKey);
-            });
-        }
-
-        public class GenerateKeyRequest
-        {
-            [JsonPropertyName("name")]
-            public string Name { get; set; } = string.Empty;
-
-            [JsonPropertyName("json_web_key")]
-            public JsonWebKey? JsonWebKey { get; set; }
-        }
-
-        [HttpPut("key")]
-        public async Task<IActionResult> PutKey([FromBody] Key key)
-        {
-            return await HandlePut(async () =>
-            {
-                var modelHostKey = _mapper.Map<Models.Key>(key);
-                await _dataAdapter.UpdateRecordAsPersonAsync(modelHostKey, PersonId);
-            });
-        }
-
-        [HttpDelete("key/{id}")]
-        public async Task<IActionResult> DeleteKey(string id)
+        public async Task<IActionResult> RemovePluginFromHost(string hostId, string pluginId)
         {
             return await HandleDelete(async () =>
             {
-                await _dataAdapter.DeleteRecordAsPersonAsync<Models.Key>(id, PersonId);
+                var host = await _repository.GetRecordByIdAsPersonAsync<Host>(hostId, PersonId);
+
+                if (host == null)
+                    throw new KeyNotFoundException("Host not found.");
+
+                var hostPlugin = await _repository.QueryRecordsAsSystemAsync<HostPlugin>(
+                    new() { { "HostId", hostId }, { "PluginId", pluginId } }
+                );
+
+                if (!hostPlugin.Any())
+                    throw new InvalidOperationException("Plugin is not associated with Host.");
+
+                await _repository.DeleteRecordAsSystemAsync<HostPlugin>(hostPlugin.First().Id!);
             });
         }
+
+        // *** KEY *** //
+
+        [HttpPost("host/{hostId}/key/generate")]
+        public async Task<ActionResult<ManageModel.Key>> GenerateKeyForHost(string hostId, [FromBody] Key key, [FromQuery] JsonWebKey? jwk = null)
+        {
+            return await HandlePost(async () =>
+            {
+
+                if (string.IsNullOrEmpty(key.Name))
+                    throw new InvalidOperationException("Query parameter 'name' is required.");
+
+                var host = await _repository.GetRecordByIdAsPersonAsync<Host>(hostId, PersonId);
+
+                if (host == null)
+                    throw new KeyNotFoundException("Host not found.");
+
+                key.HostId = hostId;
+
+                var secret = HostSecretValidator.Random32ByteString();
+
+                key.SaltedValue = HostSecretValidator.HashSecret(secret, HostSecretValidator.Random32ByteString());
+
+                key = await _repository.CreateRecordAsSystemAsync(key);
+
+                if (jwk == null || string.IsNullOrEmpty(jwk.Kty))
+                {
+                    key.Value = secret;
+                    key.IsEncrypted = false;
+                }
+                else
+                {
+                    key.Value = HostSecretValidator.EncryptWithJsonWebKey(secret, jwk);
+                    key.IsEncrypted = true;
+                }
+
+                return _mapper.Map<ManageModel.Key>(key);
+
+            }, nameof(GetKeyById), "keyId");
+        }
+
+        [HttpGet("host/{hostId}/keys")]
+        public async Task<ActionResult<IEnumerable<ManageModel.Key>>> GetKeysForHost(string hostId)
+        {
+            return await HandleGet(async () =>
+            {
+                var keys = await _repository.GetChildRecordsAsPersonAsync<Host, Key>("HostId", hostId, PersonId);
+
+                foreach (var key in keys)
+                {
+                    // Secrets only get sent when the key is first generated
+                    key.SaltedValue = null;
+                }
+
+                return _mapper.Map<IEnumerable<ManageModel.Key>>(keys);
+            });
+        }
+
+        [HttpGet("key/{keyId}")]
+        [HttpGet("host/{hostId}/key/{keyId}")]
+        public async Task<ActionResult<ManageModel.Key>> GetKeyById(string keyId, string? hostId = null)
+        {
+            return await HandleGet(async () =>
+            {
+                Key? key = null;
+
+                if (!string.IsNullOrEmpty(hostId))
+                {
+                    key = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", hostId, keyId, PersonId);
+                }
+                else
+                {
+                    key = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", keyId, PersonId);
+                }
+
+                if (key == null)
+                    throw new KeyNotFoundException("Key not found.");
+
+                // Secrets only get sent when the key is first generated
+                key.SaltedValue = null;
+
+                return _mapper.Map<ManageModel.Key>(key);
+            });
+        }
+
+        [HttpPut("key/{keyId}")]
+        [HttpPut("host/{hostId}/key/{keyId}")]
+        public async Task<IActionResult> UpdateKey(string keyId, [FromBody] Key key, string? hostId = null)
+        {
+            return await HandlePut(async () =>
+            {
+                if (key?.Id == null)
+                    throw new ArgumentNullException("Key Id is required.");
+
+                if (key.Id != null && !key.Id.Equals(keyId))
+                {
+                    throw new InvalidOperationException("If an Id is provided in the body, it must match the Id in the URL.");
+                }
+
+                Key? dbkey = null;
+
+                if (!string.IsNullOrEmpty(hostId))
+                {
+                    if (key.HostId == null || key.HostId == hostId)
+                    {
+                        dbkey = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", hostId, keyId, PersonId);
+                    }
+                }
+                else
+                {
+                    dbkey = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", keyId, PersonId);
+                }
+
+                if (dbkey == null)
+                    throw new KeyNotFoundException("Key not found.");
+
+
+                await _repository.UpdateRecordAsSystemAsync(key);
+            });
+        }
+
+        [HttpDelete("key/{keyId}")]
+        [HttpDelete("host/{hostId}/key/{keyId}")]
+        public async Task<IActionResult> DeleteKey(string keyId, string? hostId = null)
+        {
+            return await HandleDelete(async () =>
+            {
+                Key? key = null;
+
+                if (!string.IsNullOrEmpty(hostId))
+                {
+                    // Check for key under a specific host
+                    key = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", hostId, keyId, PersonId);
+                }
+                else
+                {
+                    // Check for key without a specific host
+                    key = await _repository.GetChildRecordByIdAsPersonAsync<Host, Key>("HostId", keyId, PersonId);
+                }
+
+                if (key == null)
+                {
+                    throw new KeyNotFoundException("Key not found.");
+                }
+
+                var success = await _repository.DeleteRecordAsSystemAsync<Key>(key.Id);
+
+                if (!success)
+                {
+                    throw new KeyNotFoundException("Key not found or could not be deleted.");
+                }
+            });
+        }
+
     }
 }

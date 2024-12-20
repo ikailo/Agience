@@ -2,7 +2,7 @@
   "profiles": {
     "Debug": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "https://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "debug"
@@ -11,7 +11,7 @@
     },
     "Development": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "https://localhost:5001",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "development"
@@ -20,7 +20,7 @@
     },
     "Local": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "https://authority.local.agience.ai",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "local"

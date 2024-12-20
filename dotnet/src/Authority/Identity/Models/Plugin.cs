@@ -9,29 +9,17 @@ namespace Agience.Authority.Identity.Models
     [AutoMap(typeof(Authority.Models.Manage.Plugin), ReverseMap = true)]
     public class Plugin : Authority.Models.Manage.Plugin
     {
-        [JsonPropertyName("creator_id")]
-        public string CreatorId { get; set; } = string.Empty;
-
-        [ForeignKey("CreatorId")]
+        [ForeignKey(nameof(OwnerId))]
         [JsonIgnore]
-        public virtual Person? Creator { get; set; }
+        public virtual new Person? Owner { get; set; }
 
-        [JsonPropertyName("plugin_functions")]
-        public virtual ICollection<PluginFunction> PluginFunctions { get; set; } = new List<PluginFunction>();
+        [JsonPropertyName("functions")]
+        public virtual new List<Function> Functions { get; set; } = new();
 
-        [JsonIgnore]
-        public override List<Core.Models.Entities.Function> Functions => PluginFunctions.Select(pf => pf.Function).Where(f => f != null).Cast<Core.Models.Entities.Function>().ToList()!;
+        //[ForeignKey(nameof(PluginLibraryId))]
+        //[JsonIgnore]
+        //public virtual PluginLibrary PluginLibrary { get; set; } = new();
 
-        [JsonIgnore]
-        public virtual List<Host> Hosts { get; set; } = new List<Host>();
-
-        [JsonIgnore]
-        public virtual List<Agent> Agents { get; set; } = new List<Agent>();
-
-        [JsonPropertyName("connections")]
-        public virtual new List<PluginConnection> Connections { get; set; } = new List<PluginConnection>();
-
-        public NpgsqlTsVector DescriptionSearchVector { get; set; } = null!;
 
     }
 }
