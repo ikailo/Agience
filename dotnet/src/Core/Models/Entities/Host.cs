@@ -1,16 +1,16 @@
-﻿using System.Text.Json.Serialization;
+﻿using Agience.Core.Models.Entities.Abstract;
+using Agience.Core.Models.Enums;
+using System.Text.Json.Serialization;
 
 namespace Agience.Core.Models.Entities
 {
-    public class Host : AgienceEntity
+    public class Host : PublicEntity
     {
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
-
         [JsonPropertyName("agents")]
-        public virtual List<Agent> Agents { get; set; } = new List<Agent>();
+        public virtual List<Agent> Agents { get; set; } = new();
 
-        [JsonPropertyName("visibility")]
-        public Visibility Visibility { get; set; } = Visibility.Private;
+        [JsonPropertyName("plugins")]
+        public virtual List<Plugin> Plugins { get; set; } = new();
+
     }
 }

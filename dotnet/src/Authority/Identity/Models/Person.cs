@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Agience.Authority.Identity.Models
 {
+    [AutoMap(typeof(Core.Models.Entities.Person), ReverseMap = true)]
     [AutoMap(typeof(Authority.Models.Manage.Person), ReverseMap = true)]
     public class Person : Authority.Models.Manage.Person
     {
@@ -33,16 +34,25 @@ namespace Agience.Authority.Identity.Models
             return $"{provider}{SEPARATOR}{id}";
         }
 
+        [JsonPropertyName("agents")]
+        public virtual List<Agent> Agents { get; set; } = new();
+
         [JsonPropertyName("plugins")]
-        public virtual List<Plugin> Plugins { get; set; } = new List<Plugin>();
+        public virtual List<Plugin> Plugins { get; set; } = new();
+
+        //[JsonPropertyName("plugins_libraries")]
+        //public virtual List<PluginLibrary> PluginLibraries { get; set; } = new();
 
         [JsonPropertyName("hosts")]
-        public virtual List<Host> Hosts { get; set; } = new List<Host>();
+        public virtual List<Host> Hosts { get; set; } = new();
 
-        [JsonPropertyName("agencies")]
-        public virtual List<Agency> Agencies { get; set; } = new List<Agency>();
+        [JsonPropertyName("topics")]
+        public virtual List<Topic> Topics { get; set; } = new();
 
         [JsonPropertyName("authorizers")]
-        public virtual List<Authorizer> Authorizers { get; set; } = [];
+        public virtual List<Authorizer> Authorizers { get; set; } = new();
+        
+        [JsonPropertyName("connection")]
+        public virtual List<Connection> Connections { get; set; } = new();
     }
 }

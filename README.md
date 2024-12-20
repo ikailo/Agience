@@ -34,8 +34,94 @@ Agience is designed to be accessible to everyone, from developers and hobbyists 
 
 ### Preview Instance
 
-Visit the [Agience Preview Instance](https://preview.agience.ai) to explore the platform and to start building and deploying agents.
+### Would you like a one-on-one session to go through all this?  **Reach out via [email](mailto:connect@agience.ai) or via [Discord](https://discord.gg/fyWWqzeUKH) for real-time assistance.**
+
+Visit the [Agience Preview Instance](https://preview.agience.ai) to explore the platform and to start configuring agents.
+
+To see it in action, you will an Agience Host. The Host is a lightweight application that runs on your device and connects to the Authority. The vision of Agience is that there will be multiple Hosts available for different platforms and use cases.
+
+**First, create a Host**
+- Go to Hosts.
+- Add a host name. 
+- Fill in any value for "Redirect URIs" and "Post Logout Redirect URIs". (eg: foo, bar) There is a bug in the current version that requires these fields to be filled in every time.
+- Select Scope: "connect"
+- Click "SAVE".
+- Go to the "KEYS" tab.
+- Enter a key name and click "SAVE".
+- Copy the Host ID and Host Secret. This is the only time you will see the Host Secret, so make sure to save it in a secure location.
+
+Currently, there is only one Host app available [here](https://github.com/ikailo/Agience/tree/main/dotnet/src/Hosts/Console) and it can be created using Visual Studio by cloning and building the source code. In the future, we will provide a standalone installer for this Host.
+
+**Host Build Instructions**
+
+Prerequsites:
+  - [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/)
+  - An OpenAI API Key
+	
+1. **Clone the Repository**: Start by cloning the Agience repository.
+   ```bash
+   git clone https://github.com/ikailo/Agience.git
+   ```
+
+2. **Open the Solution**: Open the `/dotnet/Agience.sln` solution file in Visual Studio 2022 and find the `Agience.Hosts.Console` project (in Hosts folder).
+
+3. **Configure the Host**: Update user secrets for the Host by right-clicking on the `Agience.Hosts.Console` project and selecting `Manage User Secrets`. Add the following configuration:
+   ```plaintext
+   {	 
+	 "HostId": "<Your_Host_Id>",
+	 "HostSecret": "<Your_Host_Secret>",
+	 "AuthorityUri": "https://preview.agience.ai",
+	 "WorkspacePath": "<Choose_A_Local_Directory_Outside_The_Agience_Source_Code>"
+   }
+   ```
+You'll need to escape the backslashes in the `WorkspacePath` value, like this: `"C:\\Users\\YourName\\Documents\\AgienceWorkspace"`.
  
+4. **Run the Host**: Start the Host by running the `Agience.Hosts.Console` project in Visual Studio. The Host will connect to the Agience Preview Instance. The first time you run the Host, it will update the Authority with its Plugin information.
+
+5. **Create an Agent**: Go to Agents in the preview instance.
+	- Add a Name
+	- Select the Host you created
+	- Select the Executive Function "GetChatMessageContentsAsync"
+	- Click "SAVE"
+	- Go to "PLUGINS" tab. Select and Add a plugin (TimePlugin is a good start) 
+	 
+**All of the below steps are currently needed but will be made much easier in the future.**
+
+6. **Create an Authorizer**: Go to Authorizers in the preview instance.
+	- Add a Name "OpenAI API"
+	- Select Type: "API Key"
+	- Click "SAVE"
+
+7. **Create a Connection**: Go to Connections in the preview instance.
+	- Add a Name "OpenAI"
+	- Click "SAVE"
+	- Go to "AUTHORIZERS" tab. Select and Add the Authorizer you created.
+
+8. **Attach the Connection to the Plugin**
+	- Go to "Plugins" page.
+	- Choose "ChatCompletionPlugin"
+	- Go to "CONNECTIONS" tab.
+	- Select "GetChatMessageContentsAsync" and add the Connection you created. Click SAVE.
+
+9. Authorize the Agent to use the Connection
+	- Go to "Agents" page.
+	- Select the Agent you created in step 5.
+	- Go to "CONNECTIONS" tab.
+	- Select the Authorizer you created. Click "ENTER"
+	- Enter a valid API Key for OpenAI. Click "SAVE".
+
+**IMPORTANT NOTE: The API Key is NOT currently stored encrypted at rest. Even though the preview instance is secure, I strongly recommend you delete (overwrite) and disable it after you test. This is a high priority bug.**
+
+**All the above steps are a bit cumbersome and will be made easier in the future.**
+
+### FINALLY
+
+10. **Test the Agent**
+ - Re-start the `Agience.Hosts.Console` project in Visual Studio. The Host will connect to the Agience Preview Instance and start running the Agent. You can now test the Agent by sending a message to the Agent in the Preview Instance.
+ - Ask the agent what time it is and it should respond with the current time.
+
+### Running into an issue?  **Reach out via [email](mailto:connect@agience.ai) or via [Discord](https://discord.gg/fyWWqzeUKH) for real-time assistance.**
+
 ### Development Instance
 
 Prerequsites:
@@ -75,16 +161,7 @@ After running the initialization script, open the `/dotnet/Agience.sln` solution
 
 ## Complete the Configuration
 
-Now you’ll need to complete a few outstanding configurations in the `.env.development` files. These files are now located within the `Agience.Authority.Manage` and `Agience.Authority.Identity` directories and control API keys and other credentials.
-
-1. **Edit Agience.Authority.Manage Environment File**
-
-  - Obtain an [OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key) and set it in the `.env.development` file located in `Agience.Authority.Manage`.
-   ```plaintext   
-   HostOpenAiApiKey=<Your_OpenAI_API_Key>
-   ```
-
-2. **Edit Agience.Authority.Identity Environment File**  
+**Edit Agience.Authority.Identity Environment File**  
 
   - Obtain [Google OAuth2.0 Credentials](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred) for Server-side Web Apps.
 	- Enter `https://localhost:5001` for Authorized JavaScript origins.
@@ -109,17 +186,6 @@ Once the configuration is complete, you can start the necessary Docker services 
 .\docker-up.bat
 ```
 This script will bring up the required Docker containers, such as the database, message broker, and any other necessary services specified in the configuration.
-
----
-
-### Local Build
-
-The development build accesses the Agience stack on the `https://localhost:<port>` domain. This is good for debugging and testing locally.
-
-You can also run it locally using the `*.local.agience.ai` domains. This is an example of how it is intended to be hosted, however it does not support debugging directly.
-
-Run the `.\agience-init.bat` from the `Build\local` directory.  Then update the `\.ent.local` configuration files as above. Finally, run `.\docker-up.bat` to start the services.
-
 
 ### Additional Notes
 

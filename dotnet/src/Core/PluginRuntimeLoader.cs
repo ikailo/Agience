@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using System.Reflection;
-using Agience.Core.Models.Entities;
+using Agience.Core.Interfaces;
 
 namespace Agience.Core;
 

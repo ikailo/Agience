@@ -5,9 +5,15 @@ namespace Agience.Authority.Models.Manage
 {
     public class Agent : Core.Models.Entities.Agent
     {
-        [JsonPropertyName("connections")]
-        public virtual List<AgentConnection> Connections { get; set; } = new List<AgentConnection>();
+        [JsonPropertyName("executive_function")]
+        public virtual Function? ExecutiveFunction { get; set; }
 
+        [JsonPropertyName("auto_start_function")]
+        public virtual Function? AutoStartFunction { get; set; }
+
+        [JsonPropertyName("host")]
+        public virtual Host? Host { get; set; }
+ 
         [JsonPropertyName("is_connected")]
         [NotMapped]
         public bool IsConnected { get; set; }

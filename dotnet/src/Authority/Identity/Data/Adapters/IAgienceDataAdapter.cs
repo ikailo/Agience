@@ -1,37 +1,19 @@
-﻿using Agience.Authority.Identity.Models;
-using Microsoft.IdentityModel.Tokens;
-using AgienceEntity = Agience.Core.Models.Entities.AgienceEntity;
+﻿using Agience.Core.Models.Entities.Abstract;
 
-namespace Agience.Authority.Identity.Data.Adapters
+public interface IAgienceDataAdapter
 {
-    public interface IAgienceDataAdapter : Core.Models.Entities.IAuthorityDataAdapter
-    {
-        /** PERSON SCOPED **/
-
-        Task<IEnumerable<T>> GetRecordsAsPersonAsync<T>(string personId, bool includePublic = false) where T : AgienceEntity;        
-        Task<T?> GetRecordByIdAsPersonAsync<T>(string recordId, string personId) where T : AgienceEntity;
-        Task<T?> CreateRecordAsPersonAsync<T>(T record, string personId) where T : AgienceEntity;
-        Task<T?> CreateRecordAsPersonAsync<T>(T record, string parentId, string personId) where T : AgienceEntity;
-        Task UpdateRecordAsPersonAsync<T>(T record, string personId) where T : AgienceEntity;
-        Task DeleteRecordAsPersonAsync<T>(string recordId, string personId) where T : AgienceEntity;
-        Task<Key?> GenerateHostKeyAsPersonAsync(string hostId, string keyName, JsonWebKey? jsonWebKey, string personId);
-        Task<IEnumerable<Plugin>> FindPluginsAsPersonAsync(string searchTerm, bool includePublic, string personId);
-        Task AddPluginToHostAsPersonAsync(string hostId, string pluginId, string personId);
-        Task RemovePluginFromHostAsPersonAsync(string hostId, string pluginId, string personId);
-        Task AddPluginToAgentAsPersonAsync(string agentId, string pluginId, string personId);
-        Task RemovePluginFromAgentAsPersonAsync(string agentId, string pluginId, string personId);        
-        Task<IEnumerable<PluginConnection>> GetPluginConnectionsForAgentAsPersonAsync(string ageintId, string personId);        
-        Task UpsertAgentConnectionAsPersonAsync(string agentId, string pluginConnectionId, string? authorizerId, string? credentialId , string personId);
-        Task<AgentConnection?> GetAgentConnectionAsPersonAsync(string agentId, string pluginConnectionId, string personId);
-        Task<IEnumerable<Function>> GetFunctionsForAgentAsPersonAsync(string agentId, string personId);
-
-        /** SYSTEM SCOPED **/
-
-        Task<T?> GetRecordByIdAsync<T>(string recordId) where T : AgienceEntity;
-        Task<T?> CreateRecordAsync<T>(T record) where T : AgienceEntity;
-        Task UpdateRecordAsync<T>(T record, CancellationToken cancellationToken) where T : AgienceEntity;
-        Task<Person?> GetPersonByExternalProviderIdAsync(string provider, string providerPersonId, CancellationToken cancellationToken);
-        Task<bool> VerifyHostSourceTargetRelationships(string hostId, string? sourceId, string? targetAgencyId, string? targetAgentId);
-        
-    }
+    Task<T> CreateRecordAsync<T>(T record) where T : BaseEntity, new();
+    Task<IEnumerable<T>> CreateRecordsAsync<T>(IEnumerable<T> records) where T : BaseEntity, new();
+    Task<bool> DeleteRecordAsync<T>(string recordId) where T : BaseEntity, new();
+    Task<bool> DeleteRecordsAsync<T>(IEnumerable<string> recordIds) where T : BaseEntity, new();
+    Task<IEnumerable<T>> GetAllOwnedRecordsAsync<T>(string ownerId, bool includePublic = false, int? skip = null, int? take = null) where T : BaseEntity, new();
+    Task<IEnumerable<T>> GetAllRecordsAsync<T>(int? skip = null, int? take = null) where T : BaseEntity, new();
+    Task<T?> GetOwnedRecordByIdAsync<T>(string recordId, string personId, bool includePublic = false) where T : BaseEntity, new();
+    Task<T?> GetRecordByIdAsync<T>(string recordId) where T : BaseEntity, new();
+    Task<IEnumerable<T>> GetRecordsByIdsAsync<T>(IEnumerable<string> recordIds) where T : BaseEntity, new();
+    Task<IEnumerable<T>> QueryRecordsAsync<T>(Dictionary<string, object> criteria, int? skip = null, int? take = null) where T : BaseEntity, new();
+    Task<IEnumerable<T>> SearchOwnedRecordsAsync<T>(IEnumerable<string> searchFields, string searchTerm, string personId, bool includePublic = false, int? skip = null, int? take = null) where T : BaseEntity, new();
+    Task<IEnumerable<T>> SearchRecordsAsync<T>(IEnumerable<string> searchFields, string searchTerm, int? skip = null, int? take = null) where T : BaseEntity, new();
+    Task<T> UpdateRecordAsync<T>(T record) where T : BaseEntity, new();
+    Task<IEnumerable<T>> UpdateRecordsAsync<T>(IEnumerable<T> records) where T : BaseEntity, new();
 }

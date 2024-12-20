@@ -9,6 +9,7 @@ using Timer = System.Timers.Timer;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Agience.Core.Models.Messages;
+using Agience.Core.Models.Entities;
 
 namespace Agience.Core
 {
@@ -78,6 +79,7 @@ namespace Agience.Core
                     .WithCleanStart()
                     .Build();
 
+
                 await _mqttClient.ConnectAsync(options);
 
                 if (_mqttClient.IsConnected)
@@ -93,8 +95,10 @@ namespace Agience.Core
 
         private Task _client_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs args)
         {
+            _logger.LogInformation($"Received Message: {args.ApplicationMessage.Topic}");
+
             var topic = args.ApplicationMessage.Topic;
-            var callbackTopic = topic.Substring(topic.IndexOf('/') + 1); // Remove the SenderId segment
+            var callbackTopic = string.Join("/", topic.Split('/')[2..]);  // Remove the SenderId segment
 
             if (_callbacks.TryGetValue(callbackTopic, out var callbackContainers))
             {
@@ -125,6 +129,8 @@ namespace Agience.Core
                 {
                     if (container.Callback != null)
                     {
+                        _logger.LogDebug("found Callback");
+
                         Task.Run(async () =>
                         {
                             try
@@ -147,7 +153,7 @@ namespace Agience.Core
         {
             if (!_mqttClient.IsConnected) throw new InvalidOperationException("Not Connected");
 
-            var callbackTopic = topic.Substring(topic.IndexOf('/') + 1); // Remove the SenderId segment
+            var callbackTopic = string.Join("/", topic.Split('/')[2..]);  // Remove the SenderId segment
 
             var container = new CallbackContainer(callback);
             if (!_callbacks.ContainsKey(callbackTopic))
@@ -172,8 +178,8 @@ namespace Agience.Core
         }
 
         internal async Task Unsubscribe(string topic)
-        {
-            var callbackTopic = topic.Substring(topic.IndexOf('/') + 1);
+        {            
+            var callbackTopic = string.Join("/", topic.Split('/')[2..]);
 
             _callbacks.Remove(callbackTopic);
 
@@ -226,7 +232,7 @@ namespace Agience.Core
             public void Publish(MqttNetLogLevel logLevel, string source, string message, object[] parameters, Exception exception)
             {
                 // TODO: Write to real logger
-                // Console.WriteLine($"{logLevel}: {source} - {message}");
+                //Console.WriteLine($"{logLevel}: {source} - {message}");
             }
         }
 

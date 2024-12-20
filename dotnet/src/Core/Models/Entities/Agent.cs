@@ -1,15 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Agience.Core.Models.Entities.Abstract;
+using Agience.Core.Models.Enums;
 using System.Text.Json.Serialization;
 
 namespace Agience.Core.Models.Entities
 {
-    public class Agent : AgienceEntity
+    public class Agent : OwnedEntity
     {
-        [JsonPropertyName("name")]
-        public string? Name { get; set; }
+        //[JsonPropertyName("host")]
+        //public virtual Host? Host { get; set; }
 
-        [JsonPropertyName("description")]
-        public string? Description { get; set; }
+        [JsonPropertyName("topics")]
+        public virtual List<Topic> Topics { get; set; } = new();
+
+        [JsonPropertyName("plugins")]
+        public virtual List<Plugin> Plugins { get; set; } = new();
 
         [JsonPropertyName("persona")]
         public string? Persona { get; set; }
@@ -17,32 +21,16 @@ namespace Agience.Core.Models.Entities
         [JsonPropertyName("is_enabled")]
         public bool IsEnabled { get; set; } = true;
 
-        [JsonPropertyName("agency_id")]
-        public string AgencyId { get; set; } = string.Empty;
+        [JsonPropertyName("executive_function_id")]
+        public string? ExecutiveFunctionId { get; set; }
 
-        [JsonPropertyName("agency")]
-        public virtual Agency? Agency { get; set; }
-
-        [JsonPropertyName("plugins")]
-        public virtual List<Plugin> Plugins { get; set; } = new List<Plugin>();
-
-        [JsonPropertyName("chat_completion_function_name")]
-        public string? ChatCompletionFunctionName { get; set; }
-
-        [JsonPropertyName("auto_start_function_name")]
-        public string? AutoStartFunctionName { get; set; }
+        [JsonPropertyName("auto_start_function_id")]
+        public string? AutoStartFunctionId { get; set; }
         
-        [JsonPropertyName("auto_start_function_completion_action")]
-        public CompletionAction? AutoStartFunctionCompletionAction { get; set; }
-                
-        
-        // ***************** //
-        // Currently, Agents can be associated only with a single Host.
-        // TODO: In the future, an Agency will have mupltiple Hosts and an Agent's Functions can be spread accross all of them.
+        [JsonPropertyName("on_auto_start_function_complete")]
+        public CompletionAction? OnAutoStartFunctionComplete { get; set; }               
+
         [JsonPropertyName("host_id")]
         public string? HostId { get; set; }
-        [JsonIgnore]
-        public virtual Host? Host { get; set; }
-        // ***************** //
     }
 }

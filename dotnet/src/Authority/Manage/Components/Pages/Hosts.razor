@@ -1,0 +1,68 @@
+﻿@page "/hosts"
+@using Agience.Authority.Models.Manage
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using System.Text.Json
+@inject ILogger<Hosts> _logger
+@inject IDialogService DialogService
+
+<EntityPage @key="typeof(Host)" TEntity="Host" Icon="@Icons.Material.Filled.Dns">
+    <EntityDetailPanel TEntity="Host" Fields="HostFields" />
+    <EntityListPanel TParent="Host" TChild="Key" TabName="Keys" Fields="KeyFields" OnSavePostHook="OnKeyGenerated" />    
+    <EntityListPanel TParent="Host" TChild="Plugin" TabName="Plugins" Fields="PluginFields" />
+</EntityPage>
+
+@code {
+    private Key? _newKey;
+
+    public List<FieldDefinition> HostFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "RedirectUris", Label = "Redirect URIs" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "PostLogoutUris", Label = "Post Logout URIs" },
+        new FieldDefinition { Type = FieldType.MultiSelect, FieldName = "Scopes", Label = "Scopes",
+            DropDownOptions = new Dictionary<string, string>
+            {
+                { "openid", "openid" },
+                { "profile", "profile" },
+                { "email", "email" },
+                { "manage", "manage" },
+                { "connect", "connect" }
+            }}
+    };
+
+    public List<FieldDefinition> KeyFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "CreatedDate", Label = "Created", ReadOnly = true},
+        new FieldDefinition { Type = FieldType.DropDown, FieldName = "IsActive", Label = "Active", DropDownOptions = new() { {"true","True" },{"false","False" } } },
+    };
+
+    // Plugin Fields
+    public List<FieldDefinition> PluginFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "Id", Label = "Plugin", RelatedEntityApiName = "plugin",  RelatedEntityFieldName = "this" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description", ReadOnly = true }
+    };
+
+    private async Task OnKeyGenerated(Key key)
+    {
+        _newKey = key;
+        await ShowDialog();
+        _newKey = null;
+    }
+
+    private async Task ShowDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            { "KeyName", _newKey?.Name },
+            { "HostId", _newKey?.HostId },
+            { "HostSecret", _newKey?.Value }
+        };
+
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        await DialogService.ShowAsync<KeyDialog>("New Key Generated", parameters, options);
+    }
+}

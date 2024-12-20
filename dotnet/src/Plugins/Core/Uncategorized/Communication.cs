@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace Agience.Plugins.Core.Uncategorized
 {
@@ -34,7 +35,7 @@ namespace Agience.Plugins.Core.Uncategorized
                 }
             };
 
-            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            _httpClient.DefaultRequestHeaders.Authorization = new  AuthenticationHeaderValue("Bearer", apiKey);
             var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(endpoint, content);

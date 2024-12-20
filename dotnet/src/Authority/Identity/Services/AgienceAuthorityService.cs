@@ -37,9 +37,9 @@ namespace Agience.Authority.Identity.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (Environment.GetEnvironmentVariable("AGIENCE_INITIALIZE")?.ToUpper() == "TRUE")
+            if (_appConfig.BypassAuthorityService ?? false || Environment.GetEnvironmentVariable("AGIENCE_INITIALIZE")?.ToUpper() == "TRUE")
             {
-                _logger.LogInformation("Agience Initialization. Bypassing Authority Service.");
+                _logger.LogInformation("Agience Initialization. Bypassing Authority Service."); 
                 return;
             }
 
@@ -104,7 +104,7 @@ namespace Agience.Authority.Identity.Services
                 ValidatedResources = new ResourceValidationResult(new Resources
                 {
                     ApiScopes = { _appConfig.ApiScopes.First(x => x.Name == "connect") },
-                    ApiResources = { _appConfig.ApiResources.First(x => x.Name == "/connect/*") },
+                    ApiResources = { _appConfig.ApiResources.First(x => x.Name == "connect-mqtt") },
                     OfflineAccess = false,
                 }),
             };

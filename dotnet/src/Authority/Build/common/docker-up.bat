@@ -38,11 +38,11 @@ echo Cleaning up dangling images...
 
 docker image prune -f
 
-IF "%SERVICE%"=="" (
-    echo Restarting manage-%ENVIRONMENT%...
-    timeout /t 10
-    docker restart manage-%ENVIRONMENT%
-) 
+REM IF "%SERVICE%"=="" (
+REM    echo Restarting manage-%ENVIRONMENT%...
+REM    timeout /t 10
+REM    docker restart manage-%ENVIRONMENT%
+REM ) 
 
 cd ..\Build\common
 

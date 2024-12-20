@@ -10,7 +10,12 @@ using Agience.Authority.Identity.Services;
 using Agience.Authority.Identity.Data.Adapters;
 using Agience.Core.Extensions;
 using Microsoft.AspNetCore.Identity;
-using Agience.Core.Models.Entities;
+using System.Text.Json;
+using Agience.Core.Interfaces;
+using Agience.Authority.Identity.Data.Repositories;
+using Agience.Core.Models.Entities.Abstract;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 
 
 namespace Agience.Authority.Identity;
@@ -30,13 +35,13 @@ internal static class HostingExtensions
             options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All;
         });
 
-        builder.Services.AddAgienceAuthority(appConfig.AuthorityUri, appConfig.CustomNtpHost, appConfig.AuthorityUriInternal, appConfig.BrokerUriInternal);
+        builder.Services.AddAgienceAuthoritySingleton(appConfig.AuthorityUri, appConfig.CustomNtpHost, appConfig.AuthorityUriInternal, appConfig.BrokerUriInternal);
         builder.Services.AddHostedService<AgienceAuthorityService>();
 
         builder.Services.AddAutoMapper(cfg =>
         {
             cfg.AddMaps(AppDomain.CurrentDomain.GetAssemblies());
-        });
+        });        
 
         builder.Services.AddHttpContextAccessor();
 
@@ -45,6 +50,8 @@ internal static class HostingExtensions
         builder.Services.AddRazorPages();
 
         builder.Services.AddControllers();
+        //builder.Services.AddEndpointsApiExplorer();
+        //builder.Services.AddSwaggerGen();
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
@@ -53,7 +60,16 @@ internal static class HostingExtensions
         {
             options.IssuerUri = appConfig.AuthorityUri;
             options.Discovery.CustomEntries.Add("broker_uri", appConfig.BrokerUri ?? throw new ArgumentNullException("BrokerUri"));
+            options.Discovery.CustomEntries.Add("files_uri", appConfig.BrokerUri ?? throw new ArgumentNullException("FilesUri"));
+            //options.Discovery.CustomEntries.Add("stream_uri", appConfig.BrokerUri ?? throw new ArgumentNullException("StreamUri"));
             options.Authentication.CookieLifetime = TimeSpan.FromDays(30); // TODO: Manage sessions better.
+            options.Endpoints.EnableIntrospectionEndpoint = true;
+
+            //options.Events.RaiseSuccessEvents = true;
+            //options.Events.RaiseFailureEvents = true;
+            //options.Events.RaiseErrorEvents = true;
+            //options.Events.RaiseInformationEvents = true;
+
         })
             .AddInMemoryIdentityResources(appConfig.IdentityResources)
             .AddInMemoryApiResources(appConfig.ApiResources)
@@ -102,12 +118,25 @@ internal static class HostingExtensions
         builder.Services.AddDbContext<AgienceDbContext>(options =>
         {
             options.UseLazyLoadingProxies();
+            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
             options.UseNpgsql(connectionString);
         });
 
-        builder.Services.AddScoped<AgienceDataAdapter>();
-        builder.Services.AddScoped<IAgienceDataAdapter>(sp => sp.GetRequiredService<AgienceDataAdapter>());
-        builder.Services.AddScoped<IAuthorityDataAdapter>(sp => sp.GetRequiredService<AgienceDataAdapter>());
+        builder.Services.AddScoped<AgienceDataAdapter>();        
+        builder.Services.AddScoped<RecordsRepository>();        
+        builder.Services.AddScoped<IAuthorityRecordsRepository, AuthorityRecordsRepository>();        
+
+        builder.Services.AddSingleton<PluginImportService>();
+
+        builder.Services.AddDistributedMemoryCache(); // Or a distributed cache like Redis
+        builder.Services.AddSession(options =>
+        {
+            options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout
+            options.Cookie.HttpOnly = true; // Security settings
+            options.Cookie.IsEssential = true; // Required for GDPR compliance
+        });
+
+
 
         builder.Services.AddScoped<AgiencePersonStore>();
         builder.Services.AddScoped<IUserStore<Models.Person>>(sp => sp.GetRequiredService<AgiencePersonStore>());
@@ -124,10 +153,12 @@ internal static class HostingExtensions
                 options.Scope.Add(IdentityServerConstants.StandardScopes.OpenId);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Profile);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Email);
+
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
            {
                options.Authority = appConfig.AuthorityUri;
+               options.RequireHttpsMetadata = true;
 
                if (appConfig.AuthorityUriInternal != null)
                {
@@ -138,12 +169,33 @@ internal static class HostingExtensions
                {
                    ValidateIssuer = true,
                    ValidIssuer = appConfig.AuthorityUri,
-                   ValidateAudience = true,
-                   ValidAudiences = new List<string> { "/manage/*", "/connect/*" },
+                   ValidateAudience = true,                   
+                   ValidAudiences = new List<string> { "manage-api", "connect-mqtt" },
                    ValidateLifetime = true,
                    ValidateIssuerSigningKey = true
                };
+
+               options.Events = new JwtBearerEvents
+               {
+                   OnChallenge = context =>
+                   {
+                       if (!context.Response.HasStarted)
+                       {
+                           context.HandleResponse();
+                           context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                           context.Response.ContentType = "application/json";
+                           var errorResponse = new
+                           {
+                               error = "Unauthorized",
+                               description = context.ErrorDescription
+                           };
+                           return context.Response.WriteAsJsonAsync(errorResponse);
+                       }
+                       return Task.CompletedTask;
+                   }
+               };
            });
+        
 
         builder.Services.AddAuthorization(options =>
         {
@@ -158,12 +210,19 @@ internal static class HostingExtensions
                 policy.RequireAuthenticatedUser();
                 policy.RequireClaim("scope", "connect");
             });
+
+            options.AddPolicy("host", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireRole("host"); // Require the 'host' role
+            });
+
         });
 
         return builder.Build();
     }
 
-    public static WebApplication ConfigurePipeline(this WebApplication app)
+    public static WebApplication ConfigurePipeline(this WebApplication app, AppConfig appConfig)
     {
         app.UseSerilogRequestLogging();
 
@@ -179,15 +238,46 @@ internal static class HostingExtensions
             app.UseExceptionHandler();
             app.UseHsts();
         }
-
-        app.UseStatusCodePages();
+        /*
+        if (app.Environment.IsDevelopment() || app.Environment.EnvironmentName.ToLower() == "local")
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Agience API v1");
+                //c.RoutePrefix = "manage";
+            });
+        }
+        */
+        app.UseSession();
 
         app.UseIdentityServer();
         app.UseAuthentication();
-        app.UseStaticFiles();
+
+        app.UseStaticFiles(); // For the wwwroot folder
+
+        /*
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            // TODO: Limit to Hosts ?
+
+            FileProvider = new PhysicalFileProvider(appConfig.FilesRoot ?? throw new ArgumentNullException(nameof(appConfig.FilesRoot))),
+            RequestPath = "/files",
+            OnPrepareResponse = ctx =>
+            {
+                // Add the Content-Disposition header to force file download
+                var fileName = Path.GetFileName(ctx.File.PhysicalPath);
+                ctx.Context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{fileName}\"";
+            }
+        });*/
+
+
+
         app.UseRouting();
 
         app.UseAuthorization();
+
+        app.UseStatusCodePages();
 
         app.MapControllers();
         app.MapRazorPages().RequireAuthorization();
