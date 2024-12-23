@@ -4,6 +4,8 @@ import asyncio
 from broker import Broker
 from authority import Authority
 from host import Host
+from models.messages.broker_message import BrokerMessage, BrokerMessageType
+import time
 
 load_dotenv()
 
@@ -24,16 +26,19 @@ async def main():
 
     # Initialize Host with ID and Secret
     # TODO: Need to initialize Authority and Agent Factory before the host
-    host = Host(host_id=HOST_ID, host_secret=HOST_SECRET, authority=None,
+    host = Host(host_id=HOST_ID, host_secret=HOST_SECRET, authority=authority,
                 broker=broker, agent_factory=None, logger=None)
 
     # Get the access token for the host
     host_access_token = await host.get_access_token()
 
-    # print(host_access_token)
-
     # Connect to the broker using the access token
     await broker.connect(host_access_token, BROKER_URI)
+
+    # Wait for connection to complete
+    time.sleep(2)
+
+    await broker.publish(message=BrokerMessage(type=BrokerMessageType.EVENT, topic="hello/world"))
 
 
 asyncio.run(main())

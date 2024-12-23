@@ -97,6 +97,7 @@ class Broker:
 
     async def publish(self, message: BrokerMessage):
         if not self._is_connected:
+            logger.error("Cannot publish, MQTT client is not connected")
             raise ConnectionError("MQTT client is not connected.")
 
         payload = ""
@@ -105,13 +106,16 @@ class Broker:
         elif message.type == BrokerMessageType.INFORMATION:
             payload = json.dumps(message.information)
 
-        self._mqtt_client.publish(
+        resp = self._mqtt_client.publish(
             topic=message.topic,
             payload=payload,
             qos=0,  # QoS Level 0 for at-most-once delivery
             retain=False
         )
+
         logger.info("Published message to topic %s", message.topic)
+        print(f"Publised? - {resp.is_published()}")
+        print(resp)
 
     def _on_connect(self, client, userdata, flags, rc):
         self._is_connected = rc == 0
