@@ -8,9 +8,9 @@ internal class Program
 {
     private static async Task Main(string[] args)
     {
-        Log.Logger = new LoggerConfiguration()
-            .WriteTo.Console()
-            .CreateBootstrapLogger();
+        //Log.Logger = new LoggerConfiguration()
+            //.WriteTo.Console()
+           // .CreateBootstrapLogger();
 
         Log.Information("Starting up");
 
@@ -18,13 +18,13 @@ internal class Program
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            if (builder.Environment.EnvironmentName == "Design")
-            {
-                return; // Skip Building - AgienceDbContextFactory will handle this.
+            if (Environment.GetEnvironmentVariable("EF_MIGRATION")?.ToUpper() == "TRUE")
+            {   
+                return;
             }
 
             builder.Logging.ClearProviders();
-            builder.Logging.AddConsole();
+            //builder.Logging.AddConsole();
 
             builder.Host.UseSerilog((ctx, lc) => lc
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
@@ -42,9 +42,11 @@ internal class Program
                 builder.Configuration.AddUserSecrets<Program>();
             }
 
-            var app = builder
-                .ConfigureServices()
-                .ConfigurePipeline();
+            var app = builder.ConfigureServices();
+            
+            var appConfig = app.Services.GetRequiredService<AppConfig>();
+
+            app.ConfigurePipeline(appConfig);
 
             using (var scope = app.Services.CreateScope())
             {
@@ -62,7 +64,7 @@ internal class Program
 
                     // TODO: Use a Model. Move to some config or util class. Get from Configuration.
 
-                    if (builder.Environment.EnvironmentName == "development")
+                    if (builder.Environment.EnvironmentName == "development" || builder.Environment.EnvironmentName == "debug")
                     {
                         seedArgs["web_domain"] = "localhost";
                         seedArgs["web_port"] = ":5002";
@@ -74,7 +76,14 @@ internal class Program
                         seedArgs["web_domain"] = "web.local.agience.ai";
                         seedArgs["web_port"] = string.Empty;
                         seedArgs["host_name"] = $"public.web.local.agience.ai";
-                    }                   
+                    }
+
+                    else if (builder.Environment.EnvironmentName == "preview")
+                    {
+                        seedArgs["web_domain"] = "web.preview.agience.ai";
+                        seedArgs["web_port"] = string.Empty;
+                        seedArgs["host_name"] = $"public.web.preview.agience.ai";
+                    }
 
                     seedArgs["first_name"] = "Internal";
                     seedArgs["last_name"] = "User";

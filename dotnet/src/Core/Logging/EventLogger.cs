@@ -4,26 +4,24 @@ namespace Agience.Core.Logging
 {
     public class EventLogger<T> : AgienceEventLoggerBase, ILogger<T>
     {
-        public EventLogger(string agencyId, string? agentId = null)
-            : base(agencyId, agentId) { }
+        public EventLogger(string agentId)
+            : base(agentId) { }
     }
 
     public class AgienceEventLogger : AgienceEventLoggerBase
     {
-        public AgienceEventLogger(string agencyId, string? agentId = null)
-            : base(agencyId, agentId) { }
+        public AgienceEventLogger(string agentId)
+            : base(agentId) { }
     }
 
     public abstract class AgienceEventLoggerBase : ILogger
     {
         public event EventHandler<EventLogArgs>? LogEntryReceived;
 
-        protected readonly string _agencyId;
         protected readonly string? _agentId;
 
-        protected AgienceEventLoggerBase(string agencyId, string? agentId = null)
+        protected AgienceEventLoggerBase(string agentId)
         {
-            _agencyId = agencyId;
             _agentId = agentId;
         }
 
@@ -41,7 +39,6 @@ namespace Agience.Core.Logging
 
             LogEntryReceived?.Invoke(this, new EventLogArgs()
             {
-                AgencyId = _agencyId,
                 AgentId = _agentId,
                 LogLevel = logLevel,
                 EventId = eventId,

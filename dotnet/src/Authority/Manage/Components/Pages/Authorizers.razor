@@ -1,0 +1,89 @@
+﻿@page "/authorizers"
+@using Agience.Authority.Models.Manage
+@using Agience.Authority.Manage.Components.Shared
+@using Agience.Authority.Manage.Services
+@using Agience.Authority.Manage.Models
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using System.Text.Json
+@using Core.Models.Enums
+@using Agience.Core.Models.Entities.Abstract
+
+<EntityPage @key="typeof(Authorizer)" TEntity="Authorizer" Icon="@Icons.Material.Filled.PrivateConnectivity">
+    <EntityDetailPanel TEntity="Authorizer" Fields="@_authorizerFields" />
+</EntityPage>
+
+@code {
+    [Inject] private ILogger<Authorizers> _logger { get; set; } = null!;
+    [Inject] private ContextService _contextService { get; set; } = null!;
+    public List<FieldDefinition> _authorizerFields = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contextService.ContextRecordIdChanged += OnContextRecordIdChanged;
+
+        await Task.CompletedTask; 
+    }
+
+    public void Dispose()
+    {
+        _contextService.ContextRecordIdChanged -= OnContextRecordIdChanged;
+    }
+
+    public async Task OnContextRecordIdChanged(string? contextRecordId)
+    {
+        await HandleFieldUpdates();
+    }
+
+    public async Task HandleFieldUpdates()
+    {
+        var contextRecord = _contextService.ContextRecord as Authorizer;
+
+        _authorizerFields.Clear();
+
+        _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" });
+
+        _authorizerFields.Add(new FieldDefinition
+            {
+                Type = FieldType.DropDown,
+                FieldName = "AuthType",
+                Label = "Authorizer Type",
+                OnValueChanged = OnAuthTypeValueChanged,
+                DropDownOptions = new() {
+            { AuthorizationType.Public.ToString(), "Public" },
+            { AuthorizationType.ApiKey.ToString(), "API Key" },
+            { AuthorizationType.OAuth2.ToString(), "OAuth" } }
+            });
+
+        _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" });
+
+        if (contextRecord?.AuthType == AuthorizationType.Public)
+        {
+
+        }
+
+        else if (contextRecord?.AuthType == AuthorizationType.ApiKey)
+        {
+
+        }
+
+        else if (contextRecord?.AuthType == AuthorizationType.OAuth2)
+        {
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "ClientId", Label = "Client Id" });
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "ClientSecret", Label = "Client Secret" });
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "AuthUri", Label = "Auth URI" });
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "TokenUri", Label = "Token URI" });
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "Scopes", Label = "Scopes" });
+            _authorizerFields.Add(new FieldDefinition { Type = FieldType.Text, FieldName = "RedirectUriPath", Label = "Redirect URI Path", ReadOnly = true});
+        }
+
+        await Task.CompletedTask;
+    }
+
+    public async Task OnAuthTypeValueChanged(BaseEntity record, object? value)
+    {
+        await HandleFieldUpdates();
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

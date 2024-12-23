@@ -1,25 +1,25 @@
-﻿using Agience.Authority.Identity.Data.Adapters;
-using Host = Agience.Authority.Identity.Models.Host;
+﻿using Host = Agience.Authority.Identity.Models.Host;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Stores;
 using IdentityModel;
+using Agience.Authority.Identity.Data.Repositories;
 
 namespace Agience.Authority.Identity.Data
 {
     internal class AgienceHostStore : IClientStore
     {
-        private readonly IAgienceDataAdapter _dataAdapter;
+        private readonly RecordsRepository _repository;
         private readonly AppConfig _appConfig;
 
-        public AgienceHostStore(IAgienceDataAdapter dataAdapter, AppConfig config)
+        public AgienceHostStore(RecordsRepository repository, AppConfig config)
         {
-            _dataAdapter = dataAdapter;
+            _repository = repository;
             _appConfig = config;
         }
 
         public async Task<Client?> FindClientByIdAsync(string hostId)
         {
-            var host = await _dataAdapter.GetRecordByIdAsync<Host>(hostId);
+            var host = await _repository.GetRecordByIdAsSystemAsync<Host>(hostId);
 
             if (host == null) { return null; }
 
@@ -31,7 +31,7 @@ namespace Agience.Authority.Identity.Data
                                  ?? throw new InvalidOperationException("Key value not provided."),
                 RedirectUris = host.RedirectUris?.Split(' ') ?? new string[0],
                 PostLogoutRedirectUris = host.PostLogoutUris?.Split(' ') ?? new string[0],
-                AllowedScopes = host.Scopes,
+                AllowedScopes = host.Scopes ?? new(),
                 EnableLocalLogin = false,
                 AlwaysIncludeUserClaimsInIdToken = true,
                 AccessTokenLifetime = 24 * 60 * 60, // 24 hours

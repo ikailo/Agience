@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using NpgsqlTypes;
 
 #nullable disable
 
@@ -26,60 +25,28 @@ namespace Agience.Authority.Identity.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Agency", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "id");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "description");
-
-                    b.Property<string>("DirectorId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "director_id");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DirectorId");
-
-                    b.ToTable("Agencies", (string)null);
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "agencies");
-                });
-
             modelBuilder.Entity("Agience.Authority.Identity.Models.Agent", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<string>("AgencyId")
-                        .IsRequired()
+                    b.Property<string>("AutoStartFunctionId")
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "agency_id");
+                        .HasAnnotation("Relational:JsonPropertyName", "auto_start_function_id");
 
-                    b.Property<int?>("AutoStartFunctionCompletionAction")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "auto_start_function_completion_action");
-
-                    b.Property<string>("AutoStartFunctionName")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "auto_start_function_name");
-
-                    b.Property<string>("ChatCompletionFunctionName")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "chat_completion_function_name");
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "description");
+
+                    b.Property<string>("ExecutiveFunctionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "executive_function_id");
 
                     b.Property<string>("HostId")
                         .HasColumnType("text")
@@ -90,8 +57,17 @@ namespace Agience.Authority.Identity.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "is_enabled");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
+
+                    b.Property<int?>("OnAutoStartFunctionComplete")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Relational:JsonPropertyName", "on_auto_start_function_complete");
+
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
 
                     b.Property<string>("Persona")
                         .HasColumnType("text")
@@ -99,69 +75,101 @@ namespace Agience.Authority.Identity.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AgencyId");
+                    b.HasIndex("AutoStartFunctionId");
+
+                    b.HasIndex("ExecutiveFunctionId");
 
                     b.HasIndex("HostId");
+
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Agents", (string)null);
 
                     b.HasAnnotation("Relational:JsonPropertyName", "agents");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentConnection", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentLogEntry", b =>
                 {
-                    b.Property<string>("PluginConnectionId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "plugin_connection_id");
-
-                    b.Property<string>("AgentId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "agent_id");
-
-                    b.Property<string>("AuthorizerId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "authorizer_id");
-
-                    b.Property<string>("CredentialId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "credential_id");
-
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "status");
+                    b.Property<string>("AgentId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "agent_id");
 
-                    b.HasKey("PluginConnectionId", "AgentId");
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("LogText")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "log_text");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("AgentId");
 
-                    b.HasIndex("AuthorizerId");
+                    b.ToTable("AgentLogEntries", (string)null);
 
-                    b.HasIndex("CredentialId");
-
-                    b.ToTable("AgentConnections", (string)null);
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "connections");
+                    b.HasAnnotation("Relational:JsonPropertyName", "log_entries");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.AgentPlugin", b =>
                 {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<string>("AgentId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "agent_id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("PluginId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PluginId");
+
+                    b.HasIndex("AgentId", "PluginId");
+
+                    b.ToTable("AgentPlugins", (string)null);
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentTopic", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
                     b.Property<string>("AgentId")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "agent_id");
 
-                    b.Property<string>("PluginId")
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("TopicId")
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
+                        .HasAnnotation("Relational:JsonPropertyName", "topic_id");
 
-                    b.HasKey("AgentId", "PluginId");
+                    b.HasKey("Id");
 
-                    b.HasIndex("PluginId");
+                    b.HasIndex("TopicId");
 
-                    b.ToTable("AgentPlugins", (string)null);
+                    b.HasIndex("AgentId", "TopicId");
+
+                    b.ToTable("AgentTopics", (string)null);
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Authorizer", b =>
@@ -170,8 +178,11 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<int?>("AuthType")
-                        .HasColumnType("integer")
+                    b.Property<string>("AuthType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Public")
                         .HasAnnotation("Relational:JsonPropertyName", "auth_type");
 
                     b.Property<string>("AuthUri")
@@ -186,33 +197,122 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "client_secret");
 
-                    b.Property<string>("ManagerId")
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "manager_id");
+                        .HasAnnotation("Relational:JsonPropertyName", "description");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
 
-                    b.Property<string>("Scope")
+                    b.Property<string>("OwnerId")
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "scope");
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
+
+                    b.Property<string>("Scopes")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scopes");
 
                     b.Property<string>("TokenUri")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "token_uri");
 
-                    b.Property<int?>("Visibility")
-                        .HasColumnType("integer")
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Private")
                         .HasAnnotation("Relational:JsonPropertyName", "visibility");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ManagerId");
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Authorizers", (string)null);
 
-                    b.HasAnnotation("Relational:JsonPropertyName", "authorizers");
+                    b.HasAnnotation("Relational:JsonPropertyName", "authorizer");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Connection", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "name");
+
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
+
+                    b.Property<string>("ResourceUri")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "resource_uri");
+
+                    b.Property<string>("Scopes")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "scopes");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Private")
+                        .HasAnnotation("Relational:JsonPropertyName", "visibility");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Connections", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "connection");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.ConnectionAuthorizer", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<string>("AuthorizerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "authorizer_id");
+
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "connection_id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorizerId");
+
+                    b.HasIndex("ConnectionId", "AuthorizerId");
+
+                    b.ToTable("ConnectionAuthorizers", (string)null);
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Credential", b =>
@@ -221,11 +321,48 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<string>("Secret")
+                    b.Property<string>("AccessToken")
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "secret");
+                        .HasAnnotation("Relational:JsonPropertyName", "access_token");
+
+                    b.Property<string>("AgentId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "agent_id");
+
+                    b.Property<string>("AuthorizerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "authorizer_id");
+
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "connection_id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "expiry_date");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "refresh_token");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("NoAuthorizer")
+                        .HasAnnotation("Relational:JsonPropertyName", "status");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AgentId");
+
+                    b.HasIndex("AuthorizerId");
+
+                    b.HasIndex("ConnectionId");
 
                     b.ToTable("Credentials", (string)null);
                 });
@@ -236,21 +373,56 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "description");
 
+                    b.Property<string>("Instruction")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "instruction");
+
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
-
-                    b.Property<string>("Prompt")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "prompt");
 
                     b.HasKey("Id");
 
                     b.ToTable("Functions", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "functions");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.FunctionConnection", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<string>("ConnectionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "connection_id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("FunctionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "function_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConnectionId");
+
+                    b.HasIndex("FunctionId", "ConnectionId");
+
+                    b.ToTable("FunctionConnections", (string)null);
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Host", b =>
@@ -259,14 +431,23 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "description");
+
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
 
-                    b.Property<string>("OperatorId")
-                        .IsRequired()
+                    b.Property<string>("OwnerId")
                         .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "operator_id");
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
 
                     b.Property<string>("PostLogoutUris")
                         .HasColumnType("text")
@@ -277,16 +458,20 @@ namespace Agience.Authority.Identity.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "redirect_uris");
 
                     b.Property<string>("Scopes")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "scopes");
 
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer")
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Private")
                         .HasAnnotation("Relational:JsonPropertyName", "visibility");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OperatorId");
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Hosts", (string)null);
 
@@ -295,6 +480,14 @@ namespace Agience.Authority.Identity.Migrations
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.HostPlugin", b =>
                 {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
                     b.Property<string>("HostId")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "host_id");
@@ -303,9 +496,11 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
 
-                    b.HasKey("HostId", "PluginId");
+                    b.HasKey("Id");
 
                     b.HasIndex("PluginId");
+
+                    b.HasIndex("HostId", "PluginId");
 
                     b.ToTable("HostPlugins", (string)null);
                 });
@@ -321,7 +516,6 @@ namespace Agience.Authority.Identity.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
                     b.Property<string>("HostId")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "host_id");
 
@@ -330,6 +524,7 @@ namespace Agience.Authority.Identity.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "is_active");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
 
@@ -346,27 +541,52 @@ namespace Agience.Authority.Identity.Migrations
                     b.HasAnnotation("Relational:JsonPropertyName", "keys");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Log", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Parameter", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<string>("AgentId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
-                    b.Property<string>("LogText")
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "description");
+
+                    b.Property<string>("FunctionId")
                         .HasColumnType("text");
+
+                    b.Property<string>("InputFunctionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "input_function_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "name");
+
+                    b.Property<string>("OutputFunctionId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "output_function_id");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "type");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AgentId");
+                    b.HasIndex("FunctionId");
 
-                    b.ToTable("Logs", (string)null);
+                    b.HasIndex("InputFunctionId");
+
+                    b.HasIndex("OutputFunctionId");
+
+                    b.ToTable("Parameters", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "outputs");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Person", b =>
@@ -374,6 +594,10 @@ namespace Agience.Authority.Identity.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
                     b.Property<string>("Email")
                         .HasColumnType("text")
@@ -392,18 +616,18 @@ namespace Agience.Authority.Identity.Migrations
                         .HasAnnotation("Relational:JsonPropertyName", "last_name");
 
                     b.Property<string>("ProviderId")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "provider_id");
 
                     b.Property<string>("ProviderPersonId")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "provider_person_id");
 
                     b.HasKey("Id");
 
                     b.ToTable("People", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "owner");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Plugin", b =>
@@ -412,80 +636,67 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<string>("CreatorId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "creator_id");
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "description");
 
-                    b.Property<NpgsqlTsVector>("DescriptionSearchVector")
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("tsvector")
-                        .HasAnnotation("Npgsql:TsVectorConfig", "english")
-                        .HasAnnotation("Npgsql:TsVectorProperties", new[] { "Name", "Description" });
-
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "name");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Relational:JsonPropertyName", "type");
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
 
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer")
+                    b.Property<string>("PluginProvider")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Prompt")
+                        .HasAnnotation("Relational:JsonPropertyName", "plugin_provider");
+
+                    b.Property<string>("PluginSource")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("UserDefined")
+                        .HasAnnotation("Relational:JsonPropertyName", "plugin_source");
+
+                    b.Property<string>("UniqueName")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "unique_name");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Private")
                         .HasAnnotation("Relational:JsonPropertyName", "visibility");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatorId");
-
-                    b.HasIndex("DescriptionSearchVector");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("DescriptionSearchVector"), "GIN");
+                    b.HasIndex("OwnerId");
 
                     b.ToTable("Plugins", (string)null);
 
-                    b.HasAnnotation("Relational:JsonPropertyName", "plugin");
+                    b.HasAnnotation("Relational:JsonPropertyName", "plugins");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.PluginConnection", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.PluginFunction", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text")
                         .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "description");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "name");
-
-                    b.Property<string>("PluginId")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PluginId");
-
-                    b.ToTable("PluginConnections", (string)null);
-
-                    b.HasAnnotation("Relational:JsonPropertyName", "connections");
-                });
-
-            modelBuilder.Entity("Agience.Authority.Identity.Models.PluginFunction", b =>
-                {
-                    b.Property<string>("PluginId")
-                        .HasColumnType("text")
-                        .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
 
                     b.Property<string>("FunctionId")
                         .HasColumnType("text")
@@ -495,72 +706,98 @@ namespace Agience.Authority.Identity.Migrations
                         .HasColumnType("boolean")
                         .HasAnnotation("Relational:JsonPropertyName", "is_root");
 
-                    b.HasKey("PluginId", "FunctionId");
+                    b.Property<string>("PluginId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "plugin_id");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("FunctionId");
 
-                    b.ToTable("PluginFunctions", (string)null);
+                    b.HasIndex("PluginId", "FunctionId");
 
-                    b.HasAnnotation("Relational:JsonPropertyName", "plugin_functions");
+                    b.ToTable("PluginFunctions", (string)null);
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Agency", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Topic", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Person", "Director")
-                        .WithMany("Agencies")
-                        .HasForeignKey("DirectorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "id");
 
-                    b.Navigation("Director");
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasAnnotation("Relational:JsonPropertyName", "created_date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "name");
+
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("text")
+                        .HasAnnotation("Relational:JsonPropertyName", "owner_id");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Private")
+                        .HasAnnotation("Relational:JsonPropertyName", "visibility");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Topics", (string)null);
+
+                    b.HasAnnotation("Relational:JsonPropertyName", "topics");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Agent", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Agency", "Agency")
-                        .WithMany("Agents")
-                        .HasForeignKey("AgencyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("Agience.Authority.Identity.Models.Function", "AutoStartFunction")
+                        .WithMany()
+                        .HasForeignKey("AutoStartFunctionId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Function", "ExecutiveFunction")
+                        .WithMany()
+                        .HasForeignKey("ExecutiveFunctionId");
 
                     b.HasOne("Agience.Authority.Identity.Models.Host", "Host")
                         .WithMany("Agents")
                         .HasForeignKey("HostId");
 
-                    b.Navigation("Agency");
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
+                        .WithMany("Agents")
+                        .HasForeignKey("OwnerId");
+
+                    b.Navigation("AutoStartFunction");
+
+                    b.Navigation("ExecutiveFunction");
 
                     b.Navigation("Host");
+
+                    b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentConnection", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentLogEntry", b =>
                 {
                     b.HasOne("Agience.Authority.Identity.Models.Agent", "Agent")
-                        .WithMany("Connections")
+                        .WithMany("LogEntries")
                         .HasForeignKey("AgentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Agience.Authority.Identity.Models.Authorizer", "Authorizer")
-                        .WithMany()
-                        .HasForeignKey("AuthorizerId");
-
-                    b.HasOne("Agience.Authority.Identity.Models.Credential", "Credential")
-                        .WithMany()
-                        .HasForeignKey("CredentialId");
-
-                    b.HasOne("Agience.Authority.Identity.Models.PluginConnection", "PluginConnection")
-                        .WithMany()
-                        .HasForeignKey("PluginConnectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Agent");
-
-                    b.Navigation("Authorizer");
-
-                    b.Navigation("Credential");
-
-                    b.Navigation("PluginConnection");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.AgentPlugin", b =>
@@ -582,39 +819,108 @@ namespace Agience.Authority.Identity.Migrations
                     b.Navigation("Plugin");
                 });
 
+            modelBuilder.Entity("Agience.Authority.Identity.Models.AgentTopic", b =>
+                {
+                    b.HasOne("Agience.Authority.Identity.Models.Agent", "Agent")
+                        .WithMany()
+                        .HasForeignKey("AgentId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Topic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId");
+
+                    b.Navigation("Agent");
+
+                    b.Navigation("Topic");
+                });
+
             modelBuilder.Entity("Agience.Authority.Identity.Models.Authorizer", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Person", "Manager")
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
                         .WithMany("Authorizers")
-                        .HasForeignKey("ManagerId");
+                        .HasForeignKey("OwnerId");
 
-                    b.Navigation("Manager");
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Connection", b =>
+                {
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
+                        .WithMany("Connections")
+                        .HasForeignKey("OwnerId");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.ConnectionAuthorizer", b =>
+                {
+                    b.HasOne("Agience.Authority.Identity.Models.Authorizer", "Authorizer")
+                        .WithMany()
+                        .HasForeignKey("AuthorizerId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Connection", "Connection")
+                        .WithMany()
+                        .HasForeignKey("ConnectionId");
+
+                    b.Navigation("Authorizer");
+
+                    b.Navigation("Connection");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Credential", b =>
+                {
+                    b.HasOne("Agience.Authority.Identity.Models.Agent", "Agent")
+                        .WithMany()
+                        .HasForeignKey("AgentId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Authorizer", "Authorizer")
+                        .WithMany()
+                        .HasForeignKey("AuthorizerId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Connection", "Connection")
+                        .WithMany()
+                        .HasForeignKey("ConnectionId");
+
+                    b.Navigation("Agent");
+
+                    b.Navigation("Authorizer");
+
+                    b.Navigation("Connection");
+                });
+
+            modelBuilder.Entity("Agience.Authority.Identity.Models.FunctionConnection", b =>
+                {
+                    b.HasOne("Agience.Authority.Identity.Models.Connection", "Connection")
+                        .WithMany()
+                        .HasForeignKey("ConnectionId");
+
+                    b.HasOne("Agience.Authority.Identity.Models.Function", "Function")
+                        .WithMany()
+                        .HasForeignKey("FunctionId");
+
+                    b.Navigation("Connection");
+
+                    b.Navigation("Function");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Host", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Person", "Operator")
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
                         .WithMany("Hosts")
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OwnerId");
 
-                    b.Navigation("Operator");
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.HostPlugin", b =>
                 {
                     b.HasOne("Agience.Authority.Identity.Models.Host", "Host")
                         .WithMany()
-                        .HasForeignKey("HostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("HostId");
 
                     b.HasOne("Agience.Authority.Identity.Models.Plugin", "Plugin")
                         .WithMany()
-                        .HasForeignKey("PluginId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PluginId");
 
                     b.Navigation("Host");
 
@@ -625,78 +931,73 @@ namespace Agience.Authority.Identity.Migrations
                 {
                     b.HasOne("Agience.Authority.Identity.Models.Host", "Host")
                         .WithMany("Keys")
-                        .HasForeignKey("HostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("HostId");
 
                     b.Navigation("Host");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Log", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Parameter", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Agent", "Agent")
+                    b.HasOne("Agience.Authority.Identity.Models.Function", "Function")
                         .WithMany()
-                        .HasForeignKey("AgentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FunctionId");
 
-                    b.Navigation("Agent");
+                    b.HasOne("Agience.Authority.Identity.Models.Function", null)
+                        .WithMany("Inputs")
+                        .HasForeignKey("InputFunctionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Agience.Authority.Identity.Models.Function", null)
+                        .WithMany("Outputs")
+                        .HasForeignKey("OutputFunctionId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Function");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Plugin", b =>
                 {
-                    b.HasOne("Agience.Authority.Identity.Models.Person", "Creator")
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
                         .WithMany("Plugins")
-                        .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OwnerId");
 
-                    b.Navigation("Creator");
-                });
-
-            modelBuilder.Entity("Agience.Authority.Identity.Models.PluginConnection", b =>
-                {
-                    b.HasOne("Agience.Authority.Identity.Models.Plugin", "Plugin")
-                        .WithMany("Connections")
-                        .HasForeignKey("PluginId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Plugin");
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.PluginFunction", b =>
                 {
                     b.HasOne("Agience.Authority.Identity.Models.Function", "Function")
-                        .WithMany("PluginFunctions")
-                        .HasForeignKey("FunctionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("FunctionId");
 
                     b.HasOne("Agience.Authority.Identity.Models.Plugin", "Plugin")
-                        .WithMany("PluginFunctions")
-                        .HasForeignKey("PluginId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany()
+                        .HasForeignKey("PluginId");
 
                     b.Navigation("Function");
 
                     b.Navigation("Plugin");
                 });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Agency", b =>
+            modelBuilder.Entity("Agience.Authority.Identity.Models.Topic", b =>
                 {
-                    b.Navigation("Agents");
+                    b.HasOne("Agience.Authority.Identity.Models.Person", "Owner")
+                        .WithMany("Topics")
+                        .HasForeignKey("OwnerId");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Agent", b =>
                 {
-                    b.Navigation("Connections");
+                    b.Navigation("LogEntries");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Function", b =>
                 {
-                    b.Navigation("PluginFunctions");
+                    b.Navigation("Inputs");
+
+                    b.Navigation("Outputs");
                 });
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Host", b =>
@@ -708,20 +1009,17 @@ namespace Agience.Authority.Identity.Migrations
 
             modelBuilder.Entity("Agience.Authority.Identity.Models.Person", b =>
                 {
-                    b.Navigation("Agencies");
+                    b.Navigation("Agents");
 
                     b.Navigation("Authorizers");
+
+                    b.Navigation("Connections");
 
                     b.Navigation("Hosts");
 
                     b.Navigation("Plugins");
-                });
 
-            modelBuilder.Entity("Agience.Authority.Identity.Models.Plugin", b =>
-                {
-                    b.Navigation("Connections");
-
-                    b.Navigation("PluginFunctions");
+                    b.Navigation("Topics");
                 });
 #pragma warning restore 612, 618
         }

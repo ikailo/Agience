@@ -1,10 +1,10 @@
 ﻿using Agience.Core.Extensions;
-using Microsoft.Extensions.Hosting;
+using Agience.Core.Interfaces;
+using Agience.Plugins.Core.Interaction;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.Extensions.Logging;
-using Agience.Plugins.Core.OpenAI;
+using Host = Agience.Core.Host;
 
 namespace Agience.Hosts._Console
 {
@@ -14,64 +14,52 @@ namespace Agience.Hosts._Console
 
         internal static async Task Main(string[] args)
         {
-            var appBuilder = Host.CreateApplicationBuilder(args);
+            var appBuilder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder(args);
 
             appBuilder.Logging.ClearProviders();
-            appBuilder.Logging.AddConsole();
-            
-            // appBuilder.Logging.AddDebug();
+            //appBuilder.Logging.AddConsole();
 
-            AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionProcessor;            
+            appBuilder.Services.AddSingleton<InteractiveConsole>();
+            appBuilder.Services.AddSingleton<IEventLogHandler>(sp => sp.GetRequiredService<InteractiveConsole>());
+            appBuilder.Services.AddSingleton<IInteractionService>(sp => sp.GetRequiredService<InteractiveConsole>());            
 
             appBuilder.Configuration.AddUserSecrets<AppConfig>();
 
             var config = appBuilder.Configuration.Get<AppConfig>() ?? new AppConfig();
 
-            // TODO: These checks might not be necessary since we'll check in the builder anyway
-            //if (string.IsNullOrWhiteSpace(config.HostName)) { throw new ArgumentNullException("HostName"); }
             if (string.IsNullOrWhiteSpace(config.AuthorityUri)) { throw new ArgumentNullException("AuthorityUri"); }
             if (string.IsNullOrWhiteSpace(config.HostId)) { throw new ArgumentNullException("HostId"); }
             if (string.IsNullOrWhiteSpace(config.HostSecret)) { throw new ArgumentNullException("HostSecret"); }
-            if (string.IsNullOrWhiteSpace(config.OpenAiApiKey)) { throw new ArgumentNullException("OpenAiApiKey"); }
-                        
-            // Add Agience Host
-            appBuilder.Services.AddAgienceHost(config.AuthorityUri, config.HostId, config.HostSecret, config.CustomNtpHost, null, null, config.OpenAiApiKey);
 
-            appBuilder.Services.AddTransient<AgienceConsoleHost>();
+            appBuilder.Services.AddAgienceHostSingleton(config.AuthorityUri, config.HostId, config.HostSecret, config.CustomNtpHost, null, null);
 
             var app = appBuilder.Build();
 
-            _logger = app.Services.GetRequiredService<ILogger<Program>>();
+            var host = app.Services.GetRequiredService<Host>();
 
-            // ** Configure the Agience Host ** //
+#pragma warning disable SKEXP0050            
+            host.AddPluginFromType<Plugins.Core.OpenAI.ChatCompletionPlugin>();
+            host.AddPluginFromType<Plugins.Core.Interaction.InteractionPlugin>();
+            host.AddPlugin(new Plugins.Core.Code.Git(config.WorkspacePath));
+            //host.AddPlugin(new Plugins.Core.System.Files(config.WorkspacePath));
 
-            var agienceHost = app.Services.GetRequiredService<Core.Host>();
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.ConversationSummaryPlugin>();
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.FileIOPlugin>();
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.MathPlugin>();
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.TextPlugin>();
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.TimePlugin>();            
+            host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.WaitPlugin>();
 
-#pragma warning disable SKEXP0050
-            // TODO: These plugins should be loaded dynamically during runtime.
-            agienceHost.AddPluginFromType<TimePlugin>("msTime");
-            agienceHost.AddPluginFromType<ChatCompletionPlugin>("openAiChatCompletion");
+            
+
+            //host.AddPluginFromType<Microsoft.SemanticKernel.Plugins.Core.CodeInterpreter.SessionsPythonPlugin>();
 #pragma warning restore SKEXP0050
 
+            await host.StartAsync();
 
-            // TODO: Add plugins from a local assembly directory (startup and runtime)
-            // TODO: Add plugins initiated from Authority (startup and runtime)
-            // TODO: Register local services and plugins.;
+            await app.Services.GetRequiredService<IInteractionService>().Start();
 
-            try
-            {
-                await agienceHost.StartAsync();
-                await app.Services.GetRequiredService<AgienceConsoleHost>().Run();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while running the application.");
-            }
-        }
-
-        static void UnhandledExceptionProcessor(object sender, UnhandledExceptionEventArgs e)
-        {
-            _logger?.LogError($"\n\n Unhandled Exception occurred: {e.ExceptionObject}");
+            //await app.RunAsync();
         }
     }
 }

@@ -1,12 +1,11 @@
-﻿using Agience.Core.Extensions;
-using Agience.Core.Logging;
+﻿using Agience.Core.Logging;
+using Agience.Core.Models.Enums;
 using Agience.Core.Services;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
-using NuGet.Protocol.Plugins;
+using System;
 
 namespace Agience.Core
 {
@@ -16,72 +15,55 @@ namespace Agience.Core
         private readonly ILogger<AgentFactory> _logger;
         private readonly Authority _authority;
         private readonly Broker _broker;
-        private readonly string _hostOpenAiApiKey;
-        private readonly Dictionary<string, Type> _hostPluginsCompiled = new();
-        private readonly Dictionary<string, KernelPlugin> _hostPluginsCurated = new();
-        private readonly Dictionary<string, Agency> _agencies = new();
         private readonly List<Agent> _agents = new();
 
         internal AgentFactory(
             IServiceProvider mainServiceProvider,
-            Authority authority,
             Broker broker,
-            ILogger<AgentFactory> logger,
-            string? hostOpenAiApiKey = null
-            )
+            Authority authority,
+            ILogger<AgentFactory> logger
+        )
         {
             _mainServiceProvider = mainServiceProvider.CreateScope().ServiceProvider;
-            _authority = authority;
             _broker = broker;
+            _authority = authority;
             _logger = logger;
-            _hostOpenAiApiKey = hostOpenAiApiKey ?? string.Empty;
-        }
-
-        internal void AddHostPluginFromType<T>(string pluginName) where T : class
-        {
-            _hostPluginsCompiled.Add(pluginName, typeof(T));
-        }
-
-        internal void AddHostPlugin(Models.Entities.Plugin plugin)
-        {
-            if (string.IsNullOrWhiteSpace(plugin.Name))
-            {
-                _logger.LogWarning("Plugin name is empty. Plugin will not be loaded.");
-                return;
-            }
-
-            if (_hostPluginsCompiled.ContainsKey(plugin.Name) || _hostPluginsCurated.ContainsKey(plugin.Name))
-            {
-                _logger.LogWarning($"{plugin.Name} is already loaded. Plugin will not be loaded.");
-                return;
-            }
-
-            if (plugin.Type == Models.Entities.PluginType.Compiled)
-            {
-                var pluginType = Type.GetType(plugin.Name);
-
-                if (pluginType != null)
-                {
-                    _hostPluginsCompiled.Add(plugin.Name, pluginType);
-                }
-            }
-            else if (plugin.Type == Models.Entities.PluginType.Curated)
-            {
-                _hostPluginsCurated.Add(plugin.Name, CreateKernelPluginCurated(plugin));
-            }
         }
 
         internal Agent CreateAgent(Models.Entities.Agent modelAgent)
         {
+            var kernelServiceProvider = new ExtendedServiceProvider(_mainServiceProvider);
+            var host = kernelServiceProvider.GetRequiredService<Host>();
+
+            ConfigureKernelServices(kernelServiceProvider, modelAgent);
+
+            AddExecutiveFunction(kernelServiceProvider, host, modelAgent);
+
             var agentPlugins = new KernelPluginCollection();
 
-            // Create a new ServiceCollection for the Kernel
-            var kernelServiceCollection = new ServiceCollection();
+            // Create Kernel and Agent first
+            var kernel = new Kernel(kernelServiceProvider, agentPlugins);
+            kernel.Data["agent_id"] = modelAgent.Id;
 
-            kernelServiceCollection.AddSingleton<ILoggerFactory>(sp =>
+            kernelServiceProvider.Services.AddSingleton(kernel);
+
+            var agentLogger = kernel.LoggerFactory.CreateLogger<Agent>();
+            var agent = new Agent(modelAgent.Id, modelAgent.Name, _authority, _broker, modelAgent.Persona, kernel, agentLogger);
+            kernelServiceProvider.Services.AddSingleton(agent);
+
+            _agents.Add(agent);
+
+            // Add Plugins (deferred)
+            InitializePlugins(host, kernelServiceProvider, agentPlugins, modelAgent);
+
+            return agent;
+        }
+
+        private void ConfigureKernelServices(ExtendedServiceProvider kernelServiceProvider, Models.Entities.Agent modelAgent)
+        {
+            kernelServiceProvider.Services.AddSingleton<ILoggerFactory>(sp =>
             {
-                var agienceEventLoggerFactory = new EventLoggerFactory(modelAgent.AgencyId, modelAgent.Id);
-
+                var agienceEventLoggerFactory = new EventLoggerFactory(modelAgent.Id);
                 var agienceEventLoggerProvider = _mainServiceProvider.GetRequiredService<EventLoggerProvider>();
 
                 agienceEventLoggerFactory.AddProvider(agienceEventLoggerProvider);
@@ -97,18 +79,11 @@ namespace Agience.Core
                 return agienceEventLoggerFactory;
             });
 
-            // TODO: FIXME: This architecture is not ideal. We need to ensure that kernels aren't available to unassociated agents. Perhaps we just make a singular Kernel Wrapper instead.
-            kernelServiceCollection.AddSingleton(sp => _mainServiceProvider.GetRequiredService<IKernelStore>());                       
+            kernelServiceProvider.Services.AddSingleton(new AgienceCredentialService(modelAgent.Id, _authority, _broker));            
+        }
 
-            var credentialService = new AgienceCredentialService(modelAgent.Id, _authority, _broker);
-            if (!string.IsNullOrWhiteSpace(_hostOpenAiApiKey))
-            {
-                credentialService.AddCredential("HostOpenAiApiKey", _hostOpenAiApiKey);
-            }
-            kernelServiceCollection.AddSingleton(credentialService);
-
-            using var tempServiceProvider = kernelServiceCollection.BuildServiceProvider();
-
+        private void InitializePlugins(Host host, ExtendedServiceProvider serviceProvider, KernelPluginCollection agentPlugins, Models.Entities.Agent modelAgent)
+        {
             foreach (var plugin in modelAgent.Plugins)
             {
                 if (string.IsNullOrWhiteSpace(plugin.Name))
@@ -117,84 +92,112 @@ namespace Agience.Core
                     continue;
                 }
 
-                if (plugin.Type == Models.Entities.PluginType.Compiled && _hostPluginsCompiled.TryGetValue(plugin.Name, out var pluginType))
+                try
                 {
-                    var kernelPluginCompiled = CreateKernelPluginCompiled(tempServiceProvider, pluginType, plugin.Name, credentialService);
-
-                    agentPlugins.Add(kernelPluginCompiled);
-                }
-                else if (plugin.Type == Models.Entities.PluginType.Curated && _hostPluginsCurated.TryGetValue(plugin.Name, out var kernelPluginCurated))
-                {
-                    agentPlugins.Add(kernelPluginCurated);
-                }
-                else if (plugin.Type == Models.Entities.PluginType.Curated)
-                {
-                    // We can still load the plugin if it's curated and not found in the host plugins
-                    agentPlugins.Add(CreateKernelPluginCurated(plugin));
-                }
-            }
-
-            if (!string.IsNullOrWhiteSpace(modelAgent.ChatCompletionFunctionName))
-            {
-                var (pluginName, functionName) = modelAgent.ChatCompletionFunctionName.Split('.') switch
-                {
-                    var parts when parts.Length == 2 => (parts[0], parts[1]),
-                    _ => throw new InvalidOperationException($"Invalid ChatCompletionFunctionName format: {modelAgent.ChatCompletionFunctionName}")
-                };
-
-                if (functionName.EndsWith("Async"))
-                {
-                    functionName = functionName.Substring(0, functionName.Length - "Async".Length);
-                }
-
-                var chatCompletionPlugins = new KernelPluginCollection();
-
-                KernelPlugin? kernelPlugin = null;
-
-                if (_hostPluginsCompiled.TryGetValue(pluginName, out var pluginType) || _hostPluginsCurated.TryGetValue(pluginName, out kernelPlugin))
-                {
-                    kernelPlugin = CreateKernelPluginCompiled(tempServiceProvider, pluginType!, pluginName, credentialService);
-
-                    if (kernelPlugin.TryGetFunction(functionName, out var kernelFunction))
+                    if (plugin.PluginProvider == PluginProvider.SKPlugin)
                     {
-                        chatCompletionPlugins.AddFromFunctions(pluginName, new[] { kernelFunction });
+                        var pluginType = host.Plugins.FirstOrDefault(p => p.Name == plugin.Name)?.Type;
+                        if (pluginType != null)
+                        {
+                            if (host.PluginInstances.ContainsKey(pluginType.FullName ?? pluginType.Name))
+                            {
+                                var pluginName = pluginType.FullName ?? pluginType.Name;
+                                var pluginInstance = host.PluginInstances[pluginName];
+                                var kernelPlugin = CreateKernelPluginCompiled(pluginInstance, plugin.Name);
+                                agentPlugins.Add(kernelPlugin);
+                            }
+                            else
+                            {
+                                var kernelPlugin = CreateKernelPluginCompiled(serviceProvider, pluginType, plugin.Name);
+                                agentPlugins.Add(kernelPlugin);
+                            }
+                        }
                     }
+                    else if (plugin.PluginProvider == PluginProvider.Prompt)
+                    {
+                        var promptPlugin = CreateKernelPluginPrompt(plugin);
+                        agentPlugins.Add(promptPlugin);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to initialize plugin: {plugin.Name}");
+                }
+            }            
+        }
+
+        private void AddExecutiveFunction(ExtendedServiceProvider serviceProvider, Host host, Models.Entities.Agent modelAgent)
+        {
+            if (!string.IsNullOrWhiteSpace(modelAgent.ExecutiveFunctionId))
+            {
+                string executiveFunctionName = string.Empty;
+                Func<IServiceProvider, IChatCompletionService> factory = null;
+
+                foreach (var hostPlugin in host.Plugins)
+                {
+                    if (hostPlugin.Functions.Any(f => f.Id == modelAgent.ExecutiveFunctionId))
+                    {
+                        if (hostPlugin.PluginProvider == PluginProvider.SKPlugin && hostPlugin.Type != null)
+                        {
+                            var pluginType = hostPlugin.Type;
+                            var pluginName = hostPlugin.Name;
+                            executiveFunctionName = hostPlugin.Functions
+                                .FirstOrDefault(f => f.Id == modelAgent.ExecutiveFunctionId)?.Name.Replace("Async", "");
+
+                            factory = sp =>
+                            {
+                                var kernelPlugin = CreateKernelPluginCompiled(serviceProvider, pluginType, pluginName);
+                                if (kernelPlugin.TryGetFunction(executiveFunctionName, out var executiveFunction))
+                                {
+                                    return new AgienceChatCompletionService(executiveFunction);
+                                }
+                                throw new InvalidOperationException($"Executive function '{executiveFunctionName}' could not be found.");
+                            };
+                        }
+                        else if (hostPlugin.PluginProvider == PluginProvider.Prompt)
+                        {
+                            var plugin = CreateKernelPluginPrompt(hostPlugin);
+                            executiveFunctionName = hostPlugin.Functions
+                                .FirstOrDefault(f => f.Id == modelAgent.ExecutiveFunctionId)?.Name.Replace("Async", "");
+
+                            factory = sp =>
+                            {
+                                if (plugin.TryGetFunction(executiveFunctionName, out var executiveFunction))
+                                {
+                                    return new AgienceChatCompletionService(executiveFunction);
+                                }
+                                throw new InvalidOperationException($"Executive function '{executiveFunctionName}' could not be found.");
+                            };
+                        }
+                    }
+                }
+
+                if (factory != null)
+                {
+                    serviceProvider.Services.AddScoped<IChatCompletionService>(factory);
                 }
                 else
                 {
-                    _logger.LogWarning($"Plugin {pluginName} not found. Chat Completion function {modelAgent.ChatCompletionFunctionName} will not be loaded.");
+                    _logger.LogWarning($"Could not find a plugin with the executive function id {modelAgent.ExecutiveFunctionId}");
                 }
-
-                var chatCompletionFunction = chatCompletionPlugins.GetFunction(pluginName, functionName);
-
-                kernelServiceCollection.AddScoped<IChatCompletionService>(sp => new AgienceChatCompletionService(chatCompletionFunction));
             }
-
-            return CreateScopedAgent(modelAgent, kernelServiceCollection.BuildServiceProvider(), agentPlugins);
-
         }
 
-        private Agent CreateScopedAgent(Models.Entities.Agent modelAgent, IServiceProvider serviceProvider, KernelPluginCollection plugins)
+        private KernelPlugin CreateKernelPluginCompiled(ExtendedServiceProvider serviceProvider, Type pluginType, string pluginName)
         {
-            var kernel = new Kernel(serviceProvider, plugins);
+            var pluginInstance = ActivatorUtilities.CreateInstance(serviceProvider, pluginType);
+            return KernelPluginFactory.CreateFromObject(pluginInstance, pluginName);
+        }
 
-            kernel.Data["agent_id"] = modelAgent.Id;
+        private KernelPlugin CreateKernelPluginCompiled<T>(T pluginInstance, string pluginName) where T : class
+        {   
+            return KernelPluginFactory.CreateFromObject(pluginInstance, pluginName);
+        }
 
-            _mainServiceProvider.GetRequiredService<IKernelStore>().AddKernel(modelAgent.Id, kernel);
-
-            var agencyLogger = kernel.LoggerFactory.CreateLogger<Agency>();
-
-            var agentLogger = kernel.LoggerFactory.CreateLogger<Agent>();
-
-            var agency = GetAgency(modelAgent.Agency, agencyLogger);
-
-            var agent = new Agent(modelAgent.Id, modelAgent.Name, _authority, _broker, agency, modelAgent.Persona, kernel, agentLogger);
-
-            agency.AddLocalAgent(agent);
-
-            _agents.Add(agent);
-
-            return agent;
+        private KernelPlugin CreateKernelPluginPrompt(Models.Entities.Plugin plugin)
+        {
+            var functions = plugin.Functions.Select(f => KernelFunctionFactory.CreateFromPrompt(f.Instruction, null as PromptExecutionSettings, f.Name, f.Description, null, null, null)).ToList();
+            return KernelPluginFactory.CreateFromFunctions(plugin.Name, functions);
         }
 
         public void DisposeAgent(string agentId)
@@ -204,71 +207,18 @@ namespace Agience.Core
             if (agent != null)
             {
                 _agents.Remove(agent);
-                _mainServiceProvider.GetRequiredService<IKernelStore>().RemoveKernel(agent.Id);
+                //_mainServiceProvider.GetRequiredService<IKernelStore>().RemoveKernel(agent.Id);
                 agent.Dispose();
             }
         }
 
         public void Dispose()
         {
-            // Create a list to avoid modifying the collection while iterating
-            var agentsToRemove = new List<Agent>(_agents);
-
-            foreach (var agent in agentsToRemove)
+            foreach (var agent in _agents.ToList())
             {
-                DisposeAgent(agent.Id); // Use agent.Id as the string parameter
+                DisposeAgent(agent.Id);
             }
-
-            // Clear all agents from the collection
             _agents.Clear();
-        }
-
-
-        private KernelPlugin CreateKernelPluginCompiled(IServiceProvider serviceProvider, Type pluginType, string pluginName, AgienceCredentialService credentialService)
-        {
-
-            {
-                var pluginInstance = ActivatorUtilities.CreateInstance(serviceProvider, pluginType);
-
-                return KernelPluginFactory.CreateFromObject(pluginInstance, pluginName);
-            }
-
-            /*
-            var connectionAttribute = pluginType.GetCustomAttribute<PluginConnectionAttribute>();
-            
-            if (connectionAttribute != null)
-            {
-                // Could potentially do some binding or injection here
-            }
-            */
-        }
-
-        private KernelPlugin CreateKernelPluginCurated(Models.Entities.Plugin plugin)
-        {
-            var functions = new List<KernelFunction>();
-
-            foreach (var function in plugin.Functions)
-            {
-                functions.Add(KernelFunctionFactory.CreateFromPrompt(function.Prompt!, null as PromptExecutionSettings, function.Name, function.Description, null, null));
-            }
-            return KernelPluginFactory.CreateFromFunctions(plugin.Name, functions);
-        }
-
-        internal Agency GetAgency(Models.Entities.Agency modelAgency, ILogger<Agency> logger)
-        {
-            if (!_agencies.TryGetValue(modelAgency.Id, out var agency))
-            {
-                agency = new Agency(_authority, _broker, logger)
-                {
-                    Id = modelAgency.Id,
-                    Name = modelAgency.Name
-                    // Could use AutoMapper here
-                };
-
-                _agencies[modelAgency.Id] = agency;
-            }
-
-            return _agencies[modelAgency.Id];
         }
     }
 }

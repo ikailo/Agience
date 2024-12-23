@@ -1,0 +1,29 @@
+﻿@page "/topics"
+@using Agience.Authority.Models.Manage
+@using Agience.Authority.Manage.Components.Shared
+@using Agience.Authority.Manage.Services
+@using Agience.Authority.Manage.Models
+@using FieldType = Agience.Authority.Manage.Models.FieldType
+@using System.Text.Json
+
+<EntityPage @key="typeof(Topic)" TEntity="Topic" Icon="@Icons.Material.Filled.Chat">
+    <EntityDetailPanel TEntity="Topic" Fields="TopicFields" />
+    <EntityListPanel TParent="Topic" TChild="Agent" TabName="Agents" Fields="AgentFields"/>
+</EntityPage>
+
+@code {
+    [Inject] private ILogger<Topics> _logger { get; set; } = null!;
+
+    public List<FieldDefinition> TopicFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Name", Label = "Name" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Address", Label = "Address" }
+    };
+
+    public List<FieldDefinition> AgentFields { get; set; } = new()
+    {
+        new FieldDefinition { Type = FieldType.Lookup, FieldName = "Id", Label = "Agent", RelatedEntityApiName = "agent",  RelatedEntityFieldName = "this" },
+        new FieldDefinition { Type = FieldType.Text, FieldName = "Description", Label = "Description" }
+    };
+}

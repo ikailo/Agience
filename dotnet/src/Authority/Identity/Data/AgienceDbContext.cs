@@ -2,8 +2,10 @@
 using Agience.Authority.Identity.Models;
 using Host = Agience.Authority.Identity.Models.Host;
 using System.Text.Json;
-using Duende.IdentityServer.Models;
 using Agience.Authority.Identity.Validators;
+using Agience.Core.Models.Enums;
+using Agience.Authority.Identity.Converters;
+
 
 namespace Agience.Authority.Identity.Data
 {
@@ -16,99 +18,138 @@ namespace Agience.Authority.Identity.Data
         {
             _logger = logger;
         }
-        public DbSet<Agency> Agencies { get; set; }
+
         public DbSet<Agent> Agents { get; set; }
+        public DbSet<AgentLogEntry> AgentLogEntries { get; set; }
         public DbSet<AgentPlugin> AgentPlugins { get; set; }
+        public DbSet<AgentTopic> AgentTopics { get; set; }
         public DbSet<Authorizer> Authorizers { get; set; }
+        public DbSet<Connection> Connections { get; set; }
+        public DbSet<ConnectionAuthorizer> ConnectionAuthorizers { get; set; }
         public DbSet<Credential> Credentials { get; set; }
-        public DbSet<AgentConnection> AgentConnections { get; set; }
         public DbSet<Function> Functions { get; set; }
+        public DbSet<FunctionConnection> FunctionConnections { get; set; }
         public DbSet<Host> Hosts { get; set; }
         public DbSet<HostPlugin> HostPlugins { get; set; }
         public DbSet<Key> Keys { get; set; }
-        public DbSet<Log> Logs { get; set; }
+        public DbSet<Parameter> Parameters { get; set; }
         public DbSet<Person> People { get; set; }
         public DbSet<Plugin> Plugins { get; set; }
-        public DbSet<PluginConnection> PluginConnections { get; set; }
         public DbSet<PluginFunction> PluginFunctions { get; set; }
+        public DbSet<Topic> Topics { get; set; }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+
+            base.OnConfiguring(optionsBuilder);
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Agency>(a =>
-            {
-                a.ToTable(nameof(Agencies));
-                a.HasKey(a => a.Id);
-                a.HasOne(a => a.Director).WithMany(p => p.Agencies).HasForeignKey(a => a.DirectorId);
-                a.HasMany(a => a.Agents).WithOne(a => a.Agency).HasForeignKey(a => a.AgencyId);
-            });
-
             modelBuilder.Entity<Agent>(a =>
             {
                 a.ToTable(nameof(Agents));
                 a.HasKey(a => a.Id);
-                a.HasOne(a => a.Agency).WithMany(a => a.Agents).HasForeignKey(a => a.AgencyId);
+                a.HasOne(a => a.Owner).WithMany(p => p.Agents).HasForeignKey(a => a.OwnerId);
                 a.HasOne(a => a.Host).WithMany(h => h.Agents).HasForeignKey(a => a.HostId);
-                a.HasMany(a => a.Connections).WithOne(ac => ac.Agent).HasForeignKey(ac => ac.AgentId);
-                a.HasMany(a => a.Plugins).WithMany(p => p.Agents).UsingEntity<AgentPlugin>();
+                a.HasOne(a => a.ExecutiveFunction).WithMany().HasForeignKey(a => a.ExecutiveFunctionId);
+                a.HasOne(a => a.AutoStartFunction).WithMany().HasForeignKey(a => a.AutoStartFunctionId);
+                a.HasMany(a => a.Plugins).WithMany().UsingEntity<AgentPlugin>();
+                a.HasMany(a => a.Topics).WithMany(t => t.Agents).UsingEntity<AgentTopic>();
+                a.HasMany(a => a.LogEntries).WithOne(lg => lg.Agent).HasForeignKey(lg => lg.AgentId);
             });
 
-            modelBuilder.Entity<AgentConnection>(ac =>
+            modelBuilder.Entity<AgentLogEntry>(lg =>
             {
-                ac.ToTable(nameof(AgentConnections));
-                ac.HasKey(ac => new { ac.PluginConnectionId, ac.AgentId });
-                ac.HasOne(ac => ac.Agent).WithMany(a => a.Connections).HasForeignKey(ac => ac.AgentId);
-                ac.HasOne(ac => ac.Credential).WithMany().HasForeignKey(ac => ac.CredentialId);
-                ac.HasOne(ac => ac.PluginConnection).WithMany().HasForeignKey(ac => ac.PluginConnectionId);
-                ac.HasOne(ac => ac.Authorizer).WithMany().HasForeignKey(ac => ac.AuthorizerId);
+                lg.ToTable(nameof(AgentLogEntries));
+                lg.HasKey(lg => lg.Id);
             });
 
             modelBuilder.Entity<AgentPlugin>(ap =>
             {
                 ap.ToTable(nameof(AgentPlugins));
-                ap.HasKey(ap => new { ap.AgentId, ap.PluginId });
-                ap.HasOne(ap => ap.Agent).WithMany().HasForeignKey(ap => ap.AgentId);
-                ap.HasOne(ap => ap.Plugin).WithMany().HasForeignKey(ap => ap.PluginId);
+                ap.HasKey(ap => ap.Id);
+                ap.HasIndex(ap => new { ap.AgentId, ap.PluginId });
+            });
+
+            modelBuilder.Entity<AgentTopic>(at =>
+            {
+                at.ToTable(nameof(AgentTopics));
+                at.HasKey(at => at.Id);
+                at.HasIndex(at => new { at.AgentId, at.TopicId });
             });
 
             modelBuilder.Entity<Authorizer>(a =>
             {
                 a.ToTable(nameof(Authorizers));
-                a.HasOne(a => a.Manager).WithMany(p => p.Authorizers).HasForeignKey(a => a.ManagerId);
+                a.HasKey(a => a.Id);
+                a.HasOne(a => a.Owner).WithMany(p => p.Authorizers).HasForeignKey(a => a.OwnerId);
+                //a.Property(a => a.Scopes).HasConversion(ListValueConversion.GetValueConverter()).Metadata.SetValueComparer(ListValueConversion.GetValueComparer());
+                a.Property(a => a.Visibility).HasConversion(v => v.ToString(), v => Enum.Parse<Visibility>(v)).HasDefaultValue(Visibility.Private);
+                a.Property(a => a.AuthType).HasConversion(v => v.ToString(), v => Enum.Parse<AuthorizationType>(v)).HasDefaultValue(AuthorizationType.Public);
+            });
+
+            modelBuilder.Entity<Connection>(c =>
+            {
+                c.ToTable(nameof(Connections));
+                c.HasKey(c => c.Id);
+                c.HasOne(c => c.Owner).WithMany(a => a.Connections).HasForeignKey(c => c.OwnerId);
+                c.HasMany(c => c.Authorizers).WithMany(a => a.Connections).UsingEntity<ConnectionAuthorizer>();
+                c.Property(c => c.Scopes).HasConversion(ListValueConversion.GetValueConverter()).Metadata.SetValueComparer(ListValueConversion.GetValueComparer());
+                c.Property(c => c.Visibility).HasConversion(v => v.ToString(), v => Enum.Parse<Visibility>(v)).HasDefaultValue(Visibility.Private);
+            });
+
+            modelBuilder.Entity<ConnectionAuthorizer>(ca =>
+            {
+                ca.ToTable(nameof(ConnectionAuthorizers));
+                ca.HasKey(ca => ca.Id);
+                ca.HasIndex(ca => new { ca.ConnectionId, ca.AuthorizerId });
             });
 
             modelBuilder.Entity<Credential>(c =>
             {
                 c.ToTable(nameof(Credentials));
+                c.HasKey(c => c.Id);
+                c.HasOne(c => c.Agent).WithMany().HasForeignKey(c => c.AgentId);
+                c.HasOne(c => c.Connection).WithMany().HasForeignKey(c => c.ConnectionId);
+                c.Property(c => c.Status).HasConversion(v => v.ToString(), v => Enum.Parse<CredentialStatus>(v)).HasDefaultValue(CredentialStatus.NoAuthorizer);
             });
 
             modelBuilder.Entity<Function>(f =>
             {
                 f.ToTable(nameof(Functions));
                 f.HasKey(f => f.Id);
-                f.HasMany(f => f.PluginFunctions).WithOne(pf => pf.Function).HasForeignKey(pf => pf.FunctionId);
+                f.HasMany(f => f.Connections).WithMany(c => c.Functions).UsingEntity<FunctionConnection>();
+                f.HasMany(f => f.Inputs).WithOne().HasForeignKey(ip => ip.InputFunctionId).OnDelete(DeleteBehavior.Cascade);
+                f.HasMany(f => f.Outputs).WithOne().HasForeignKey(op => op.OutputFunctionId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<FunctionConnection>(fc =>
+            {
+                fc.ToTable(nameof(FunctionConnections));
+                fc.HasKey(fc => fc.Id);
+                fc.HasIndex(fc => new { fc.FunctionId, fc.ConnectionId });
             });
 
             modelBuilder.Entity<Host>(h =>
             {
                 h.ToTable(nameof(Hosts));
                 h.HasKey(h => h.Id);
-                h.HasOne(h => h.Operator).WithMany(p => p.Hosts).HasForeignKey(a => a.OperatorId);
-                h.HasMany(h => h.Plugins).WithMany(p => p.Hosts).UsingEntity<HostPlugin>();
-                h.Property(h => h.Scopes) // List of string
-                   .HasConversion(
-                       v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                       v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>()
-                   );
+                h.HasOne(h => h.Owner).WithMany(p => p.Hosts).HasForeignKey(a => a.OwnerId);
+                h.HasMany(h => h.Plugins).WithMany().UsingEntity<HostPlugin>();
+                h.HasMany(h => h.Agents).WithOne(a => a.Host).HasForeignKey(a => a.HostId);
+                h.Property(h => h.Scopes).HasConversion(ListValueConversion.GetValueConverter()).Metadata.SetValueComparer(ListValueConversion.GetValueComparer());
+                h.Property(h => h.Visibility).HasConversion(v => v.ToString(), v => Enum.Parse<Visibility>(v)).HasDefaultValue(Visibility.Private);
             });
 
             modelBuilder.Entity<HostPlugin>(hp =>
             {
                 hp.ToTable(nameof(HostPlugins));
-                hp.HasKey(hp => new { hp.HostId, hp.PluginId });
-                hp.HasOne(hp => hp.Host).WithMany().HasForeignKey(hp => hp.HostId);
-                hp.HasOne(hp => hp.Plugin).WithMany().HasForeignKey(hp => hp.PluginId);
+                hp.HasKey(hp => hp.Id);
+                hp.HasIndex(hp => new { hp.HostId, hp.PluginId });
             });
 
             modelBuilder.Entity<Key>(k =>
@@ -118,55 +159,46 @@ namespace Agience.Authority.Identity.Data
                 k.HasOne(k => k.Host).WithMany(h => h.Keys).HasForeignKey(h => h.HostId);
             });
 
-            modelBuilder.Entity<Log>(lg =>
+            modelBuilder.Entity<Parameter>(p =>
             {
-                lg.HasKey(lg => lg.Id);
-                lg.ToTable(nameof(Logs));
-                lg.HasOne(lg => lg.Agent).WithMany().HasForeignKey(lg => lg.AgentId);
+                p.ToTable(nameof(Parameters));
+                p.HasKey(p => p.Id);
             });
 
             modelBuilder.Entity<Person>(p =>
             {
                 p.ToTable(nameof(People));
                 p.HasKey(p => p.Id);
-                p.HasMany(p => p.Agencies).WithOne(a => a.Director).HasForeignKey(a => a.DirectorId);
-                p.HasMany(p => p.Hosts).WithOne(h => h.Operator).HasForeignKey(p => p.OperatorId);
-                p.HasMany(p => p.Plugins).WithOne(p => p.Creator).HasForeignKey(p => p.CreatorId);
             });
 
             modelBuilder.Entity<Plugin>(p =>
             {
                 p.ToTable(nameof(Plugins));
                 p.HasKey(p => p.Id);
-                p.HasOne(p => p.Creator).WithMany(p => p.Plugins).HasForeignKey(p => p.CreatorId);
-                p.HasMany(p => p.Agents).WithMany(a => a.Plugins).UsingEntity<AgentPlugin>();
-                p.HasMany(p => p.Hosts).WithMany(h => h.Plugins).UsingEntity<HostPlugin>();
-                p.HasMany(p => p.Connections).WithOne(c => c.Plugin).HasForeignKey(c => c.PluginId);
-                p.HasMany(p => p.PluginFunctions).WithOne(pf => pf.Plugin).HasForeignKey(pf => pf.PluginId);
-                p.HasGeneratedTsVectorColumn(p => p.DescriptionSearchVector, "english", p => new { p.Name, p.Description }).HasIndex(p => p.DescriptionSearchVector).HasMethod("GIN");
-            });
+                p.HasOne(p => p.Owner).WithMany(p => p.Plugins).HasForeignKey(p => p.OwnerId);
+                p.HasMany(p => p.Functions).WithMany().UsingEntity<PluginFunction>();
+                p.Property(p => p.Visibility).HasConversion(v => v.ToString(), v => Enum.Parse<Visibility>(v)).HasDefaultValue(Visibility.Private);
+                p.Property(p => p.PluginProvider).HasConversion(v => v.ToString(), v => Enum.Parse<PluginProvider>(v)).HasDefaultValue(PluginProvider.Prompt);
+                p.Property(p => p.PluginSource).HasConversion(v => v.ToString(), v => Enum.Parse<PluginSource>(v)).HasDefaultValue(PluginSource.UserDefined);
 
-            modelBuilder.Entity<PluginConnection>(c =>
-            {
-                c.ToTable(nameof(PluginConnections));
-                c.HasOne(c => c.Plugin).WithMany(p => p.Connections).HasForeignKey(c => c.PluginId);
             });
 
             modelBuilder.Entity<PluginFunction>(pf =>
             {
                 pf.ToTable(nameof(PluginFunctions));
-                pf.HasKey(pf => new { pf.PluginId, pf.FunctionId });
-                pf.HasOne(pf => pf.Plugin).WithMany(p => p.PluginFunctions).HasForeignKey(pf => pf.PluginId);
-                pf.HasOne(pf => pf.Function).WithMany(f => f.PluginFunctions).HasForeignKey(pf => pf.FunctionId);
+                pf.HasKey(pf => pf.Id);
+                pf.HasIndex(pf => new { pf.PluginId, pf.FunctionId });
+                pf.HasOne(pf => pf.Plugin).WithMany().HasForeignKey(pf => pf.PluginId);
+                pf.HasOne(pf => pf.Function).WithMany().HasForeignKey(pf => pf.FunctionId);
                 pf.Property(pf => pf.IsRoot).IsRequired();
-                // pf.HasIndex(pf => new { pf.FunctionId, pf.IsRoot }).IsUnique().HasFilter("IsRoot = true"); // Need to create manually
-                // SQL:  CREATE UNIQUE INDEX "IX_PluginFunctions_FunctionId_IsRoot" ON "PluginFunctions" ("FunctionId", "IsRoot") WHERE "IsRoot" = true;
             });
 
-            modelBuilder.Entity<Log>(lg => {
-                lg.HasKey(lg => lg.Id);
-                lg.ToTable(nameof(Logs));
-                lg.HasOne(lg => lg.Agent).WithMany().HasForeignKey(lg =>lg.AgentId);
+            modelBuilder.Entity<Topic>(t =>
+            {
+                t.ToTable(nameof(Topics));
+                t.HasKey(t => t.Id);
+                t.HasOne(t => t.Owner).WithMany(p => p.Topics).HasForeignKey(t => t.OwnerId);
+                t.Property(t => t.Visibility).HasConversion(v => v.ToString(), v => Enum.Parse<Visibility>(v)).HasDefaultValue(Visibility.Private);
             });
         }
 
@@ -189,7 +221,7 @@ namespace Agience.Authority.Identity.Data
                 var webDomain = args["web_domain"];
                 var webPort = args["web_port"];
 
-                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssffff");
+                var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmssffff"); 
 
                 var personId = idProvider.GenerateId(nameof(Person));
                 var hostId = idProvider.GenerateId(nameof(Host));
@@ -205,7 +237,8 @@ namespace Agience.Authority.Identity.Data
                         LastName = lastName,
                         Email = email,
                         ProviderId = providerId,
-                        ProviderPersonId = providerPersonId
+                        ProviderPersonId = providerPersonId,
+                        CreatedDate = DateTime.UtcNow
                     }
                 );
 
@@ -217,12 +250,14 @@ namespace Agience.Authority.Identity.Data
                     // Public Web Host
 
                     Id = hostId,
-                    OperatorId = personId,
+                    OwnerId = personId,
                     Name = hostName,
                     RedirectUris = string.Join(' ', redirectUris),
                     PostLogoutUris = string.Join(' ', postLogoutUris),
                     Scopes = new List<string> { "openid", "profile", "email", "manage", "connect" }, // TODO: Allow Configuration
-                    Visibility = Core.Models.Entities.Visibility.Public
+                    Visibility = Core.Models.Enums.Visibility.Public,
+                    CreatedDate = DateTime.UtcNow
+
                 });
 
                 Keys.AddRange(new Key

@@ -41,7 +41,7 @@ namespace Agience.Hosts.Service
                     if (string.IsNullOrWhiteSpace(config.HostId)) { throw new ArgumentNullException(nameof(config.HostId)); }
                     if (string.IsNullOrWhiteSpace(config.HostSecret)) { throw new ArgumentNullException(nameof(config.HostSecret)); }
 
-                    services.AddAgienceHost(config.AuthorityUri, config.HostId, config.HostSecret);
+                    services.AddAgienceHostSingleton(config.AuthorityUri, config.HostId, config.HostSecret);
                     services.AddHostedService<Worker>();
                 })
                 .ConfigureLogging(logging =>
