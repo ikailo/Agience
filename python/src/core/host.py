@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Callable, Any, Union
 from dataclasses import dataclass
 import aiohttp
 import asyncio
+import os
 
 # from models.entities.host import Host as HostModel
 # from models.entities.agent import Agent as AgentModel
@@ -165,7 +166,9 @@ class Host:
         """
         Obtain access token from token endpoint
         """
-        token_endpoint = self._authority.token_endpoint
+        # TODO: Fix this
+        # token_endpoint = self._authority.token_endpoint
+        token_endpoint = f"{os.getenv("AUTHORITY_URI")}/connect/token"
         if not token_endpoint:
             raise ValueError("tokenEndpoint is null")
 

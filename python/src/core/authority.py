@@ -5,10 +5,12 @@ from datetime import datetime
 import logging
 
 # Custom imports (to match the .NET structure)
-from models.entities import Broker, BrokerMessage, BrokerMessageType
-from models.entities.authority_data_adapter_interface import AuthorityDataAdapter
+# from models.entities import Broker, BrokerMessage, BrokerMessageType
+from models.messages.broker_message import BrokerMessage, BrokerMessageType
+# from models.entities.authority_data_adapter_interface import AuthorityDataAdapter
 
 logger = logging.getLogger(__name__)
+
 
 class Authority:
     BROKER_URI_KEY = "broker_uri"
@@ -17,8 +19,11 @@ class Authority:
     def __init__(
         self,
         authority_uri: str,
-        broker: Broker,
-        authority_data_adapter: AuthorityDataAdapter,
+        # TODO: Fix type hinting for broker, authority_data_adapter
+        # broker: Broker,
+        broker,
+        # authority_data_adapter: AuthorityDataAdapter,
+        authority_data_adapter,
         authority_uri_internal: Optional[str] = None,
         broker_uri_internal: Optional[str] = None,
     ):
@@ -67,7 +72,8 @@ class Authority:
                 config = await self._retrieve_openid_configuration(authority_uri)
 
                 # Set Broker URI and Token Endpoint
-                self._broker_uri = config.get(self.BROKER_URI_KEY, self._broker_uri)
+                self._broker_uri = config.get(
+                    self.BROKER_URI_KEY, self._broker_uri)
                 self._token_endpoint = config.get("token_endpoint")
 
                 logger.info("Authority initialized successfully.")
@@ -133,7 +139,8 @@ class Authority:
         plugins = await self._data_adapter.get_plugins_for_host_id_no_tracking(host_id)
         agents = await self._data_adapter.get_agents_for_host_id_no_tracking(host_id)
 
-        logger.info(f"Host: {host['name']}, Plugins: {len(plugins)}, Agents: {len(agents)}")
+        logger.info(f"Host: {host['name']}, Plugins: {
+                    len(plugins)}, Agents: {len(agents)}")
         self._send_host_welcome_event(host, plugins, agents)
 
     def _send_host_welcome_event(self, host: dict, plugins: List[dict], agents: List[dict]):
