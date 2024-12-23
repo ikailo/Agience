@@ -2,7 +2,7 @@ from typing import List, Optional
 from .agience_entity import AgienceEntity
 from .agency import Agency
 from .plugin import Plugin
-from .host import Host
+from models.entities.host import Host
 from .enum import CompletionAction
 
 

@@ -1,6 +1,6 @@
 from typing import List, Optional
 from .agience_entity import AgienceEntity
-from .agent import Agent
+from models.entities.agent import Agent
 from .enum import Visibility
 
 

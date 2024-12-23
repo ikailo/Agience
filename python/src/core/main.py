@@ -4,6 +4,8 @@ import asyncio
 from broker import Broker
 from host import Host
 
+load_dotenv()
+
 HOST_ID = os.getenv('HOST_ID')
 HOST_SECRET = os.getenv('HOST_SECRET')
 BROKER_URI = os.getenv('BROKER_URI')
@@ -19,10 +21,12 @@ async def main():
                 broker=broker, agent_factory=None, logger=None)
 
     # Get the access token for the host
-    host_access_token = host.get_access_token()
+    host_access_token = await host.get_access_token()
+
+    print(host_access_token)
 
     # Connect to the broker using the access token
-    await broker.connect(host_access_token, BROKER_URI)
+    # await broker.connect(host_access_token, BROKER_URI)
 
 
 asyncio.run(main())
