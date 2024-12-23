@@ -17,6 +17,7 @@ class TokenResponse:
     access_token: Optional[str] = None
     token_type: Optional[str] = None
     expires_in: Optional[int] = None
+    scope: Optional[str] = None
 
 
 class Host:
@@ -170,11 +171,13 @@ class Host:
 
         # Create basic auth header
         auth_str = base64.b64encode(
-            f"{self.id}:{self._host_secret}".encode()
-        ).decode()
+            f"{self.id}:{self._host_secret}".encode('utf-8')
+        ).decode('utf-8')
 
         async with aiohttp.ClientSession() as session:
-            headers = {"Authorization": f"Basic {auth_str}"}
+            headers = {"Authorization": f"Basic {auth_str}",
+                       "Content-Type": "application/x-www-form-urlencoded"}
+
             data = {
                 "grant_type": "client_credentials",
                 "scope": "connect"
@@ -184,6 +187,7 @@ class Host:
                 if resp.status == 200:
                     response_data = await resp.json()
                     return TokenResponse(**response_data).access_token
+
         return None
 
     def add_plugin_from_type(self, name: str, plugin_type: type):
