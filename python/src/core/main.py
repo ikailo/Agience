@@ -26,6 +26,7 @@ async def message_handler(message: BrokerMessage):
 async def main():
     # Initialize the Broker
     broker = Broker(None)
+    broker_2 = Broker(None)
 
     # Initialize the Authority
     # TODO: authority_data_adapter should not be null, implement
@@ -42,6 +43,9 @@ async def main():
 
     # Connect to the broker using the access token
     await broker.connect(host_access_token, BROKER_URI)
+    time.sleep(2)
+
+    await broker_2.connect(host_access_token, BROKER_URI)
 
     # Wait for connection to complete
     time.sleep(2)
@@ -50,6 +54,11 @@ async def main():
     await broker.subscribe("hello/world", message_handler)
     time.sleep(2)
 
+    time.sleep(2)
+    await broker_2.publish(message=BrokerMessage(
+        type=BrokerMessageType.EVENT, topic="hello/world"))
+
+    time.sleep(2)
     await broker.publish(message=BrokerMessage(type=BrokerMessageType.EVENT, topic="hello/world"))
 
 
