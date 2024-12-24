@@ -15,6 +15,14 @@ BROKER_URI = os.getenv('BROKER_URI')
 AUTHORITY_URI = os.getenv('AUTHORITY_URI')
 
 
+async def message_handler(message: BrokerMessage):
+    print("===========================================")
+    print(f"Received message on topic: {message.topic}")
+    print(f"Message type: {message.type}")
+    print(f"Message data: {message.data}")
+    print("===========================================")
+
+
 async def main():
     # Initialize the Broker
     broker = Broker(None)
@@ -36,6 +44,10 @@ async def main():
     await broker.connect(host_access_token, BROKER_URI)
 
     # Wait for connection to complete
+    time.sleep(2)
+
+    # Subscribe to a topic
+    await broker.subscribe("hello/world", message_handler)
     time.sleep(2)
 
     await broker.publish(message=BrokerMessage(type=BrokerMessageType.EVENT, topic="hello/world"))

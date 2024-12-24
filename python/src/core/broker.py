@@ -73,6 +73,7 @@ class Broker:
 
     async def subscribe(self, topic: str, callback: Callable[[BrokerMessage], asyncio.Task]):
         if not self._is_connected:
+            logger.error("Cannot subscribe, MQTT client is not connected")
             raise ConnectionError("MQTT client is not connected.")
 
         # Register the callback for the topic
@@ -82,7 +83,8 @@ class Broker:
             self._callbacks[topic].append(callback)
 
         # Subscribe to the topic
-        self._mqtt_client.subscribe(topic)
+        resp = self._mqtt_client.subscribe(topic)
+        print(f"subscribe - {resp}")
         logger.info("Subscribed to topic: %s", topic)
 
     async def unsubscribe(self, topic: str):
