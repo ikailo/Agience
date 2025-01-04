@@ -1,12 +1,16 @@
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
 class ChatMessage:
-    def __init__(self, author_role: str, content: str):
-        self._author_role = author_role
-        self._content = content
+    author_role: str
+    content: str
 
     @property
-    def author_role(self) -> str:
-        return self._author_role
+    def author_role(self) -> Optional[str]:
+        return self.author_role
 
     @property
-    def content(self) -> str:
-        return self._content
+    def content(self) -> Optional[str]:
+        return self.content

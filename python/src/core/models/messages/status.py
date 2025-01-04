@@ -1,5 +1,6 @@
-from enum import Enum
+from enum import Enum, auto
+
 
 class Status(Enum):
-    ONLINE = "ONLINE"
-    OFFLINE = "OFFLINE"
+    ONLINE = auto()
+    OFFLINE = auto()

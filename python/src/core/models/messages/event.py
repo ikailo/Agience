@@ -1,7 +1,8 @@
-from enum import Enum
+from enum import Enum, auto
+
 
 class Event(Enum):
-    LOAD_PLUGINS = "LOAD_PLUGINS"
-    UNLOAD_PLUGINS = "UNLOAD_PLUGINS"
-    CONNECT_AGENT = "CONNECT_AGENT"
-    DISCONNECT_AGENT = "DISCONNECT_AGENT"
+    LOAD_PLUGINS = auto()
+    UNLOAD_PLUGINS = auto()
+    CONNECT_AGENT = auto()
+    DISCONNECT_AGENT = auto()
