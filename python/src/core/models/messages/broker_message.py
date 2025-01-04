@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Union
+from pydantic import BaseModel, Field, computed_field
 from core.data import Data
 from core.information import Information
 
@@ -12,15 +12,13 @@ class BrokerMessageType(Enum):
     UNKNOWN = "UNKNOWN"
 
 
-@dataclass
-class BrokerMessage:
-    type: BrokerMessageType = field(default=BrokerMessageType.UNKNOWN)
+class BrokerMessage(BaseModel):
+    type: BrokerMessageType = Field(default=BrokerMessageType.UNKNOWN)
     topic: Optional[str] = None
-
     _content: Optional[Union[Data, Information]
-                       ] = field(default=None, repr=False)
+                       ] = Field(default=None, exclude=True)
 
-    @property
+    @computed_field
     def sender_id(self) -> Optional[str]:
         if self.topic:
             parts = self.topic.split('/')
@@ -28,7 +26,7 @@ class BrokerMessage:
                 return parts[1]
         return None
 
-    @property
+    @computed_field
     def destination(self) -> Optional[str]:
         if self.topic:
             parts = self.topic.split('/')
@@ -43,7 +41,7 @@ class BrokerMessage:
         return None
 
     @data.setter
-    def data(self, value: Optional[Data]):
+    def data(self, value: Optional[Data]) -> None:
         if self.type == BrokerMessageType.EVENT:
             self._content = value
 
@@ -54,6 +52,6 @@ class BrokerMessage:
         return None
 
     @information.setter
-    def information(self, value: Optional[Information]):
+    def information(self, value: Optional[Information]) -> None:
         if self.type == BrokerMessageType.INFORMATION:
             self._content = value

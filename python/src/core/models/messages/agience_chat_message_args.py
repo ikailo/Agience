@@ -1,10 +1,9 @@
-from dataclasses import dataclass
 from typing import Optional
+from pydantic import BaseModel
 from semantic_kernel.contents import ChatMessageContent
 
 
-@dataclass
-class AgienceChatMessageArgs:
+class AgienceChatMessageArgs(BaseModel):
     message: Optional[ChatMessageContent] = None
     agent_id: Optional[str] = None
 
