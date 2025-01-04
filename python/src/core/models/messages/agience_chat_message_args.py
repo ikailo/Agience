@@ -1,5 +1,13 @@
+from dataclasses import dataclass
+from typing import Optional
+from semantic_kernel.contents import ChatMessageContent
+
+
+@dataclass
 class AgienceChatMessageArgs:
-    def __init__(self, agency_id: str, message: 'ChatMessageContent', agent_id: str):
-        self.agency_id = agency_id
-        self.message = message
-        self.agent_id = agent_id
+    message: Optional[ChatMessageContent] = None
+    agent_id: Optional[str] = None
+
+    @property
+    def latest_message(self) -> Optional[str]:
+        return self.message.content if self.message else None
