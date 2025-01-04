@@ -1,16 +1,13 @@
-from typing import List, Optional
-from .agience_entity import AgienceEntity
+from pydantic import Field
+from typing import List
+from models.entities.abstract.public_entity import PublicEntity
 from models.entities.agent import Agent
-from .enum import Visibility
+from models.entities.plugin import Plugin
 
 
-class Host(AgienceEntity):
-    def __init__(self,
-                 name: Optional[str] = None,
-                 agents: Optional[List[Agent]] = None,
-                 visibility: Visibility = Visibility.Private,
-                 id: str = ""):
-        super().__init__(id=id)
-        self.name = name
-        self.agents = agents or []
-        self.visibility = visibility
+class Host(PublicEntity):
+    agents: List[Agent] = Field(default_factory=list, alias="agents")
+    plugins: List[Plugin] = Field(default_factory=list, alias="plugins")
+
+    class Config:
+        allow_population_by_field_name = True
