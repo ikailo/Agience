@@ -1,19 +1,13 @@
-from .agience_entity import AgienceEntity
-from typing import Optional
+from pydantic import Field
+from typing import Optional, List
+from models.entities.abstract.described_entity import DescribedEntity
+from models.entities.parameter import Parameter
 
 
-class Function(AgienceEntity):
-    def __init__(self,
-                 name: Optional[str] = None,
-                 description: Optional[str] = None,
-                 prompt: Optional[str] = None,
-                 id: str = ""):
-        super().__init__(id=id)
-        self.name = name
-        self.description = description
-        self.prompt = prompt
+class Function(DescribedEntity):
+    instruction: Optional[str] = Field(None, alias="instruction")
+    inputs: List[Parameter] = Field(default_factory=list, alias="inputs")
+    outputs: List[Parameter] = Field(default_factory=list, alias="outputs")
 
-        # Commented out as in original:
-        # self.input_variables = []
-        # self.output_variable = None
-        # self.execution_settings = {}
+    class Config:
+        allow_population_by_field_name = True

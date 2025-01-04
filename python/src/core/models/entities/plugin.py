@@ -1,28 +1,19 @@
-from typing import List, Optional
-from .agience_entity import AgienceEntity
-from .function import Function
-from enum import Enum
+from pydantic import Field
+from typing import Optional, List, Type
+from models.entities.abstract.public_entity import PublicEntity
+from models.entities.function import Function
+from models.enums.enums import PluginProvider, PluginSource
 
 
-class PluginType(Enum):
-    Curated = "Curated"
+class Plugin(PublicEntity):
+    type: Optional[Type] = Field(None, exclude=True)
+    unique_name: Optional[str] = Field(None, alias="unique_name")
+    plugin_provider: PluginProvider = Field(
+        default=PluginProvider.Prompt, alias="plugin_provider")
+    plugin_source: PluginSource = Field(
+        default=PluginSource.UserDefined, alias="plugin_source")
+    functions: List[Function] = Field(default_factory=list, alias="functions")
 
-
-class Visibility(Enum):
-    Private = "Private"
-
-
-class Plugin(AgienceEntity):
-    def __init__(self,
-                 name: Optional[str] = None,
-                 description: Optional[str] = None,
-                 type: PluginType = PluginType.Curated,
-                 visibility: Visibility = Visibility.Private,
-                 functions: Optional[List[Function]] = None,
-                 id: str = ""):
-        super().__init__(id=id)
-        self.name = name
-        self.description = description
-        self.type = type
-        self.visibility = visibility
-        self.functions = functions or []  # NotMapped equivalent - just a runtime property
+    class Config:
+        allow_population_by_field_name = True
+        use_enum_values = True
