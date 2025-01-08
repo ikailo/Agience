@@ -5,6 +5,7 @@ from broker import Broker
 from authority import Authority
 from host import Host
 from models.messages.broker_message import BrokerMessage, BrokerMessageType
+import logging
 import time
 
 load_dotenv()
@@ -23,15 +24,19 @@ async def message_handler(message: BrokerMessage):
     print("===========================================")
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("authority")
+
+
 async def main():
     # Initialize the Broker
     broker = Broker(None)
     broker_2 = Broker(None)
 
     # Initialize the Authority
-    # TODO: authority_data_adapter should not be null, implement
-    authority = Authority(authority_uri=AUTHORITY_URI, broker=broker, authority_data_adapter=None,
-                          authority_uri_internal=None, broker_uri_internal=None)
+    # TODO: service_scope_factory should not be null, implement
+    authority = Authority(authority_uri=AUTHORITY_URI, broker=broker, service_scope_factory=None,
+                          logger=logger, authority_uri_internal=None, broker_uri_internal=None)
 
     # Initialize Host with ID and Secret
     # TODO: Need to initialize Authority and Agent Factory before the host
