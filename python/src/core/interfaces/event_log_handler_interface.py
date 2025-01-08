@@ -1,16 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Any
 from pydantic import BaseModel
-
-# TODO: Replace with actual event log arguments
-
-
-class EventLogArgs(BaseModel):
-    """
-    Pydantic model for event log arguments.
-    Note: Define the specific fields needed based on your EventLogArgs C# class
-    """
-    pass
+from core.logging.event_log_args import EventLogArgs
 
 
 class IEventLogHandler(ABC):
