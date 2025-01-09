@@ -4,7 +4,9 @@ from urllib.parse import urlparse, urlunparse
 import json
 import asyncio
 import logging
-
+import aiohttp
+import json
+from http.client import HTTPError
 
 from broker import Broker, BrokerMessage, BrokerMessageType
 from models.entities.host import Host
@@ -22,7 +24,7 @@ class Authority:
         self,
         authority_uri: str,
         broker: Broker,
-        # TODO: Look for type of service_scope_factory
+        # TODO: need to implement service_scope_factory
         service_scope_factory,
         logger: logging.Logger,
         authority_uri_internal: Optional[str] = None,
@@ -70,8 +72,6 @@ class Authority:
 
                 self._logger.info(f"Initializing Authority: {authority_url}")
 
-                # TODO: This is a simplified version. You'll need to implement
-                # OpenID Connect configuration retrieval based on your needs
                 config = await self._fetch_openid_config(f"{authority_url}{self.OPENID_CONFIG_PATH}")
 
                 if not self._broker_uri:
@@ -154,10 +154,10 @@ class Authority:
 
             await self._handle_credential_request(agent_id, credential_name, jwk)
 
+    # TODO: need to implement authority_records_repository
     async def _handle_credential_request(self, agent_id: str, credential_name: str, jwk: dict):
         authority_records_repository = self.get_authority_records_repository()
 
-        # TODO: Implement this
         credential = await authority_records_repository.get_credential_for_agent_by_name(
             agent_id, credential_name
         )
@@ -183,8 +183,8 @@ class Authority:
         print(f"Credential response sent for '{
               credential_name}' to Agent '{agent_id}'.")
 
+    # TODO: need to implement authority_records_repository
     async def _on_host_connected(self, model_host: Host):
-        # TODO: Implement this
         authority_records_repository = self.get_authority_records_repository()
 
         self._logger.info(f"Received host_connect from: {model_host.id}")
@@ -224,13 +224,13 @@ class Authority:
             }
         ))
 
+    # TODO: need to implement authority_records_repository
     async def _send_agent_connect_event(self, agent: Agent):
         if not self.is_connected:
             raise RuntimeError("Not Connected")
 
         authority_records_repository = self.get_authority_records_repository()
 
-        # TODO: Implement this
         host_id = await authority_records_repository.get_host_id_for_agent_by_id(agent.id)
 
         self._logger.info(f"Sending Agent Connect Event: {agent.name}")
@@ -246,11 +246,11 @@ class Authority:
             }
         ))
 
+    # TODO: need to implement authority_records_repository
     async def _send_agent_disconnect_event(self, agent: Agent):
         if not self.is_connected:
             raise RuntimeError("Not Connected")
 
-        # TODO: Implement this
         authority_records_repository = self.get_authority_records_repository()
         host_id = await authority_records_repository.get_host_id_for_agent_by_id(agent.id)
 
@@ -264,14 +264,34 @@ class Authority:
             }
         ))
 
-    # TODO: Implement this
     async def _fetch_openid_config(self, config_url: str) -> dict:
-        # Implement OpenID Connect configuration retrieval
-        # This is a placeholder - you'll need to implement based on your needs
-        pass
+        if not config_url:
+            raise ValueError("Config URL cannot be empty")
 
-    # TODO: Implement this
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(config_url) as response:
+                    if response.status != 200:
+                        raise aiohttp.ClientError(
+                            f"Failed to fetch OpenID config. Status: {
+                                response.status}"
+                        )
+
+                    config_data = await response.json()
+
+                    if not isinstance(config_data, dict):
+                        raise ValueError("Invalid OpenID configuration format")
+
+                    return config_data
+
+            except aiohttp.ClientError as e:
+                raise HTTPError(
+                    f"Failed to fetch OpenID configuration: {str(e)}")
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"Invalid JSON in OpenID configuration: {str(e)}")
+
+    # TODO: need to implement this after authority_records_repository
     def _encrypt_with_jwk(self, credential: Any, jwk: dict) -> str:
         # Implement JWK encryption
-        # This is a placeholder - you'll need to implement based on your needs
         pass
