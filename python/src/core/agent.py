@@ -1,130 +1,174 @@
+from typing import Optional, Any
+from logging import Logger
 import asyncio
-import logging
-from typing import Callable, Dict, Optional
-from dataclasses import dataclass, field
-from paho.mqtt.client import Client
-from threading import Timer
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 
+from semantic_kernel import Kernel
+from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecutionSettings
+from semantic_kernel.contents.chat_history import ChatHistory
+from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
+
+from models.entities.agent import Agent as AgentModel
 from models.messages.broker_message import BrokerMessage, BrokerMessageType
+from authority import Authority
+from broker import Broker
+from topic_generator import TopicGenerator
 
 
-logger = logging.getLogger(__name__)
-
-
-@dataclass
-class Agent:
-    id: str
-    name: str
-    authority: "Authority"
-    broker: "Broker"
-    agency: "Agency"
-    persona: str
-    kernel: "Kernel"
-    logger: logging.Logger = field(default_factory=logging.getLogger)
-    chat_message_received: Optional[Callable[[dict], None]] = None
-    chat_history: list = field(default_factory=list)
-    is_connected: bool = False
-    disposed: bool = False
-
-    def __post_init__(self):
-        self.representative_claim_timer = Timer(
-            interval=5, function=self._send_representative_claim
-        )
-        self.executor = ThreadPoolExecutor(max_workers=5)
-
-    async def connect(self):
-        if not self.is_connected:
-            # Subscribe to the MQTT broker topic for this agent
-            await self.broker.subscribe(
-                self.authority.agent_topic("+", self.id), self._receive_message
-            )
-
-            # Send a "join" message to notify others
-            self._send_join()
-            self.representative_claim_timer.start()
-            self.is_connected = True
-
-    async def disconnect(self):
-        if self.is_connected:
-            # Send "leave" and "representative_resign" messages before disconnecting
-            self._send_representative_resign()
-            self._send_leave()
-
-            # Unsubscribe from the MQTT broker
-            await self.broker.unsubscribe(self.authority.agent_topic("+", self.id))
-            self.is_connected = False
-
-    async def _receive_message(self, message: BrokerMessage):
-        # Handle received MQTT messages for this agent
-        logger.debug("Received message on topic %s: %s", message.topic, message.data)
-        # TODO: Implement message-specific logic
-        pass
-
-    def _send_join(self):
-        logger.debug("Sending 'join' message")
-        self.broker.publish(
-            BrokerMessage(
-                type=BrokerMessageType.EVENT,
-                topic=self.authority.agency_topic(self.id, self.agency.id),
-                data={"type": "join", "timestamp": self.broker.timestamp, "agent_id": self.id},
-            )
+class Agent(AgentModel):
+    def __init__(
+        self,
+        id: str,
+        name: str,
+        authority: 'Authority',
+        broker: 'Broker',
+        persona: str,
+        kernel: Kernel,
+        logger: Logger,
+        **data: Any
+    ):
+        super().__init__(
+            id=id,
+            name=name,
+            persona=persona,
+            **data
         )
 
-    def _send_leave(self):
-        logger.debug("Sending 'leave' message")
-        self.broker.publish(
-            BrokerMessage(
-                type=BrokerMessageType.EVENT,
-                topic=self.authority.agency_topic(self.id, self.agency.id),
-                data={"type": "leave", "timestamp": self.broker.timestamp, "agent_id": self.id},
-            )
+        # Private attributes
+        self._authority = authority
+        self._broker = broker
+        self._kernel = kernel
+        self._logger = logger
+        self._disposed = False
+        self._is_connected = False
+        self._chat_history = ChatHistory()
+        self._topic_generator = TopicGenerator(authority.id, id)
+
+        self._prompt_execution_settings = PromptExecutionSettings(
+            extension_data={
+                "model": "gpt-4",  # Can be configured as needed
+                "temperature": 0.7,
+                "max_tokens": 2000,
+                "tool_call_behavior": "auto"
+            }
         )
 
-    def _send_representative_claim(self):
-        if self.agency.representative_id is not None:
-            return  # Another agent already claimed the role
+    @property
+    def is_connected(self) -> bool:
+        return self._is_connected
 
-        logger.debug("Sending 'representative_claim' message")
-        self.broker.publish(
-            BrokerMessage(
-                type=BrokerMessageType.EVENT,
-                topic=self.authority.agency_topic(self.id, self.agency.id),
-                data={"type": "representative_claim", "timestamp": self.broker.timestamp, "agent_id": self.id},
-            )
-        )
+    @property
+    def chat_history(self) -> ChatHistory:
+        return self._chat_history
 
-    def _send_representative_resign(self):
-        if self.agency.representative_id != self.id:
-            return  # Only the current representative can resign
+    async def connect(self) -> None:
+        """Connect the agent to its topics"""
+        if not self.is_enabled:
+            self._logger.warning(f"Agent {self.id} is not enabled")
+            return
 
-        logger.debug("Sending 'representative_resign' message")
-        self.broker.publish(
-            BrokerMessage(
-                type=BrokerMessageType.EVENT,
-                topic=self.authority.agency_topic(self.id, self.agency.id),
-                data={"type": "representative_resign", "timestamp": self.broker.timestamp, "agent_id": self.id},
-            )
-        )
-
-    async def prompt_async(self, user_message: str):
-        self.chat_history.append({"role": "user", "message": user_message})
-        # Call the kernel (simulating an AI LLM call) for a response
-        assistant_message = await self.kernel.get_chat_response(
-            self.chat_history, self.persona
-        )
-        if assistant_message:
-            self.chat_history.append({"role": "assistant", "message": assistant_message})
-
-            # Notify listeners of the new message
-            if self.chat_message_received:
-                self.chat_message_received(
-                    {"agent_id": self.id, "message": assistant_message}
+        if not self._is_connected:
+            try:
+                # Subscribe to agent's topic
+                await self._broker.subscribe(
+                    self._topic_generator.subscribe_as_agent(),
+                    self._broker_receive_message
                 )
 
-    def dispose(self):
-        if not self.disposed:
-            self.representative_claim_timer.cancel()
-            self.executor.shutdown(wait=False)
-            self.disposed = True
+                # Subscribe to each topic
+                for topic in self.topics:
+                    await self._broker.subscribe(
+                        self._topic_generator.connect_to(topic.name),
+                        self._broker_receive_message
+                    )
+
+                self._is_connected = True
+                self._logger.info(f"Agent {self.id} connected successfully")
+            except Exception as e:
+                self._logger.error(f"Failed to connect agent {
+                                   self.id}: {str(e)}")
+                raise
+
+    # TODO: Implement AgienceCredentialService
+    async def _broker_receive_message(self, message: BrokerMessage) -> None:
+        """Handle incoming broker messages"""
+        try:
+            # Handle incoming credential
+            if (message.type == BrokerMessageType.EVENT
+                and message.data
+                and message.data.get("type") == "credential_response"
+                and message.data.get("credential_name")
+                    and message.data.get("encrypted_credential")):
+
+                name = message.data["credential_name"]
+                credential = message.data["encrypted_credential"]
+
+                credential_service = await self._kernel.get_service(AgienceCredentialService)
+                await credential_service.add_encrypted_credential(name, credential)
+        except Exception as e:
+            self._logger.error(f"Error processing broker message: {str(e)}")
+            raise
+
+    async def disconnect(self) -> None:
+        """Disconnect the agent from its topics"""
+        if self._is_connected:
+            try:
+                await self._broker.unsubscribe(self._topic_generator.subscribe_as_agent())
+                self._is_connected = False
+                self._logger.info(f"Agent {self.id} disconnected successfully")
+            except Exception as e:
+                self._logger.error(f"Failed to disconnect agent {
+                                   self.id}: {str(e)}")
+                raise
+
+    # TODO: chat completion needs some fixes
+    # Ref - https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion
+    async def prompt_async(
+        self,
+        user_message: str,
+        cancellation_token: Optional[asyncio.CancellationToken] = None
+    ) -> Optional[str]:
+        """
+        Process a user message and return the agent's response
+
+        Args:
+            user_message: The message from the user
+            cancellation_token: Optional token for cancelling the operation
+
+        Returns:
+            The agent's response message or None if no response could be generated
+        """
+        try:
+            # Add the user's message to the chat history
+            self._chat_history.add_user_message(user_message)
+
+            # Get the chat completion service
+            chat_completion = self._kernel.get_service(
+                type=ChatCompletionClientBase)
+
+            # Get the response from the chat completion service
+            result = await chat_completion.complete_chat(
+                self._chat_history,
+                self._prompt_execution_settings,
+                kernel=self._kernel,
+                cancellation_token=cancellation_token
+            )
+
+            if result and result.messages:
+                assistant_message = str(result.messages[-1].content)
+                # Add the assistant's message to the chat history
+                self._chat_history.add_assistant_message(assistant_message)
+                return assistant_message
+
+            return None
+
+        except Exception as e:
+            self._logger.error(f"Error in prompt_async: {str(e)}")
+            raise
+
+    # TODO: Cleanup properly (not priority)
+    def __del__(self):
+        """Cleanup when the agent is destroyed"""
+        if not self._disposed:
+            if hasattr(self._logger, 'dispose'):
+                self._logger.dispose()
+            self._disposed = True
