@@ -61,6 +61,7 @@ class Agent(AgentModel):
     def chat_history(self) -> ChatHistory:
         return self._chat_history
 
+    # self._broker_receive_message depends on AgienceCredentialService (not implemented yet)
     async def connect(self) -> None:
         """Connect the agent to its topics"""
         if not self.is_enabled:

@@ -103,6 +103,7 @@ class Authority:
                 await asyncio.sleep(delay)
                 delay = min(delay * 2, max_delay_seconds)
 
+    # TODO: depends on _broker_receive_message
     async def connect(self, access_token: str):
         if not self.is_connected:
             if not self._broker_uri:
@@ -127,6 +128,7 @@ class Authority:
             await self._broker.disconnect()
             self.is_connected = False
 
+    # TODO: depents on _handle_credential_request, _on_host_connected,
     async def _broker_receive_message(self, message: BrokerMessage):
         self._logger.info(f"MessageReceived: sender:{
                           message.sender_id}, destination:{message.destination}")
