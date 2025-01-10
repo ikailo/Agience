@@ -15,8 +15,8 @@ class BrokerMessageType(Enum):
 class BrokerMessage(BaseModel):
     type: BrokerMessageType = Field(default=BrokerMessageType.UNKNOWN)
     topic: Optional[str] = None
-    _content: Optional[Union[Data, Information]
-                       ] = Field(default=None, exclude=True)
+    content: Optional[Union[Data, Information]
+                      ] = Field(default=None, exclude=True, alias="_content")
 
     @computed_field
     def sender_id(self) -> Optional[str]:
@@ -37,21 +37,21 @@ class BrokerMessage(BaseModel):
     @property
     def data(self) -> Optional[Data]:
         if self.type == BrokerMessageType.EVENT:
-            return self._content
+            return self.content
         return None
 
     @data.setter
     def data(self, value: Optional[Data]) -> None:
         if self.type == BrokerMessageType.EVENT:
-            self._content = value
+            self.content = value
 
     @property
     def information(self) -> Optional[Information]:
         if self.type == BrokerMessageType.INFORMATION:
-            return self._content
+            return self.content
         return None
 
     @information.setter
     def information(self, value: Optional[Information]) -> None:
         if self.type == BrokerMessageType.INFORMATION:
-            self._content = value
+            self.content = value

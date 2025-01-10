@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 import asyncio
 from core.broker import Broker
-from authority import Authority
+from core.authority import Authority
 from core.host import Host
 from core.agent_factory import AgentFactory
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType

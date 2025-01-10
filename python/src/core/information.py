@@ -3,7 +3,8 @@ from typing import Optional
 import hashlib
 import uuid
 import base64
-from data import Data
+
+from core.data import Data
 
 
 class Information(BaseModel):

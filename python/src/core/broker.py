@@ -6,8 +6,9 @@ import logging
 from ntplib import NTPClient
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
+
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
-from information import Information
+from core.information import Information
 
 
 class CallbackContainer(BaseModel):
