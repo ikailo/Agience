@@ -6,9 +6,9 @@ from core.models.enums.enums import PluginProvider
 from core.models.entities.agent import Agent as AgentModel
 from core.models.entities.plugin import Plugin
 
-from agent import Agent
-from authority import Authority
-from broker import Broker
+from core.agent import Agent
+from core.authority import Authority
+from core.broker import Broker
 
 from core.logging.event_logger_factory import EventLoggerFactory
 from core.services.agience_credential_service import AgienceCredentialService

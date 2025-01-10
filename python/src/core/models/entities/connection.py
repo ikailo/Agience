@@ -1,7 +1,7 @@
 from pydantic import Field
 from typing import Optional
 from datetime import datetime  # Assuming PublicEntity has timestamp fields
-from models.entities.abstract.public_entity import PublicEntity
+from core.models.entities.abstract.public_entity import PublicEntity
 
 
 class Connection(PublicEntity):

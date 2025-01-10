@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from models.entities.abstract.named_entity import NamedEntity
+from core.models.entities.abstract.named_entity import NamedEntity
 
 
 @dataclass

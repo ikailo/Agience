@@ -1,7 +1,7 @@
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
-from models.entities.abstract.described_entity import DescribedEntity
+from core.models.entities.abstract.described_entity import DescribedEntity
 
 
 class Parameter(DescribedEntity):

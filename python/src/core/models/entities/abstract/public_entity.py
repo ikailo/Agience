@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from models.entities.abstract.owned_entity import OwnedEntity
-from models.enums.enums import Visibility
+from core.models.entities.abstract.owned_entity import OwnedEntity
+from core.models.enums.enums import Visibility
 
 
 class PublicEntity(OwnedEntity):

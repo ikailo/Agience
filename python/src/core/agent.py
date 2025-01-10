@@ -7,11 +7,11 @@ from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecut
 from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
 
-from models.entities.agent import Agent as AgentModel
-from models.messages.broker_message import BrokerMessage, BrokerMessageType
-from authority import Authority
-from broker import Broker
-from topic_generator import TopicGenerator
+from core.models.entities.agent import Agent as AgentModel
+from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
+from core.authority import Authority
+from core.broker import Broker
+from core.topic_generator import TopicGenerator
 from core.services.agience_credential_service import AgienceCredentialService
 
 

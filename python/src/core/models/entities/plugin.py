@@ -1,8 +1,8 @@
 from pydantic import Field
 from typing import Optional, List, Type
-from models.entities.abstract.public_entity import PublicEntity
-from models.entities.function import Function
-from models.enums.enums import PluginProvider, PluginSource
+from core.models.entities.abstract.public_entity import PublicEntity
+from core.models.entities.function import Function
+from core.models.enums.enums import PluginProvider, PluginSource
 
 
 class Plugin(PublicEntity):

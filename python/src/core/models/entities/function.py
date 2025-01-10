@@ -1,7 +1,7 @@
 from pydantic import Field
 from typing import Optional, List
-from models.entities.abstract.described_entity import DescribedEntity
-from models.entities.parameter import Parameter
+from core.models.entities.abstract.described_entity import DescribedEntity
+from core.models.entities.parameter import Parameter
 
 
 class Function(DescribedEntity):

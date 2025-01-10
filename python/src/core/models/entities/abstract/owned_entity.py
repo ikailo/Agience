@@ -1,6 +1,6 @@
 from typing import Optional
-from models.entities.abstract.described_entity import DescribedEntity
-from models.entities.person import Person
+from core.models.entities.abstract.described_entity import DescribedEntity
+from core.models.entities.person import Person
 
 
 class OwnedEntity(DescribedEntity):

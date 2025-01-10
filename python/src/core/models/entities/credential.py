@@ -1,8 +1,8 @@
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
-from models.entities.abstract.base_entity import BaseEntity
-from models.enums.enums import CredentialStatus
+from core.models.entities.abstract.base_entity import BaseEntity
+from core.models.enums.enums import CredentialStatus
 
 
 class Credential(BaseEntity):

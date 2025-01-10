@@ -1,7 +1,7 @@
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
-from models.entities.abstract.named_entity import NamedEntity
+from core.models.entities.abstract.named_entity import NamedEntity
 
 
 class Key(NamedEntity):

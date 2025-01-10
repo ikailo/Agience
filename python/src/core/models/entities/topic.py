@@ -1,6 +1,6 @@
 from pydantic import Field
 from typing import Optional
-from models.entities.abstract.public_entity import PublicEntity
+from core.models.entities.abstract.public_entity import PublicEntity
 
 
 class Topic(PublicEntity):

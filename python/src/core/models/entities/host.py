@@ -1,8 +1,8 @@
 from pydantic import Field
 from typing import List
-from models.entities.abstract.public_entity import PublicEntity
-from models.entities.agent import Agent
-from models.entities.plugin import Plugin
+from core.models.entities.abstract.public_entity import PublicEntity
+from core.models.entities.agent import Agent
+from core.models.entities.plugin import Plugin
 
 
 class Host(PublicEntity):

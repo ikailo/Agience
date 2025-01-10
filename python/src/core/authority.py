@@ -6,13 +6,13 @@ import asyncio
 import logging
 import aiohttp
 import json
-from http.client import HTTPError
+from http.client import HTTPException
 
-from broker import Broker, BrokerMessage, BrokerMessageType
-from models.entities.host import Host
-from models.entities.agent import Agent
-from models.entities.plugin import Plugin
-from topic_generator import TopicGenerator
+from core.broker import Broker, BrokerMessage, BrokerMessageType
+from core.models.entities.host import Host
+from core.models.entities.agent import Agent
+from core.models.entities.plugin import Plugin
+from core.topic_generator import TopicGenerator
 
 
 class Authority:
@@ -287,7 +287,7 @@ class Authority:
                     return config_data
 
             except aiohttp.ClientError as e:
-                raise HTTPError(
+                raise HTTPException(
                     f"Failed to fetch OpenID configuration: {str(e)}")
             except json.JSONDecodeError as e:
                 raise ValueError(

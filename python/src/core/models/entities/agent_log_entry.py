@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import Field
-from models.entities.abstract.base_entity import BaseEntity
+from core.models.entities.abstract.base_entity import BaseEntity
 
 
 class AgentLogEntry(BaseEntity):

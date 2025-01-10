@@ -9,11 +9,11 @@ import json
 from core.models.entities.host import Host as HostModel
 from core.models.entities.agent import Agent as AgentModel
 from core.models.entities.plugin import Plugin as PluginModel
-from authority import Authority
-from broker import Broker, BrokerMessage, BrokerMessageType
-from agent_factory import AgentFactory
-from agent import Agent
-from topic_generator import TopicGenerator
+from core.authority import Authority
+from core.broker import Broker, BrokerMessage, BrokerMessageType
+from core.agent_factory import AgentFactory
+from core.agent import Agent
+from core.topic_generator import TopicGenerator
 
 
 class TokenResponse(BaseModel):

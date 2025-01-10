@@ -1,8 +1,8 @@
 from enum import Enum
 from typing import Optional
 from pydantic import Field, computed_field
-from models.entities.abstract.public_entity import PublicEntity
-from models.enums.enums import AuthorizationType
+from core.models.entities.abstract.public_entity import PublicEntity
+from core.models.enums.enums import AuthorizationType
 
 
 class Authorizer(PublicEntity):

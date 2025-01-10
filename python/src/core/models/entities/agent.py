@@ -1,9 +1,9 @@
 from pydantic import Field
 from typing import Optional, List
-from models.entities.abstract.owned_entity import OwnedEntity
-from models.entities.topic import Topic
-from models.entities.plugin import Plugin
-from models.enums.enums import CompletionAction
+from core.models.entities.abstract.owned_entity import OwnedEntity
+from core.models.entities.topic import Topic
+from core.models.entities.plugin import Plugin
+from core.models.enums.enums import CompletionAction
 
 
 class Agent(OwnedEntity):
