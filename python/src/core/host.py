@@ -84,10 +84,11 @@ class Host(HostModel):
             raise ValueError("BrokerUri not set")
 
         access_token = await self._get_access_token()
+
         if not access_token:
             raise ValueError("Failed to get access token")
 
-        await self._broker.connect(access_token, self._authority.broker_uri)
+        await self._broker.connect(access_token, self._authority._broker_uri)
 
         if self._broker.is_connected:
             await self._broker.subscribe(
@@ -127,7 +128,8 @@ class Host(HostModel):
         auth_string = f"{self.id}:{self._host_secret}"
         basic_auth = base64.b64encode(auth_string.encode()).decode()
 
-        async with httpx.AsyncClient() as client:
+        # TODO: Verification turned off for development
+        async with httpx.AsyncClient(verify=False) as client:
             headers = {"Authorization": f"Basic {basic_auth}"}
             data = {
                 "grant_type": "client_credentials",

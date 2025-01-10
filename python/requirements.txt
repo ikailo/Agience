@@ -6,3 +6,4 @@ semantic-kernel
 ntplib
 websockets
 python-dotenv
+certifi

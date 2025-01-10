@@ -6,6 +6,7 @@ import asyncio
 import logging
 import aiohttp
 import json
+import ssl
 from http.client import HTTPException
 
 from core.broker import Broker, BrokerMessage, BrokerMessageType
@@ -97,6 +98,8 @@ class Authority:
                 break
 
             except Exception as ex:
+                self._logger.error(
+                    "Failed to initialize Authority.", exc_info=ex)
                 self._logger.debug(str(ex))
                 self._logger.info(
                     f"Unable to initialize Authority. Retrying in {delay} seconds.")
@@ -165,8 +168,8 @@ class Authority:
         )
 
         if not credential:
-            print(f"Credential '{
-                  credential_name}' not found for Agent '{agent_id}'.")
+            self._logger.error(f"Credential '{
+                credential_name}' not found for Agent '{agent_id}'.")
             return
 
         # Note: You'll need to implement the encryption method based on your needs
@@ -182,8 +185,8 @@ class Authority:
             }
         ))
 
-        print(f"Credential response sent for '{
-              credential_name}' to Agent '{agent_id}'.")
+        self._logger.error(f"Credential response sent for '{
+            credential_name}' to Agent '{agent_id}'.")
 
     # TODO: need to implement authority_records_repository
     async def _on_host_connected(self, model_host: Host):
@@ -270,9 +273,15 @@ class Authority:
         if not config_url:
             raise ValueError("Config URL cannot be empty")
 
+        # TODO: SSL Certificate Error fix
+        # ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.get(config_url) as response:
+                async with session.get(config_url, ssl=ssl_context) as response:
                     if response.status != 200:
                         raise aiohttp.ClientError(
                             f"Failed to fetch OpenID config. Status: {
