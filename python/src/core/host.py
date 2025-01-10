@@ -1,341 +1,274 @@
-import json
+from typing import Dict, Optional, Callable, Any
+from pydantic import BaseModel, Field
+import asyncio
 import base64
 import logging
-from typing import Dict, List, Optional, Callable, Any, Union
-from dataclasses import dataclass
-import aiohttp
-import asyncio
-import os
+import httpx
+import json
 
-# from models.entities.host import Host as HostModel
-# from models.entities.agent import Agent as AgentModel
-# from models.entities.plugin import Plugin as PluginModel
-from models.messages.broker_message import BrokerMessageType
+from core.models.entities.host import Host as HostModel
+from core.models.entities.agent import Agent as AgentModel
+from core.models.entities.plugin import Plugin as PluginModel
+from authority import Authority
+from broker import Broker, BrokerMessage, BrokerMessageType
+from agent_factory import AgentFactory
+from agent import Agent
+from topic_generator import TopicGenerator
 
 
-@dataclass
-class TokenResponse:
+class TokenResponse(BaseModel):
     access_token: Optional[str] = None
     token_type: Optional[str] = None
     expires_in: Optional[int] = None
-    scope: Optional[str] = None
 
 
-class Host:
-    def __init__(
-        self,
-        host_id: str,
-        host_secret: str,
-        authority,
-        broker,
-        agent_factory,
-        logger: Optional[logging.Logger] = None
-    ):
-        if not host_id or not host_secret:
-            raise ValueError("host_id and host_secret must not be empty")
+class Host(HostModel):
+    id: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    properties: Dict[str, Any] = Field(default_factory=dict)
 
-        self._id = host_id
+    # Non-model attributes
+    is_connected: bool = False
+    agents: Dict[str, Agent] = Field(default_factory=dict)
+    plugin_instances: Dict[str, Any] = Field(default_factory=dict)
+
+    # Event callbacks
+    agent_connected: Optional[Callable[[Agent], None]] = None
+    agent_disconnected: Optional[Callable[[str], None]] = None
+    agent_log_entry_received: Optional[Callable[[str, str], None]] = None
+
+    def __init__(self, host_id: str, host_secret: str, authority: Authority,
+                 broker: Broker, agent_factory: AgentFactory, logger: Optional[logging.Logger] = None, **data):
+        super().__init__(id=host_id, **data)
+
+        if not host_id:
+            raise ValueError("host_id cannot be empty")
+        if not host_secret:
+            raise ValueError("host_secret cannot be empty")
+
         self._host_secret = host_secret
         self._authority = authority
         self._broker = broker
         self._agent_factory = agent_factory
         self._logger = logger or logging.getLogger(__name__)
-
-        self._agents: Dict[str, Any] = {}
-        self._agencies: Dict[str, Any] = {}
-        self.is_connected = False
-
-        # Event-like callbacks
-        self.agent_connected: Optional[Callable] = None
-        self.agency_connected: Optional[Callable] = None
-        self.agent_disconnected: Optional[Callable] = None
-        self.agency_disconnected: Optional[Callable] = None
-        self.agent_log_entry_received: Optional[Callable] = None
-        self.agency_log_entry_received: Optional[Callable] = None
-
-    @property
-    def id(self) -> str:
-        return self._id
-
-    @property
-    def is_connected(self) -> bool:
-        return self._is_connected
-
-    @is_connected.setter
-    def is_connected(self, value: bool):
-        self._is_connected = value
-
-    @property
-    def agents(self) -> Dict[str, Any]:
-        return dict(self._agents)
-
-    @property
-    def agencies(self) -> Dict[str, Any]:
-        return dict(self._agencies)
+        self._topic_generator = TopicGenerator(authority.id, host_id)
 
     async def run(self):
-        """
-        Run the host, maintaining connection until stopped
-        """
         await self.start()
+
         while self.is_connected:
             await asyncio.sleep(0.1)
 
     async def stop(self):
-        """
-        Stop the host
-        """
         self._logger.info("Stopping Host")
         await self.disconnect()
 
     async def start(self):
-        """
-        Start the host with connection retry logic
-        """
         self._logger.info("Starting Host")
+
         while not self.is_connected:
             try:
                 await self.connect()
             except Exception as ex:
-                self._logger.error(f"Unable to Connect: {str(ex)}")
+                self._logger.error("Unable to Connect", exc_info=ex)
                 self._logger.info("Retrying in 10 seconds")
-                await asyncio.sleep(10)  # TODO: Implement exponential backoff
+                await asyncio.sleep(10)  # TODO: Implement backoff
 
     async def connect(self):
-        """
-        Establish connection to the broker and subscribe to topics
-        """
         self._logger.info("Connecting Host")
 
         await self._authority.initialize_with_backoff()
 
-        broker_uri = self._authority.broker_uri
-        if not broker_uri:
-            raise ValueError("BrokerUri is null")
+        if not self._authority._broker_uri:
+            raise ValueError("BrokerUri not set")
 
-        access_token = await self.get_access_token()
+        access_token = await self._get_access_token()
         if not access_token:
-            raise ValueError("access_token is null")
+            raise ValueError("Failed to get access token")
 
-        await self._broker.connect(access_token, broker_uri)
+        await self._broker.connect(access_token, self._authority.broker_uri)
 
         if self._broker.is_connected:
-            # Subscribe to broadcast and specific host topics
             await self._broker.subscribe(
-                self._authority.host_topic("+", "0"),
-                self._broker_receive_message
-            )
-            await self._broker.subscribe(
-                self._authority.host_topic("+", self.id),
+                self._topic_generator.subscribe_as_host(),
                 self._broker_receive_message
             )
 
-            # Publish host connect event
-            await self._broker.publish_async({
-                "type": BrokerMessageType.EVENT,
-                "topic": self._authority.authority_topic(self.id),
-                "data": {
+            await self._broker.publish_async(BrokerMessage(
+                type=BrokerMessageType.EVENT,
+                topic=self._topic_generator.publish_to_authority(),
+                data={
                     "type": "host_connect",
                     "timestamp": self._broker.timestamp,
-                    "host": json.dumps(self.to_dict())
+                    "host": self.json()
                 }
-            })
+            ))
 
             self.is_connected = True
+            self._logger.info("Host Connected")
         else:
             raise Exception("Broker Connection Failed")
 
-        self._logger.info("Host Connected")
-
     async def disconnect(self):
-        """
-        Disconnect all agents and broker
-        """
         if self.is_connected:
-            # Disconnect all agents
-            for agent in list(self._agents.values()):
+            for agent in self.agents.values():
                 await agent.disconnect()
 
-            # Unsubscribe from topics and disconnect broker
-            await self._broker.unsubscribe(self._authority.host_topic("+", "0"))
-            await self._broker.unsubscribe(self._authority.host_topic("+", self.id))
+            await self._broker.unsubscribe(self._topic_generator.subscribe_as_host())
             await self._broker.disconnect()
+
             self.is_connected = False
 
-    async def get_access_token(self) -> Optional[str]:
-        """
-        Obtain access token from token endpoint
-        """
-        # TODO: Fix this
-        # token_endpoint = self._authority.token_endpoint
-        token_endpoint = f"{os.getenv("AUTHORITY_URI")}/connect/token"
-        if not token_endpoint:
-            raise ValueError("tokenEndpoint is null")
+    async def _get_access_token(self) -> Optional[str]:
+        if not self._authority.token_endpoint:
+            raise ValueError("Token endpoint not set")
 
-        # Create basic auth header
-        auth_str = base64.b64encode(
-            f"{self.id}:{self._host_secret}".encode('utf-8')
-        ).decode('utf-8')
+        auth_string = f"{self.id}:{self._host_secret}"
+        basic_auth = base64.b64encode(auth_string.encode()).decode()
 
-        async with aiohttp.ClientSession() as session:
-            headers = {"Authorization": f"Basic {auth_str}",
-                       "Content-Type": "application/x-www-form-urlencoded"}
-
+        async with httpx.AsyncClient() as client:
+            headers = {"Authorization": f"Basic {basic_auth}"}
             data = {
                 "grant_type": "client_credentials",
                 "scope": "connect"
             }
 
-            async with session.post(token_endpoint, headers=headers, data=data) as resp:
-                if resp.status == 200:
-                    response_data = await resp.json()
-                    return TokenResponse(**response_data).access_token
+            response = await client.post(
+                self._authority.token_endpoint,
+                headers=headers,
+                data=data
+            )
 
-        return None
+            if response.status_code == 200:
+                token_response = TokenResponse.parse_raw(response.text)
+                return token_response.access_token
 
-    def add_plugin_from_type(self, name: str, plugin_type: type):
-        """
-        Add a plugin to the host from a given type
-        """
-        self._agent_factory.add_host_plugin_from_type(name, plugin_type)
+            return None
 
-    async def _receive_host_welcome(
-        self,
-        host_data: Dict[str, Any],
-        plugins: List[Dict[str, Any]],
-        agents: List[Dict[str, Any]]
-    ):
-        """
-        Process host welcome message, add plugins and connect agents
-        """
-        # Add plugins
-        for plugin_data in plugins:
-            self._agent_factory.add_host_plugin(plugin_data)
+    async def receive_host_welcome(self, host: 'HostModel', plugins: list['PluginModel'], agents: list['AgentModel']):
+        # Reconcile plugins
+        for plugin in plugins:
+            # Find existing plugin by unique name or name
+            existing_plugin = next(
+                (p for p in self.plugins if p.unique_name == plugin.unique_name),
+                next(
+                    (p for p in self.plugins if p.name == plugin.name),
+                    None
+                )
+            )
 
-        # Connect agents
-        for agent_data in agents:
-            await self._receive_agent_connect(agent_data)
+            if existing_plugin:
+                # Update Plugin ID
+                existing_plugin.id = plugin.id
 
-    async def _receive_agent_connect(self, agent_data: Dict[str, Any]):
-        """
-        Process agent connection
-        """
-        # Create agent using agent factory
-        agent = self._agent_factory.create_agent(agent_data)
+                # Reconcile functions
+                for function in plugin.functions:
+                    existing_function = next(
+                        (f for f in existing_plugin.functions if f.name == function.name),
+                        None
+                    )
+                    if existing_function:
+                        # Update Function ID
+                        existing_function.id = function.id
+                    # Note: Adding new functions is commented out in original
+                    # else:
+                    #     existing_plugin.functions.append(function)
 
-        # Connect agency first if not already connected
-        if agent.agency.id not in self._agencies:
-            self._agencies[agent.agency.id] = agent.agency
-            await agent.agency.connect()
+                # Note: Removing extra functions is commented out in original
+                # function_names = {f.name for f in plugin.functions}
+                # existing_plugin.functions = [f for f in existing_plugin.functions if f.name in function_names]
+            else:
+                # Add the entire plugin
+                self.plugins.append(plugin)
 
-            self._logger.info(f"{agent.agency.name} Connected")
+        # Connect all agents
+        for agent in agents:
+            await self.receive_agent_connect(agent)
 
-            # Invoke agency connected callback if set
-            if self.agency_connected:
-                await self.agency_connected(agent.agency)
+    # TODO: AgentFactory is not implemented
+    async def receive_agent_connect(self, model_agent: 'Agent'):
+        # Create and configure agent
+        agent = self._agent_factory.create_agent(model_agent)
 
-        # Connect agent
-        self._agents[agent.id] = agent
+        # Connect the agent
+        self.agents[agent.id] = agent
         await agent.connect()
 
         self._logger.info(f"{agent.name} Connected")
 
-        # Invoke agent connected callback if set
+        # Notify listeners if callback is set
         if self.agent_connected:
             await self.agent_connected(agent)
 
-    async def _receive_agent_disconnect(self, agent_id: str):
-        """
-        Process agent disconnection
-        """
-        agent = self._agents.get(agent_id)
-        if not agent:
-            return
+    # TODO: AgentFactory is not implemented
+    async def receive_agent_disconnect(self, agent_id: str):
+        agent = self.agents[agent_id]
 
         await agent.disconnect()
 
         self._logger.info(f"{agent.name} Disconnected")
 
-        # Invoke agent disconnected callback if set
+        # Notify listeners if callback is set
         if self.agent_disconnected:
             await self.agent_disconnected(agent_id)
 
-        # Check if agency needs to be disconnected
-        agency_agents = [
-            a for a in self._agents.values()
-            if a.agency.id == agent.agency.id
-        ]
-
-        if not agency_agents and agent.agency.id in self._agencies:
-            await agent.agency.disconnect()
-            del self._agencies[agent.agency.id]
-
-            self._logger.info(f"{agent.agency.name} Disconnected")
-
-            # Invoke agency disconnected callback if set
-            if self.agency_disconnected:
-                await self.agency_disconnected(agent.agency.id)
-
-        # Dispose of the agent
         self._agent_factory.dispose_agent(agent_id)
-        del self._agents[agent_id]
 
-    async def _broker_receive_message(self, message: Dict[str, Any]):
-        """
-        Process incoming broker messages
-        """
-        if not message.get("sender_id") or not message.get("data"):
+    async def _broker_receive_message(self, message: BrokerMessage):
+        if not message.sender_id or not message.data:
             return
 
-        data = message.get("data", {})
-        msg_type = message.get("type")
+        # Incoming Host Welcome Message
+        if (message.type == BrokerMessageType.EVENT and
+            message.data.get("type") == "host_welcome" and
+                message.data.get("host")):
 
-        # Host Welcome Message
-        if (msg_type == BrokerMessageType.EVENT and
-            data.get("type") == "host_welcome" and
-                data.get("host")):
+            try:
+                host_data = json.loads(message.data["host"])
+                plugins_data = json.loads(message.data.get("plugins", "[]"))
+                agents_data = json.loads(message.data.get("agents", "[]"))
 
-            host_data = json.loads(data["host"])
-            plugins = json.loads(data.get("plugins", "[]"))
-            agents = json.loads(data.get("agents", "[]"))
+                host = HostModel.parse_obj(host_data)
 
-            if not host_data.get("id"):
-                self._logger.error("Invalid Host")
-                return
+                if not host.id:
+                    self._logger.error("Invalid Host")
+                else:
+                    self._logger.info(
+                        f"Received Host Welcome Message for {host.name}")
+                    await self.receive_host_welcome(host, plugins_data, agents_data)
 
-            self._logger.info(f"Received Host Welcome Message from {
-                              host_data.get('name', 'Unknown')}")
-            await self._receive_host_welcome(host_data, plugins, agents)
+            except json.JSONDecodeError as e:
+                self._logger.error(
+                    f"Failed to parse host welcome message: {e}")
 
-        # Agent Connect Message
-        elif (msg_type == BrokerMessageType.EVENT and
-              data.get("type") == "agent_connect" and
-              data.get("agent")):
+        # Incoming Agent Connect Message
+        elif (message.type == BrokerMessageType.EVENT and
+              message.data.get("type") == "agent_connect" and
+              message.data.get("agent")):
 
-            agent_data = json.loads(data["agent"])
-            if not agent_data.get("id"):
-                self._logger.error("Invalid Agent")
-                return
+            try:
+                agent_data = json.loads(message.data["agent"])
+                agent = Agent.parse_obj(agent_data)
 
-            if not agent_data.get("agency", {}).get("id"):
-                self._logger.error("Agent has an invalid Agency")
-                return
+                self._logger.info(f"ReceiveAgentConnect for {agent.id}")
 
-            await self._receive_agent_connect(agent_data)
+                if not agent.id:
+                    self._logger.error("Invalid Agent")
+                    return
 
-        # Agent Disconnect Message
-        elif (msg_type == BrokerMessageType.EVENT and
-              data.get("type") == "agent_disconnect" and
-              data.get("agent_id")):
+                await self.receive_agent_connect(agent)
 
-            await self._receive_agent_disconnect(data["agent_id"])
+            except json.JSONDecodeError as e:
+                self._logger.error(
+                    f"Failed to parse agent connect message: {e}")
 
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert host to a dictionary representation
-        """
-        return {
-            "id": self.id,
-            "is_connected": self.is_connected,
-            # Add other necessary fields for serialization
-        }
+        # Incoming Agent Disconnect Message
+        elif (message.type == BrokerMessageType.EVENT and
+              message.data.get("type") == "agent_disconnect" and
+              message.data.get("agent_id")):
+
+            agent_id = message.data["agent_id"]
+            await self.receive_agent_disconnect(agent_id)
+
+    # TODO: Implement AddPlugin, GetFriendlyTypeName and AddPluginFromType

@@ -12,6 +12,7 @@ from models.messages.broker_message import BrokerMessage, BrokerMessageType
 from authority import Authority
 from broker import Broker
 from topic_generator import TopicGenerator
+from core.services.agience_credential_service import AgienceCredentialService
 
 
 class Agent(AgentModel):
