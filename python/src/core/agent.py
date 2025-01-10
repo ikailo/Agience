@@ -127,18 +127,8 @@ class Agent(AgentModel):
     async def prompt_async(
         self,
         user_message: str,
-        cancellation_token: Optional[asyncio.CancellationToken] = None
+        cancellation_token: Optional[asyncio.Event] = None
     ) -> Optional[str]:
-        """
-        Process a user message and return the agent's response
-
-        Args:
-            user_message: The message from the user
-            cancellation_token: Optional token for cancelling the operation
-
-        Returns:
-            The agent's response message or None if no response could be generated
-        """
         try:
             # Add the user's message to the chat history
             self._chat_history.add_user_message(user_message)

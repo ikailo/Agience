@@ -1,6 +1,6 @@
-from typing import List, Any
+import logging
+from typing import List, Any, Optional
 from semantic_kernel.kernel import Kernel
-from logging import Logger
 
 from core.models.enums.enums import PluginProvider
 from core.models.entities.agent import Agent as AgentModel
@@ -10,7 +10,6 @@ from core.agent import Agent
 from core.authority import Authority
 from core.broker import Broker
 
-from core.logging.event_logger_factory import EventLoggerFactory
 from core.services.agience_credential_service import AgienceCredentialService
 
 
@@ -21,7 +20,7 @@ class AgentFactory:
         service_provider: Any,
         broker: Broker,
         authority: Authority,
-        logger: Logger
+        logger: Optional[logging.Logger] = None
     ):
         self.service_provider = service_provider
         self.broker = broker
@@ -34,9 +33,7 @@ class AgentFactory:
         kernel = Kernel()
         kernel.dict["agent_id"] = model_agent.id
 
-        # Configure logger
-        logger_factory = EventLoggerFactory(model_agent.id)
-        agent_logger = logger_factory.create_logger("Agent")
+        logger = logging.getLogger(f"Agent {model_agent.id}")
 
         # Create credential service
         credential_service = AgienceCredentialService(
@@ -53,7 +50,7 @@ class AgentFactory:
             self.broker,
             model_agent.persona,
             kernel,
-            agent_logger
+            logger
         )
 
         self.agents.append(agent)
