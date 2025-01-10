@@ -1,3 +1,4 @@
+import ssl
 from datetime import datetime
 from typing import Dict, List, Optional, Callable, Any
 import asyncio
@@ -39,6 +40,7 @@ class Broker:
         ]
 
         # Set up MQTT callbacks
+
         self._mqtt_client.on_connect = self._on_connect
         self._mqtt_client.on_message = self._on_message
         self._mqtt_client.on_disconnect = self._on_disconnect
@@ -61,8 +63,13 @@ class Broker:
             self._logger.info(f"Connecting to {broker_uri}")
 
             # Configure MQTT client
-            self._mqtt_client.username_pw_set(token)
-            self._mqtt_client.tls_set()  # Enable TLS
+            self._mqtt_client.username_pw_set(
+                username=token, password="<no_password>")
+            # self._mqtt_client.tls_set()  # Enable TLS
+
+            # TODO: SSL temp fix
+            self._mqtt_client.tls_set(cert_reqs=ssl.CERT_NONE)
+            self._mqtt_client.tls_insecure_set(True)
 
             # Parse broker URI
             # Expected format: "wss://example.com:8883"
@@ -78,7 +85,7 @@ class Broker:
                 self._mqtt_client.loop_start()  # Start network loop in separate thread
 
                 # Wait for connection or timeout
-                timeout = 10
+                timeout = 100
                 start_time = datetime.now()
                 while not self.is_connected and (datetime.now() - start_time).seconds < timeout:
                     await asyncio.sleep(0.1)
@@ -204,9 +211,9 @@ class Broker:
         await self._query_ntp_with_backoff()
 
         # Schedule daily NTP updates
-        while True:
-            await asyncio.sleep(24 * 60 * 60)  # 24 hours
-            await self._query_ntp_with_backoff()
+        # while True:
+        #     await asyncio.sleep(24 * 60 * 60)  # 24 hours
+        #     await self._query_ntp_with_backoff()
 
     async def _query_ntp_with_backoff(self, max_delay_seconds: float = 32):
         if self._custom_ntp_host:

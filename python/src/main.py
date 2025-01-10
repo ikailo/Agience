@@ -48,18 +48,6 @@ async def main():
 
     await host.connect()
 
-    # Get the access token for the host
-    # host_access_token = await host._get_access_token()
-
-    # Connect to the broker using the access token
-    # await broker.connect(host_access_token, BROKER_URI)
-    # time.sleep(2)
-
-    # await broker_2.connect(host_access_token, BROKER_URI)
-
-    # Wait for connection to complete
-    # time.sleep(2)
-
     # Subscribe to a topic
     # await broker.subscribe("hello/world", message_handler)
     # time.sleep(2)
