@@ -14,6 +14,7 @@ from core.broker import Broker, BrokerMessage, BrokerMessageType
 from core.agent_factory import AgentFactory
 from core.agent import Agent
 from core.topic_generator import TopicGenerator
+from core.data import Data
 
 
 class TokenResponse(BaseModel):
@@ -91,21 +92,23 @@ class Host(HostModel):
         await self._broker.connect(access_token, self._authority._broker_uri)
 
         if self._broker.is_connected:
-            self._logger.info(self._topic_generator.subscribe_as_host())
             await self._broker.subscribe(
                 self._topic_generator.subscribe_as_host(),
                 self._broker_receive_message
             )
 
-            await self._broker.publish_async(BrokerMessage(
+            data = Data()
+            data.add("type", "host_connect")
+            data.add("timestamp", self._broker.timestamp)
+            data.add("host", self.model_dump_json())
+
+            broker_message = BrokerMessage(
                 type=BrokerMessageType.EVENT,
                 topic=self._topic_generator.publish_to_authority(),
-                data={
-                    "type": "host_connect",
-                    "timestamp": self._broker.timestamp,
-                    "host": self.json()
-                }
-            ))
+                data=data
+            )
+
+            await self._broker.publish_async(broker_message)
 
             self.is_connected = True
             self._logger.info("Host Connected")
@@ -219,6 +222,8 @@ class Host(HostModel):
         self._agent_factory.dispose_agent(agent_id)
 
     async def _broker_receive_message(self, message: BrokerMessage):
+        self._logger.info(f"Received message: {message}")
+
         # self._logger.info(f"Received message: {message}")
         if not message.sender_id or not message.data:
             return

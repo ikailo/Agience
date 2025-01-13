@@ -197,8 +197,6 @@ class Broker:
         if not message.topic:
             raise ValueError("Topic cannot be None")
 
-        self._logger.info(f"Publishing message: {message.data}")
-
         payload = ""
         if message.type == BrokerMessageType.EVENT:
             payload = str(message.data) if message.data else ""
@@ -214,8 +212,6 @@ class Broker:
         publish_properties.UserProperty = (
             self.MESSAGE_TYPE_KEY, message.type.value)
 
-        self._logger.info(f"Publishing message: {payload}")
-
         res = self._mqtt_client.publish(
             message.topic,
             payload.encode(),
@@ -223,6 +219,9 @@ class Broker:
             retain=False,
             properties=publish_properties
         )
+
+        # res.wait_for_publish()
+        # print(res.is_published())
 
     async def _start_ntp_clock(self):
         await self._query_ntp_with_backoff()
