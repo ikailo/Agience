@@ -48,16 +48,5 @@ async def main():
 
     await host.connect()
 
-    # Subscribe to a topic
-    # await broker.subscribe("hello/world", message_handler)
-    # time.sleep(2)
-
-    # time.sleep(2)
-    # await broker_2.publish(message=BrokerMessage(
-    #     type=BrokerMessageType.EVENT, topic="hello/world"))
-
-    # time.sleep(2)
-    # await broker.publish(message=BrokerMessage(type=BrokerMessageType.EVENT, topic="hello/world"))
-
 
 asyncio.run(main())

@@ -83,11 +83,10 @@ class Broker:
 
             try:
                 self._mqtt_client.connect(host, port, keepalive=60)
-                self._mqtt_client.loop_start()  # Start network loop in separate thread
 
                 # Start a background loop for the MQTT client
-                # loop = asyncio.get_running_loop()
-                # loop.run_in_executor(None, self._mqtt_client.loop_start)
+                loop = asyncio.get_running_loop()
+                loop.run_in_executor(None, self._mqtt_client.loop_forever)
 
                 # Wait for connection or timeout
                 timeout = 10
@@ -98,7 +97,6 @@ class Broker:
                 if not self.is_connected:
                     raise TimeoutError("Connection timeout")
 
-                self._logger.info("Broker Connected")
             except Exception as e:
                 self._logger.error(f"Broker Connection Failed: {str(e)}")
                 raise
@@ -106,6 +104,7 @@ class Broker:
     def _on_connect(self, client, userdata, flags, rc, properties=None):
         if rc == 0:
             self._connected = True
+            self._logger.info("Broker Connected")
         else:
             self._logger.error(f"Connection failed with code {rc}")
 
@@ -150,7 +149,8 @@ class Broker:
                 self._logger.error(f"Message handling error: {str(e)}")
                 raise
 
-    def _on_disconnect(self, client, userdata, rc):
+    def _on_disconnect(self, client, userdata, disconnect_flags, rc):
+        # client, userdata, disconnect_flags, reason_code, properties
         self._connected = False
         self._logger.info(f"Broker disconnected with code: {rc}")
 
@@ -197,6 +197,8 @@ class Broker:
         if not message.topic:
             raise ValueError("Topic cannot be None")
 
+        self._logger.info(f"Publishing message: {message.data}")
+
         payload = ""
         if message.type == BrokerMessageType.EVENT:
             payload = str(message.data) if message.data else ""
@@ -211,6 +213,8 @@ class Broker:
         # TODO: Test this line
         publish_properties.UserProperty = (
             self.MESSAGE_TYPE_KEY, message.type.value)
+
+        self._logger.info(f"Publishing message: {payload}")
 
         res = self._mqtt_client.publish(
             message.topic,
