@@ -46,6 +46,7 @@ class Broker:
         self._mqtt_client.on_connect = self._on_connect
         self._mqtt_client.on_message = self._on_message
         self._mqtt_client.on_disconnect = self._on_disconnect
+        self._mqtt_client.on_publish = self._on_publish
 
     @property
     def is_connected(self) -> bool:
@@ -59,7 +60,6 @@ class Broker:
 
     async def connect(self, token: str, broker_uri: str):
         await self._start_ntp_clock()
-        self._logger.info(f"Broker Connected Status: {self.is_connected}")
 
         if not self.is_connected:
             self._logger.info(f"Connecting to {broker_uri}")
@@ -154,7 +154,11 @@ class Broker:
         self._connected = False
         self._logger.info(f"Broker disconnected with code: {rc}")
 
+    def _on_publish(self, client, userdata, mid):
+        self._logger.info(f"Message published with mid: {mid}")
+
     async def subscribe(self, topic: str, callback: Callable[[BrokerMessage], Task]):
+        self._logger.info(f"Subscribing to topic - {topic}")
         if not self.is_connected:
             raise RuntimeError("Not Connected")
 
@@ -203,25 +207,21 @@ class Broker:
         elif message.type == BrokerMessageType.INFORMATION:
             payload = message.information.json() if message.information else ""
 
-        publish_properties = mqtt.Properties(
-            packetType=PacketTypes.PUBLISH,
-            # user_property=(self.MESSAGE_TYPE_KEY, message.type.value)
-        )
+        properties = mqtt.Properties(packetType=PacketTypes.PUBLISH)
 
         # TODO: Test this line
-        publish_properties.UserProperty = (
-            self.MESSAGE_TYPE_KEY, message.type.value)
+        properties.UserProperty = (self.MESSAGE_TYPE_KEY, message.type.value)
 
+        self._logger.info(f"Publishing message to {message.topic}")
         res = self._mqtt_client.publish(
             message.topic,
-            payload.encode(),
+            payload,
             qos=0,
             retain=False,
-            properties=publish_properties
+            properties=properties
         )
 
-        # res.wait_for_publish()
-        # print(res.is_published())
+        res.wait_for_publish()
 
     async def _start_ntp_clock(self):
         await self._query_ntp_with_backoff()
