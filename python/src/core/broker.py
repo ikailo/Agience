@@ -7,6 +7,7 @@ import logging
 from ntplib import NTPClient
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
+from urllib.parse import urlparse
 
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 from core.information import Information
@@ -62,30 +63,33 @@ class Broker:
         if not self.is_connected:
             self._logger.info(f"Connecting to {broker_uri}")
 
+            # Parse the broker URI to get host and port
+            # Expected format: "wss://example.com:8883"
+            parsed_uri = urlparse(broker_uri)
+            host = parsed_uri.hostname
+            port = parsed_uri.port or 443  # Default to 443 if not specified
+
             # Configure MQTT client
             self._mqtt_client.username_pw_set(
                 username=token, password="<no_password>")
-            # self._mqtt_client.tls_set()  # Enable TLS
+            self._mqtt_client.transport = "websockets"
+            self._mqtt_client.ws_set_options(path="/mqtt")
 
             # TODO: SSL temp fix
+            # self._mqtt_client.tls_set()  # Enable TLS
             self._mqtt_client.tls_set(cert_reqs=ssl.CERT_NONE)
             self._mqtt_client.tls_insecure_set(True)
 
-            # Parse broker URI
-            # Expected format: "wss://example.com:8883"
-            broker_uri = broker_uri.replace("wss://", "").replace("ws://", "")
-            host = broker_uri.split(":")[0]
-            port = int(broker_uri.split(":")[1]) if ":" in broker_uri else 8883
-
-            # Connect using websockets
-            self._mqtt_client.ws_set_options(path="/mqtt")
-
             try:
                 self._mqtt_client.connect(host, port, keepalive=60)
-                self._mqtt_client.loop_start()  # Start network loop in separate thread
+                # self._mqtt_client.loop_start()  # Start network loop in separate thread
+
+                # Start a background loop for the MQTT client
+                loop = asyncio.get_running_loop()
+                loop.run_in_executor(None, self._mqtt_client.loop_start)
 
                 # Wait for connection or timeout
-                timeout = 100
+                timeout = 10
                 start_time = datetime.now()
                 while not self.is_connected and (datetime.now() - start_time).seconds < timeout:
                     await asyncio.sleep(0.1)
