@@ -19,14 +19,11 @@ class Information(BaseModel):
     function_id: Optional[str] = None
 
     def __init__(self, parent_id: Optional[str] = None, **data):
-        # Generate unique ID using SHA256 of a UUID
         guid_bytes = uuid.uuid4().bytes
         sha256_hash = hashlib.sha256(guid_bytes).digest()
-        # URL-safe base64 encoding without padding
         id_value = base64.urlsafe_b64encode(
             sha256_hash).rstrip(b'=').decode('ascii')
 
-        # Call parent class constructor with our generated ID
         super().__init__(id=id_value, parent_id=parent_id, **data)
 
     class Config:

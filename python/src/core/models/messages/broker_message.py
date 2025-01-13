@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Optional, Union
-from pydantic import BaseModel, Field, computed_field
+from typing import Optional, Union, Any
+from pydantic import BaseModel, Field, computed_field, PrivateAttr
 from core.data import Data
 from core.information import Information
 
@@ -15,8 +15,15 @@ class BrokerMessageType(Enum):
 class BrokerMessage(BaseModel):
     type: BrokerMessageType = Field(default=BrokerMessageType.UNKNOWN)
     topic: Optional[str] = None
-    content: Optional[Union[Data, Information]
-                      ] = Field(default=None, exclude=True, alias="_content")
+
+    data: Optional[Data] = None
+    information: Optional[Information] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.type == BrokerMessageType.EVENT:
+            self.information = None
+        elif self.type == BrokerMessageType.INFORMATION:
+            self.data = None
 
     @computed_field
     def sender_id(self) -> Optional[str]:
@@ -33,25 +40,3 @@ class BrokerMessage(BaseModel):
             if len(parts) > 2:
                 return "/".join(parts[2:])
         return None
-
-    @property
-    def data(self) -> Optional[Data]:
-        if self.type == BrokerMessageType.EVENT:
-            return self.content
-        return None
-
-    @data.setter
-    def data(self, value: Optional[Data]) -> None:
-        if self.type == BrokerMessageType.EVENT:
-            self.content = value
-
-    @property
-    def information(self) -> Optional[Information]:
-        if self.type == BrokerMessageType.INFORMATION:
-            return self.content
-        return None
-
-    @information.setter
-    def information(self, value: Optional[Information]) -> None:
-        if self.type == BrokerMessageType.INFORMATION:
-            self.content = value
