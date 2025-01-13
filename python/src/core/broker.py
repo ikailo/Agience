@@ -7,6 +7,7 @@ import logging
 from ntplib import NTPClient
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
+from paho.mqtt.packettypes import PacketTypes
 from urllib.parse import urlparse
 
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
@@ -82,11 +83,11 @@ class Broker:
 
             try:
                 self._mqtt_client.connect(host, port, keepalive=60)
-                # self._mqtt_client.loop_start()  # Start network loop in separate thread
+                self._mqtt_client.loop_start()  # Start network loop in separate thread
 
                 # Start a background loop for the MQTT client
-                loop = asyncio.get_running_loop()
-                loop.run_in_executor(None, self._mqtt_client.loop_start)
+                # loop = asyncio.get_running_loop()
+                # loop.run_in_executor(None, self._mqtt_client.loop_start)
 
                 # Wait for connection or timeout
                 timeout = 10
@@ -157,6 +158,8 @@ class Broker:
         if not self.is_connected:
             raise RuntimeError("Not Connected")
 
+        # self._logger.info(f"Subscribing to {topic}")
+
         topic_parts = topic.split('/')
         callback_topic = '/'.join(topic_parts[2:])
 
@@ -188,6 +191,7 @@ class Broker:
 
     async def publish_async(self, message: BrokerMessage):
         if not self.is_connected:
+            self._logger.error("Not Connected")
             return
 
         if not message.topic:
@@ -199,16 +203,21 @@ class Broker:
         elif message.type == BrokerMessageType.INFORMATION:
             payload = message.information.json() if message.information else ""
 
-        properties = mqtt.Properties(
-            user_property=(self.MESSAGE_TYPE_KEY, message.type.value)
+        publish_properties = mqtt.Properties(
+            packetType=PacketTypes.PUBLISH,
+            # user_property=(self.MESSAGE_TYPE_KEY, message.type.value)
         )
 
-        self._mqtt_client.publish(
+        # TODO: Test this line
+        publish_properties.UserProperty = (
+            self.MESSAGE_TYPE_KEY, message.type.value)
+
+        res = self._mqtt_client.publish(
             message.topic,
             payload.encode(),
             qos=0,
             retain=False,
-            properties=properties
+            properties=publish_properties
         )
 
     async def _start_ntp_clock(self):

@@ -90,8 +90,6 @@ class Host(HostModel):
 
         await self._broker.connect(access_token, self._authority._broker_uri)
 
-        self._logger.info(f"Broker Connected - {self._broker.is_connected}")
-
         if self._broker.is_connected:
             self._logger.info(self._topic_generator.subscribe_as_host())
             await self._broker.subscribe(
@@ -221,6 +219,7 @@ class Host(HostModel):
         self._agent_factory.dispose_agent(agent_id)
 
     async def _broker_receive_message(self, message: BrokerMessage):
+        # self._logger.info(f"Received message: {message}")
         if not message.sender_id or not message.data:
             return
 
