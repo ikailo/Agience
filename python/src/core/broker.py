@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 from core.information import Information
+from core.data import Data
 
 
 class CallbackContainer(BaseModel):
@@ -117,12 +118,19 @@ class Broker:
 
         if callback_topic in self._callbacks:
             try:
-                # Get message type from properties
-                properties = msg.properties if hasattr(
-                    msg, 'properties') else {}
+                user_properties = msg.properties.UserProperty if hasattr(
+                    msg.properties, 'UserProperty') else []
+
+                # Get the first message type from the UserProperty or None as default
+                message_type_str = next(
+                    (value for key, value in user_properties if key ==
+                     self.MESSAGE_TYPE_KEY),
+                    None
+                )
+
                 try:
                     message_type = BrokerMessageType(
-                        properties.get(self.MESSAGE_TYPE_KEY, 'UNKNOWN'))
+                        message_type_str) if message_type_str else BrokerMessageType.UNKNOWN
                 except ValueError:
                     message_type = BrokerMessageType.UNKNOWN
 
@@ -132,7 +140,10 @@ class Broker:
                 )
 
                 if message_type == BrokerMessageType.EVENT:
-                    message.data = msg.payload.decode()
+                    data = Data()
+                    data.raw = msg.payload.decode()
+
+                    message.data = data
                 elif message_type == BrokerMessageType.INFORMATION:
                     message.information = Information.parse_raw(msg.payload)
 
@@ -144,7 +155,8 @@ class Broker:
                     asyncio.set_event_loop(loop)
 
                 for container in self._callbacks[callback_topic]:
-                    asyncio.create_task(container.callback(message))
+                    # asyncio.create_task(container.callback(message))
+                    loop.run_until_complete(container.callback(message))
 
             except Exception as e:
                 self._logger.error(f"Message handling error: {str(e)}")
@@ -166,8 +178,6 @@ class Broker:
         self._logger.info(f"Subscribing to topic - {topic}")
         if not self.is_connected:
             raise RuntimeError("Not Connected")
-
-        # self._logger.info(f"Subscribing to {topic}")
 
         topic_parts = topic.split('/')
         callback_topic = '/'.join(topic_parts[2:])

@@ -228,7 +228,7 @@ class Host(HostModel):
         self._agent_factory.dispose_agent(agent_id)
 
     async def _broker_receive_message(self, message: BrokerMessage):
-        self._logger.info(f"Received message: {message}")
+        self._logger.info(f"Received message: {message.topic}")
 
         # self._logger.info(f"Received message: {message}")
         if not message.sender_id or not message.data:
@@ -240,9 +240,14 @@ class Host(HostModel):
                 message.data.get("host")):
 
             try:
+                # TODO: Serialize this data
                 host_data = json.loads(message.data["host"])
                 plugins_data = json.loads(message.data.get("plugins", "[]"))
                 agents_data = json.loads(message.data.get("agents", "[]"))
+
+                # self._logger.info(f"host_data: {host_data}")
+                # self._logger.info(f"plugins_data: {plugins_data}")
+                # self._logger.info(f"agents_data: {agents_data}")
 
                 host = HostModel.parse_obj(host_data)
 
