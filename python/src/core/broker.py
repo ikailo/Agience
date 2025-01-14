@@ -47,6 +47,7 @@ class Broker:
         self._mqtt_client.on_message = self._on_message
         self._mqtt_client.on_disconnect = self._on_disconnect
         self._mqtt_client.on_publish = self._on_publish
+        self._mqtt_client.on_subscribe = self._on_subscribe
 
     @property
     def is_connected(self) -> bool:
@@ -157,6 +158,10 @@ class Broker:
     def _on_publish(self, client, userdata, mid):
         self._logger.info(f"Message published with mid: {mid}")
 
+    def _on_subscribe(self, client, userdata, mid, granted_qos, properties=None):
+        self._logger.info(f"Subscribed successfully with mid {
+                          mid} and QoS: {granted_qos}")
+
     async def subscribe(self, topic: str, callback: Callable[[BrokerMessage], Task]):
         self._logger.info(f"Subscribing to topic - {topic}")
         if not self.is_connected:
@@ -173,7 +178,8 @@ class Broker:
             self._callbacks[callback_topic] = []
 
         self._callbacks[callback_topic].append(container)
-        self._mqtt_client.subscribe(topic, qos=0)
+        result, mid = self._mqtt_client.subscribe(topic, qos=0)
+        self._logger.info(f"Subscription result: {result}, message ID: {mid}")
 
     async def unsubscribe(self, topic: str):
         topic_parts = topic.split('/')

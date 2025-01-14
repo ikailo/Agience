@@ -108,6 +108,8 @@ class Host(HostModel):
                 data=data
             )
 
+            # await self._broker.subscribe(broker_message.topic, self._broker_receive_message)
+
             await self._broker.publish_async(broker_message)
 
             self.is_connected = True
