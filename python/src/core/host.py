@@ -1,5 +1,5 @@
 from typing import Dict, Optional, Callable, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 import asyncio
 import base64
 import logging
@@ -54,6 +54,10 @@ class Host(HostModel):
         self._agent_factory = agent_factory
         self._logger = logger or logging.getLogger(__name__)
         self._topic_generator = TopicGenerator(authority.id, host_id)
+
+    @field_serializer('agents', when_used='json')
+    def serialize_dt(self, agents: Dict[str, Agent], _info):
+        return list(agents.values())
 
     async def run(self):
         await self.start()
