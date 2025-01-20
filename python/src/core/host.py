@@ -56,7 +56,7 @@ class Host(HostModel):
         self._topic_generator = TopicGenerator(authority.id, host_id)
 
     @field_serializer('agents', when_used='json')
-    def serialize_dt(self, agents: Dict[str, Agent], _info):
+    def serialize_agents(self, agents: Dict[str, Agent], _info):
         return list(agents.values())
 
     async def run(self):
@@ -240,23 +240,26 @@ class Host(HostModel):
                 message.data.get("host")):
 
             try:
-                # TODO: Serialize this data
-                host_data = json.loads(message.data["host"])
-                plugins_data = json.loads(message.data.get("plugins", "[]"))
-                agents_data = json.loads(message.data.get("agents", "[]"))
+                host_json = json.loads(message.data["host"])
+                plugins_list_json = json.loads(
+                    message.data.get("plugins", "[]")
+                )
+                agents_list_json = json.loads(message.data.get("agents", "[]"))
 
-                # self._logger.info(f"host_data: {host_data}")
-                # self._logger.info(f"plugins_data: {plugins_data}")
-                # self._logger.info(f"agents_data: {agents_data}")
-
-                host = HostModel.parse_obj(host_data)
+                host = HostModel.model_validate(host_json)
+                plugins_list = [
+                    PluginModel.model_validate(p) for p in plugins_list_json
+                ]
+                agents_list = [
+                    AgentModel.model_validate(a) for a in agents_list_json
+                ]
 
                 if not host.id:
                     self._logger.error("Invalid Host")
                 else:
                     self._logger.info(
                         f"Received Host Welcome Message for {host.name}")
-                    await self.receive_host_welcome(host, plugins_data, agents_data)
+                    await self.receive_host_welcome(host, plugins_list, agents_list)
 
             except json.JSONDecodeError as e:
                 self._logger.error(
