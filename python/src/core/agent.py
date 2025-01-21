@@ -63,7 +63,6 @@ class Agent(AgentModel):
 
     # self._broker_receive_message depends on AgienceCredentialService (not implemented yet)
     async def connect(self) -> None:
-        """Connect the agent to its topics"""
         if not self.is_enabled:
             self._logger.warning(f"Agent {self.id} is not enabled")
             return

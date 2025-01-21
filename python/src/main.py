@@ -5,6 +5,7 @@ from core.broker import Broker
 from core.authority import Authority
 from core.host import Host
 from core.agent_factory import AgentFactory
+from core.agent import Agent
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 import logging
 import time
@@ -16,6 +17,13 @@ HOST_SECRET = os.getenv('HOST_SECRET')
 BROKER_URI = os.getenv('BROKER_URI')
 AUTHORITY_URI = os.getenv('AUTHORITY_URI')
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("main")
+
+
+async def on_agent_connected(agent: Agent):
+    logger.info(f"Agent {agent.name} callback triggered")
+
 
 async def message_handler(message: BrokerMessage):
     print("===========================================")
@@ -23,10 +31,6 @@ async def message_handler(message: BrokerMessage):
     print(f"Message type: {message.type}")
     print(f"Message data: {message.data}")
     print("===========================================")
-
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("authority")
 
 
 async def main():
@@ -47,6 +51,7 @@ async def main():
                 authority=authority, broker=broker, agent_factory=agent_factory, logger=logging.getLogger("host"))
 
     await host.connect()
+    host.agent_connected = on_agent_connected
 
 
 asyncio.run(main())

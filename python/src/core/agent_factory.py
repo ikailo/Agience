@@ -29,11 +29,11 @@ class AgentFactory:
         self.agents: List[Agent] = []
 
     def create_agent(self, model_agent: AgentModel) -> Agent:
-        # Create kernel and services
+        logger = logging.getLogger(f"Agent {model_agent.name}:")
         kernel = Kernel()
-        kernel.dict["agent_id"] = model_agent.id
 
-        logger = logging.getLogger(f"Agent {model_agent.id}")
+        # TODO: add agent id to kernel
+        # kernel.dict["agent_id"] = model_agent.id
 
         # Create credential service
         credential_service = AgienceCredentialService(
