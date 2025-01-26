@@ -1,0 +1,9 @@
+aiohttp
+paho-mqtt
+dataclasses
+typing-extensions
+semantic-kernel
+ntplib
+websockets
+python-dotenv
+certifi
