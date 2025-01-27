@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 from core.authority import Authority
 from core.broker import Broker
+from core.data import Data
 from core.topic_generator import TopicGenerator
 from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 
@@ -60,19 +61,22 @@ class AgienceCredentialService:
         self._credentials[name] = decrypted_credential
 
     async def _send_credential_message(self, credential_name: str) -> None:
+        data = Data()
+
+        data.add("type", "credential_request")
+        data.add("agent_id", self._agent_id)
+        data.add("credential_name", credential_name)
+        data.add("jwk", json.dumps({
+            "kid": self._key_id,
+            "key": self._encryption_key.decode()
+        }))
+
         message = BrokerMessage(
             type=BrokerMessageType.EVENT,
             topic=self._topic_generator.publish_to_authority(),
-            data={
-                "type": "credential_request",
-                "agent_id": self._agent_id,
-                "credential_name": credential_name,
-                "jwk": json.dumps({
-                    "kid": self._key_id,
-                    "key": self._encryption_key.decode()
-                })
-            }
+            data=data,
         )
+
         await self._broker.publish(message)
 
     def _decrypt_with_jwk(self, encrypted_data: str) -> str:
@@ -99,5 +103,7 @@ class AgienceCredentialService:
 
     # TODO: Python doesn't have direct stack trace attribute inspection
     # Consider alternative authorization approaches
+    # Not used in the current implementation
+    # Low priority
     def _ensure_caller_has_access(self, connection_name: str) -> None:
         pass

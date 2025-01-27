@@ -46,7 +46,7 @@ class Agent(AgentModel):
 
         self._prompt_execution_settings = PromptExecutionSettings(
             extension_data={
-                "model": "gpt-4",  # Can be configured as needed
+                "model": "gpt-4",
                 "temperature": 0.7,
                 "max_tokens": 2000,
                 "tool_call_behavior": "auto"
@@ -91,7 +91,6 @@ class Agent(AgentModel):
 
     # TODO: Implement AgienceCredentialService
     async def _broker_receive_message(self, message: BrokerMessage) -> None:
-        """Handle incoming broker messages"""
         try:
             # Handle incoming credential
             if (message.type == BrokerMessageType.EVENT
@@ -103,7 +102,7 @@ class Agent(AgentModel):
                 name = message.data["credential_name"]
                 credential = message.data["encrypted_credential"]
 
-                credential_service = await self._kernel.get_service(AgienceCredentialService)
+                credential_service: AgienceCredentialService = await self._kernel.get_service(AgienceCredentialService)
                 await credential_service.add_encrypted_credential(name, credential)
         except Exception as e:
             self._logger.error(f"Error processing broker message: {str(e)}")

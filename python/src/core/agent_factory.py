@@ -64,6 +64,7 @@ class AgentFactory:
 
         return agent
 
+    # TODO: Implement plugin initialization
     def _initialize_plugins(self, agent: Agent, model_agent: AgentModel):
         for plugin in model_agent.plugins:
             if not plugin.name:
