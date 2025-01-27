@@ -35,9 +35,12 @@ class Host(HostModel):
     plugin_instances: Dict[str, Any] = Field(default_factory=dict)
 
     # Event callbacks
-    agent_connected: Optional[Callable[[Agent], None]] = None
-    agent_disconnected: Optional[Callable[[str], None]] = None
-    agent_log_entry_received: Optional[Callable[[str, str], None]] = None
+    agent_connected: Optional[Callable[[Agent], None]] = Field(
+        default=None, exclude=True)
+    agent_disconnected: Optional[Callable[[str], None]] = Field(
+        default=None, exclude=True)
+    agent_log_entry_received: Optional[Callable[[str, str], None]] = Field(
+        default=None, exclude=True)
 
     def __init__(self, host_id: str, host_secret: str, authority: Authority,
                  broker: Broker, agent_factory: AgentFactory, logger: Optional[logging.Logger] = None, **data):
