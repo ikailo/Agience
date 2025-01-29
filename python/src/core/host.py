@@ -204,7 +204,7 @@ class Host(HostModel):
     # TODO: AgentFactory is not implemented
     async def receive_agent_connect(self, model_agent: 'Agent'):
         # Create and configure agent
-        agent = self._agent_factory.create_agent(model_agent)
+        agent = self._agent_factory.create_agent(model_agent, self)
 
         # Connect the agent
         self.agents[agent.id] = agent

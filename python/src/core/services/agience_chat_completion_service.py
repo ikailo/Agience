@@ -17,15 +17,15 @@ class AgienceChatCompletionService(ChatCompletionClientBase):
 
     async def get_chat_message_contents(
         self,
-        # TODO: this was optional in .net code (not a priority)
         kernel: Kernel,
         chat_history: ChatHistory,
         execution_settings: Optional[PromptExecutionSettings] = None,
-        cancellation_token=Optional[asyncio.Event]=None
+        cancellation_token: Optional[asyncio.Event] = None
     ) -> List[ChatMessageContent]:
         args = KernelArguments(
+            settings=execution_settings,
             chat_history=chat_history,
-            execution_settings=execution_settings,
+            # TODO: Text agent_id
             agent_id=kernel.model_dump.__get__("agent_id") if kernel else None
         )
 
@@ -37,12 +37,11 @@ class AgienceChatCompletionService(ChatCompletionClientBase):
 
         return result or []
 
-    # TODO: cancellation_token type (not a priority)
     async def get_streaming_chat_message_contents(
         self,
         chat_history: ChatHistory,
         execution_settings: Optional[PromptExecutionSettings] = None,
         kernel: Optional[Kernel] = None,
-        cancellation_token=None
+        cancellation_token=Optional[asyncio.Event]
     ) -> AsyncIterable[StreamingChatMessageContent]:
         raise NotImplementedError()
