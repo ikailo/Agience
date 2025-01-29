@@ -12,6 +12,8 @@ from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 from core.authority import Authority
 from core.broker import Broker
 from core.topic_generator import TopicGenerator
+
+from core.services.agience_chat_completion_service import AgienceChatCompletionService
 from core.services.agience_credential_service import AgienceCredentialService
 
 
@@ -132,20 +134,19 @@ class Agent(AgentModel):
             self._chat_history.add_user_message(user_message)
 
             # Get the chat completion service
-            chat_completion = self._kernel.get_service(
+            chat_completion: AgienceChatCompletionService = self._kernel.get_service(
                 type=ChatCompletionClientBase)
 
             # Get the response from the chat completion service
-            result = await chat_completion.complete_chat(
-                self._chat_history,
-                self._prompt_execution_settings,
+            result = await chat_completion.get_chat_message_contents(
+                chat_history=self._chat_history,
+                execution_settings=self._prompt_execution_settings,
                 kernel=self._kernel,
                 cancellation_token=cancellation_token
             )
 
-            if result and result.messages:
-                assistant_message = str(result.messages[-1].content)
-                # Add the assistant's message to the chat history
+            if result and result[0]:
+                assistant_message = str(result[0].content)
                 self._chat_history.add_assistant_message(assistant_message)
                 return assistant_message
 
