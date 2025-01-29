@@ -148,9 +148,6 @@ class AgentFactory:
         executive_function_name = ""
         factory = None
 
-        print("-----------------")
-        print(host.plugins[0].plugin_provider == PluginProvider.Prompt)
-
         for host_plugin in host.plugins:
             if any(f.id == model_agent.executive_function_id for f in host_plugin.functions):
                 if host_plugin.plugin_provider == PluginProvider.SKPlugin and host_plugin.type is not None:
