@@ -15,6 +15,13 @@ from core.agent_factory import AgentFactory
 from hosts.console.interactive_console import InteractiveConsole
 from hosts.console.app_config import AppConfig
 
+from semantic_kernel.core_plugins import (
+    ConversationSummaryPlugin,
+    MathPlugin,
+    TextPlugin,
+    TimePlugin,
+)
+
 # from plugins.core.interaction.interaction_service_interface import IInteractionService
 
 # Import plugins
@@ -101,18 +108,15 @@ async def main() -> None:
         logger=logging.getLogger("host")
     )
 
-    # TODO: Implement add_plugin in host
-    # Add plugins to host
+    # Add custom plugins to host
     # host.add_plugin(ChatCompletionPlugin())
     # host.add_plugin(InteractionPlugin())
 
     # Add Semantic Kernel plugins
-    # host.add_plugin(ConversationSummaryPlugin())
-    # host.add_plugin(FileIOPlugin())
-    # host.add_plugin(MathPlugin())
-    # host.add_plugin(TextPlugin())
-    # host.add_plugin(TimePlugin())
-    # host.add_plugin(WaitPlugin())
+    host.add_plugin(ConversationSummaryPlugin())
+    host.add_plugin(MathPlugin())
+    host.add_plugin(TextPlugin())
+    host.add_plugin(TimePlugin())
 
     # Start the host
     await host.start()
