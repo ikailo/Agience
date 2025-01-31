@@ -15,6 +15,7 @@ from core.agent_factory import AgentFactory
 from hosts.console.interactive_console import InteractiveConsole
 from hosts.console.app_config import AppConfig
 
+from semantic_kernel.prompt_template.prompt_template_config import PromptTemplateConfig
 from semantic_kernel.core_plugins import (
     ConversationSummaryPlugin,
     MathPlugin,
@@ -113,10 +114,12 @@ async def main() -> None:
     # host.add_plugin(InteractionPlugin())
 
     # Add Semantic Kernel plugins
-    host.add_plugin(ConversationSummaryPlugin())
-    host.add_plugin(MathPlugin())
-    host.add_plugin(TextPlugin())
-    host.add_plugin(TimePlugin())
+    host.add_plugin_from_type(MathPlugin)
+    host.add_plugin_from_type(TextPlugin)
+    host.add_plugin_from_type(TimePlugin)
+
+    # Does not work with current implementation
+    # host.add_plugin_from_type(ConversationSummaryPlugin)
 
     # Start the host
     await host.start()

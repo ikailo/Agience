@@ -348,7 +348,7 @@ class Host(HostModel):
 
         decorated_methods = [
             method for method in inspect.getmembers(plugin_type, predicate=inspect.isfunction)
-            if isinstance(getattr(method[1], 'sk_function', None), KernelFunction)
+            if getattr(method[1], '__kernel_function__', False)
         ]
 
         for _, method in decorated_methods:
