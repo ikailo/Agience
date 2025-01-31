@@ -23,20 +23,9 @@ from semantic_kernel.core_plugins import (
     TimePlugin,
 )
 
-# from plugins.core.interaction.interaction_service_interface import IInteractionService
-
-# Import plugins
-# from plugins.core.openai import ChatCompletionPlugin
+from plugins.core.openai.chat_completion_plugin import ChatCompletionPlugin
 # from plugins.core.interaction import InteractionPlugin
 # from plugins.core.code import Git
-# from semantic_kernel.core_plugins import (
-#     ConversationSummaryPlugin,
-#     FileIOPlugin,
-#     MathPlugin,
-#     TextPlugin,
-#     TimePlugin,
-#     WaitPlugin,
-# )
 
 
 load_dotenv()
@@ -110,7 +99,7 @@ async def main() -> None:
     )
 
     # Add custom plugins to host
-    # host.add_plugin(ChatCompletionPlugin())
+    host.add_plugin_from_type(ChatCompletionPlugin)
     # host.add_plugin(InteractionPlugin())
 
     # Add Semantic Kernel plugins
