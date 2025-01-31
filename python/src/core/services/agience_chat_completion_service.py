@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Dict, List, Optional, AsyncIterable, Any
 
 from semantic_kernel.kernel import Kernel
@@ -26,20 +27,35 @@ class AgienceChatCompletionService(ChatCompletionClientBase):
         cancellation_token: Optional[asyncio.Event] = None,
         **kwargs,
     ) -> List[ChatMessageContent]:
-        args = KernelArguments(
-            settings=execution_settings,
-            chat_history=chat_history,
-            # TODO: Text agent_id
-            agent_id=getattr(kernel, "agent_id", None) if kernel else None
-        )
+        if getattr(kernel, '_in_completion', False):
+            return []
 
-        result = await self.chat_completion_function.invoke(
-            kernel=kernel,
-            arguments=args,
-            cancellation_token=cancellation_token
-        )
+        try:
+            # Set recursion guard
+            kernel._in_completion = True
 
-        return result or []
+            args = KernelArguments(
+                settings=execution_settings,
+                chat_history=chat_history,
+                agent_id=getattr(kernel, "agent_id", None) if kernel else None
+            )
+
+            result = await self.chat_completion_function.invoke(
+                kernel=kernel,
+                arguments=args,
+                cancellation_token=cancellation_token
+            )
+
+            return result or []
+
+        except Exception as e:
+            logging.error(f"Detailed error: {str(e)}", exc_info=True)
+            return []
+
+        finally:
+            # Clear recursion guard
+            if kernel:
+                kernel._in_completion = False
 
     async def get_streaming_chat_message_contents(
         self,
