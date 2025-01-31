@@ -43,19 +43,13 @@ class AgentFactory:
             self.broker
         )
 
-        # Add executive function if specified
-        if model_agent.executive_function_id:
-            self._add_executive_function(host, model_agent)
-
-        # TODO: KernelPluginCollection not implemented (low priority)
         agent_plugins: list[KernelPlugin] = []
+        agent_logger = logging.getLogger(f"Agent {model_agent.name}:")
 
         kernel = Kernel(plugins=agent_plugins, agent_id=model_agent.id)
 
-        # TODO: add agent id to kernel (low priority)
-        # kernel.dict["agent_id"] = model_agent.id
-
-        agent_logger = logging.getLogger(f"Agent {model_agent.name}:")
+        if model_agent.executive_function_id:
+            self._add_executive_function(host, model_agent, kernel)
 
         # Create agent
         agent = Agent(
@@ -72,14 +66,13 @@ class AgentFactory:
 
         self._initialize_plugins(
             host=host,
-            agent=agent,
             model_agent=model_agent,
-            agent_plugins=agent_plugins
+            agent_plugins=agent_plugins,
         )
 
         return agent
 
-    def _initialize_plugins(self, host: 'Host', agent: Agent, agent_plugins: list[KernelPlugin], model_agent: AgentModel):
+    def _initialize_plugins(self, host: 'Host', agent_plugins: list[KernelPlugin], model_agent: AgentModel):
         for plugin in model_agent.plugins:
             if not plugin.name:
                 self.logger.warning("Plugin name is empty.")
@@ -141,7 +134,7 @@ class AgentFactory:
 
         return KernelPlugin(name=plugin.name, description=plugin.description, functions=functions)
 
-    def _add_executive_function(self, host: 'Host', model_agent: AgentModel):
+    def _add_executive_function(self, host: 'Host', model_agent: AgentModel, kernel: Kernel):
         if not model_agent.executive_function_id:
             return
 
@@ -181,16 +174,15 @@ class AgentFactory:
                     factory = create_compiled_factory
 
                 elif host_plugin.plugin_provider == PluginProvider.Prompt:
-                    print("here")
                     plugin = self._create_kernel_plugin_prompt(host_plugin)
-                    print("lol")
-                    print(plugin)
 
                     matching_function = next(
                         (f for f in host_plugin.functions if f.id ==
                          model_agent.executive_function_id),
                         None
                     )
+
+                    # not needed (or need further discussion)
                     executive_function_name = matching_function.name.replace(
                         "Async", "").replace("async", "") if matching_function else ""
 
@@ -205,6 +197,8 @@ class AgentFactory:
                     factory = create_prompt_factory
 
         if factory is not None:
+            service = factory(None)
+            kernel.add_service(service)
             pass
             # TODO: Implement service_provider
             # service_provider.services.add_scoped(

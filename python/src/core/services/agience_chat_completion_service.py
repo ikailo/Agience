@@ -11,6 +11,7 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 
 class AgienceChatCompletionService(ChatCompletionClientBase):
+
     def __init__(self, chat_completion_function: KernelFunction):
         self.chat_completion_function = chat_completion_function
         self.attributes: Dict[str, Any] = {}
@@ -26,7 +27,7 @@ class AgienceChatCompletionService(ChatCompletionClientBase):
             settings=execution_settings,
             chat_history=chat_history,
             # TODO: Text agent_id
-            agent_id=kernel.model_dump.__get__("agent_id") if kernel else None
+            agent_id=getattr(kernel, "agent_id", None) if kernel else None
         )
 
         result = await self.chat_completion_function.invoke(
