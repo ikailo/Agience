@@ -12,16 +12,19 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 class AgienceChatCompletionService(ChatCompletionClientBase):
 
-    def __init__(self, chat_completion_function: KernelFunction):
-        self.chat_completion_function = chat_completion_function
-        self.attributes: Dict[str, Any] = {}
+    chat_completion_function: KernelFunction
+    attributes: Dict[str, Any] = {}
+
+    class Config:
+        arbitrary_types_allowed = True
 
     async def get_chat_message_contents(
         self,
         kernel: Kernel,
         chat_history: ChatHistory,
         execution_settings: Optional[PromptExecutionSettings] = None,
-        cancellation_token: Optional[asyncio.Event] = None
+        cancellation_token: Optional[asyncio.Event] = None,
+        **kwargs,
     ) -> List[ChatMessageContent]:
         args = KernelArguments(
             settings=execution_settings,

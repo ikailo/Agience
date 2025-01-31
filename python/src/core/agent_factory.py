@@ -190,7 +190,7 @@ class AgentFactory:
                         executive_function = plugin.functions.get(
                             executive_function_name)
                         if executive_function:
-                            return AgienceChatCompletionService(executive_function)
+                            return AgienceChatCompletionService(chat_completion_function=executive_function, ai_model_id=matching_function.id)
                         raise RuntimeError(f"Executive function '{
                             executive_function_name}' could not be found.")
 
