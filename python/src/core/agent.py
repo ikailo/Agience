@@ -91,7 +91,6 @@ class Agent(AgentModel):
                                    self.id}: {str(e)}")
                 raise
 
-    # TODO: Implement AgienceCredentialService
     async def _broker_receive_message(self, message: BrokerMessage) -> None:
         try:
             # Handle incoming credential
@@ -122,8 +121,6 @@ class Agent(AgentModel):
                                    self.id}: {str(e)}")
                 raise
 
-    # TODO: chat completion needs some fixes
-    # Ref - https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion
     async def prompt_async(
         self,
         user_message: str,

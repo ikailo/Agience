@@ -5,10 +5,17 @@ import base64
 import logging
 import httpx
 import json
+import inspect
+
+from semantic_kernel.functions.kernel_function import KernelFunction
 
 from core.models.entities.host import Host as HostModel
 from core.models.entities.agent import Agent as AgentModel
 from core.models.entities.plugin import Plugin as PluginModel
+from core.models.entities.function import Function as FunctionModel
+from core.models.entities.parameter import Parameter as ParameterModel
+from core.models.enums.enums import PluginProvider, PluginSource
+
 from core.authority import Authority
 from core.broker import Broker, BrokerMessage, BrokerMessageType
 from core.agent_factory import AgentFactory
@@ -216,7 +223,6 @@ class Host(HostModel):
         if self.agent_connected:
             await self.agent_connected(agent)
 
-    # TODO: AgentFactory is not implemented
     async def receive_agent_disconnect(self, agent_id: str):
         agent = self.agents[agent_id]
 
@@ -297,4 +303,90 @@ class Host(HostModel):
             agent_id = message.data["agent_id"]
             await self.receive_agent_disconnect(agent_id)
 
-    # TODO: Implement AddPlugin, GetFriendlyTypeName and AddPluginFromType
+    def add_plugin(self, instance: Any):
+        if instance is None:
+            raise ValueError("instance cannot be None")
+
+        plugin_type = type(instance)
+        plugin_name = plugin_type.__module__ + "." + plugin_type.__name__
+
+        if plugin_name in self.plugin_instances:
+            raise ValueError(f"A plugin with the name '{
+                             plugin_name}' already exists.")
+
+        self.plugin_instances[plugin_name] = instance
+
+        plugin = PluginModel(
+            name=plugin_type.__name__,
+            unique_name=plugin_name,
+            description="",
+            plugin_provider=PluginProvider.SKPlugin,
+            plugin_source=PluginSource.HostDefined,
+            type=plugin_type
+        )
+
+        decorated_methods = [
+            method for method in inspect.getmembers(plugin_type, predicate=inspect.isfunction)
+            if isinstance(getattr(method[1], 'sk_function', None), KernelFunction)
+        ]
+
+        for _, method in decorated_methods:
+            function = self._create_function_from_method(method)
+            plugin.functions.append(function)
+
+        self.plugins.append(plugin)
+
+    def add_plugin_from_type(self, plugin_type: type):
+        plugin = PluginModel(
+            name=plugin_type.__name__,
+            unique_name=plugin_type.__module__ + "." + plugin_type.__name__,
+            description="",
+            plugin_provider=PluginProvider.SKPlugin,
+            plugin_source=PluginSource.HostDefined,
+            type=plugin_type
+        )
+
+        decorated_methods = [
+            method for method in inspect.getmembers(plugin_type, predicate=inspect.isfunction)
+            if isinstance(getattr(method[1], 'sk_function', None), KernelFunction)
+        ]
+
+        for _, method in decorated_methods:
+            function = self._create_function_from_method(method)
+            plugin.functions.append(function)
+
+        self.plugins.append(plugin)
+
+    @staticmethod
+    def _create_function_from_method(method):
+        sig = inspect.signature(method)
+
+        function = FunctionModel(
+            name=method.__name__,
+            description=method.__doc__ or "",
+            inputs=[
+                ParameterModel(
+                    name=param.name,
+                    description="",  # Python doesn't have built-in parameter descriptions
+                    type=Host._get_friendly_type_name(param.annotation)
+                )
+                for param in sig.parameters.values()
+                if param.name != 'self' and param.kind != inspect.Parameter.VAR_KEYWORD
+            ],
+            outputs=[
+                ParameterModel(
+                    name="result",
+                    description="",
+                    type=Host._get_friendly_type_name(sig.return_annotation)
+                )
+            ]
+        )
+        return function
+
+    @staticmethod
+    def _get_friendly_type_name(type_hint):
+        if hasattr(type_hint, '__origin__'):  # For generic types
+            origin = type_hint.__origin__.__name__
+            args = ', '.join(arg.__name__ for arg in type_hint.__args__)
+            return f"{origin}[{args}]"
+        return getattr(type_hint, '__name__', str(type_hint))

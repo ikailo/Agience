@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 
 class AgentFactory:
-    # TODO: Class not implemented
     def __init__(
         self,
         service_provider: Any,
@@ -97,7 +96,6 @@ class AgentFactory:
                             )
                             agent_plugins.append(kernel_plugin)
                         else:
-                            # TODO: _create_plugin_instance not implemented
                             plugin_instance = self._create_plugin_instance(
                                 plugin_type,
                                 plugin.name
@@ -116,6 +114,7 @@ class AgentFactory:
                 self.logger.error(f"Failed to initialize plugin: {
                                   plugin.name}", exc_info=ex)
 
+    # TODO: _create_plugin_instance not implemented
     def _create_plugin_instance(self, plugin_type: Type, plugin_name: str) -> Any:
         pass
 
@@ -197,12 +196,10 @@ class AgentFactory:
                     factory = create_prompt_factory
 
         if factory is not None:
+            # TODO: Check if the factory is correct
             service = factory(None)
             kernel.add_service(service)
             pass
-            # TODO: Implement service_provider
-            # service_provider.services.add_scoped(
-            #     IChatCompletionService, factory)
         else:
             self.logger.warning(f"Could not find a plugin with the executive function id {
                 model_agent.executive_function_id}")
