@@ -116,8 +116,10 @@ class AgentFactory:
 
     # TODO: _create_plugin_instance not implemented
     def _create_plugin_instance(self, plugin_type: Type, plugin_name: str) -> Any:
-        pass
+        plugin_instance = plugin_type()
+        return plugin_instance
 
+    # TODO: Fix this
     def _create_kernel_plugin_compiled(self, plugin_instance: Any, plugin_name: str) -> KernelPlugin:
         return KernelPlugin.from_object(plugin_name=plugin_name, plugin_instance=plugin_instance)
 
@@ -152,14 +154,18 @@ class AgentFactory:
                          model_agent.executive_function_id),
                         None
                     )
-                    executive_function_name = matching_function.name.replace(
-                        "Async", "").replace("async", "") if matching_function else ""
+                    executive_function_name = matching_function.name if matching_function else ""
+
+                    # .replace(
+                    #     "Async", "").replace("async", "") if matching_function else ""
 
                     def create_compiled_factory(sp):
                         kernel_plugin = self._create_kernel_plugin_compiled(
-                            plugin_type,
-                            plugin_name
+                            plugin_instance=plugin_type(),
+                            plugin_name=plugin_name
                         )
+
+                        print(kernel_plugin.functions.keys())
 
                         executive_function = kernel_plugin.functions.get(
                             executive_function_name)
