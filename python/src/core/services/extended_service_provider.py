@@ -12,9 +12,27 @@ class ExtendedServiceProvider:
     def services(self) -> ServiceCollection:
         return self._collection
 
+    def build_local_provider(self):
+        return self._collection.build()
+
+    # def get_service(self, service_type: Type) -> Any:
+    #     if not self._local_provider:
+    #         self._local_provider = self._collection.build()
+
+    #     try:
+    #         return self._local_provider.get_service(service_type)
+    #     except ServiceNotFoundError:
+    #         return self._provider.get_service(service_type)
+
     def get_service(self, service_type: Type) -> Any:
-        local_provider = self._collection.build()
         try:
-            return local_provider.get_service(service_type) or self._provider.get_service(service_type)
+            return self.build_local_provider().get_service(service_type)
         except ServiceNotFoundError:
             return self._provider.get_service(service_type)
+
+    def get_required_service(self, service_type: Type) -> Any:
+        service = self.get_service(service_type)
+        if service is None:
+            raise ServiceNotFoundError(
+                f"Required service {service_type.__name__} not found")
+        return service
