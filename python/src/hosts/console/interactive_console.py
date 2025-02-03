@@ -12,6 +12,8 @@ from queue import Queue
 
 from core.host import Host
 from core.agent import Agent
+from core.interfaces.event_log_handler_interface import IEventLogHandler
+from core.logging.event_log_args import EventLogArgs
 
 from plugins.core.interaction.interaction_service_interface import IInteractionService
 
@@ -25,7 +27,7 @@ class MessageRequest(BaseModel):
     tag: Optional[str] = None
 
 
-class InteractiveConsole(IInteractionService):
+class InteractiveConsole(IInteractionService, IEventLogHandler):
     def __init__(self, logger: logging.Logger, host: Host):
         self.logger = logger
         self.host = host
@@ -41,7 +43,7 @@ class InteractiveConsole(IInteractionService):
         # Start background message processing
         asyncio.create_task(self.process_messages())
 
-    def on_log_entry_received(self, sender: Any, args: Any) -> None:
+    def on_log_entry_received(self, sender: Optional[Any], args: EventLogArgs) -> None:
         pass
 
     async def on_agent_connected(self, agent: Agent) -> None:

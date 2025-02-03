@@ -10,7 +10,7 @@ class LogLevel(IntEnum):
     Warning = 3
     Error = 4
     Critical = 5
-    None = 6
+    NoLog = 6
 
 
 class EventId(BaseModel):
@@ -26,3 +26,6 @@ class EventLogArgs(BaseModel):
     formatter: Optional[Callable[[Any, Optional[Exception]], str]] = None
     agent_id: Optional[str] = None
     scope: Optional[Any] = None
+
+    class Config:
+        arbitrary_types_allowed = True

@@ -161,6 +161,7 @@ class AgentFactory:
 
                     def create_compiled_factory(sp):
                         kernel_plugin = self._create_kernel_plugin_compiled(
+                            # TODO: Fix this dynamic creation
                             plugin_instance=plugin_type(),
                             plugin_name=plugin_name
                         )
