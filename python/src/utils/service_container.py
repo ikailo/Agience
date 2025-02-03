@@ -89,6 +89,13 @@ class ServiceProvider:
     def get_service(self, service_type: Type[T]) -> T:
         return self._get_service(service_type, set())
 
+    def get_required_service(self, service_type: Type[T]) -> T:
+        service = self._get_service(service_type, set())
+        if service is None:
+            raise ServiceNotFoundError(
+                f"Required service {service_type.__name__} not found")
+        return service
+
     def _get_service(self, service_type: Type[T], resolution_stack: set) -> T:
         if service_type in resolution_stack:
             raise CircularDependencyError(
