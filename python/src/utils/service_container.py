@@ -77,14 +77,19 @@ class ServiceProvider:
         self._scoped_instances: Dict[Type, Any] = {}
         self._singleton_instances: Dict[Type, Any] = {}
 
-    @contextmanager
-    def create_scope(self) -> Generator['ServiceProvider', None, None]:
+    # @contextmanager
+    # def create_scope(self) -> Generator['ServiceProvider', None, None]:
+    #     scoped_provider = ServiceProvider(self._descriptors)
+    #     scoped_provider._singleton_instances = self._singleton_instances
+    #     try:
+    #         yield scoped_provider
+    #     finally:
+    #         scoped_provider._scoped_instances.clear()
+
+    def create_scope(self) -> 'ServiceProvider':
         scoped_provider = ServiceProvider(self._descriptors)
         scoped_provider._singleton_instances = self._singleton_instances
-        try:
-            yield scoped_provider
-        finally:
-            scoped_provider._scoped_instances.clear()
+        return scoped_provider
 
     def get_service(self, service_type: Type[T]) -> T:
         return self._get_service(service_type, set())

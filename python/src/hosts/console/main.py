@@ -80,7 +80,7 @@ def configure_core_services(services: ServiceCollection, app_config: AppConfig):
             authority_uri=app_config.authority_uri,
             broker=broker,
             logger=logging.getLogger("authority"),
-            service_scope_factory=None,  # TODO: fix
+            service_scope_factory=None,  # TODO: Fix
             authority_uri_internal=app_config.authority_uri_internal,
             broker_uri_internal=app_config.broker_uri_internal
         )
@@ -93,7 +93,7 @@ def configure_core_services(services: ServiceCollection, app_config: AppConfig):
             broker=broker,
             authority=authority,
             logger=logging.getLogger("agent_factory"),
-            service_provider=None
+            service_provider=sp
         )
     services.add_singleton_factory(AgentFactory, agent_factory_factory)
 

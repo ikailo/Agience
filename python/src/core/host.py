@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable, Any
+from typing import Dict, Optional, Callable, Any, TYPE_CHECKING
 from pydantic import BaseModel, Field, field_serializer
 import asyncio
 import base64
@@ -18,10 +18,12 @@ from core.models.enums.enums import PluginProvider, PluginSource
 
 from core.authority import Authority
 from core.broker import Broker, BrokerMessage, BrokerMessageType
-from core.agent_factory import AgentFactory
 from core.agent import Agent
 from core.topic_generator import TopicGenerator
 from core.data import Data
+
+if TYPE_CHECKING:
+    from core.agent_factory import AgentFactory
 
 
 class TokenResponse(BaseModel):
@@ -50,7 +52,7 @@ class Host(HostModel):
         default=None, exclude=True)
 
     def __init__(self, host_id: str, host_secret: str, authority: Authority,
-                 broker: Broker, agent_factory: AgentFactory, logger: Optional[logging.Logger] = None, **data):
+                 broker: Broker, agent_factory: 'AgentFactory', logger: Optional[logging.Logger] = None, **data):
         super().__init__(id=host_id, **data)
 
         if not host_id:
@@ -211,7 +213,7 @@ class Host(HostModel):
     # TODO: AgentFactory is not implemented
     async def receive_agent_connect(self, model_agent: 'Agent'):
         # Create and configure agent
-        agent = self._agent_factory.create_agent(model_agent, self)
+        agent = self._agent_factory.create_agent(model_agent)
 
         # Connect the agent
         self.agents[agent.id] = agent

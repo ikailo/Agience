@@ -1,6 +1,5 @@
-from __future__ import annotations
 import logging
-from typing import List, Any, Optional, Type, TYPE_CHECKING
+from typing import List, Any, Optional, Type
 from semantic_kernel.kernel import Kernel
 from semantic_kernel.functions.kernel_plugin import KernelPlugin
 from semantic_kernel.functions.kernel_function import KernelFunction
@@ -14,15 +13,13 @@ from core.models.entities.plugin import Plugin
 from core.agent import Agent
 from core.authority import Authority
 from core.broker import Broker
+from core.host import Host
 
 from core.services.agience_chat_completion_service import AgienceChatCompletionService
 from core.services.agience_credential_service import AgienceCredentialService
 from core.services.extended_service_provider import ExtendedServiceProvider
 
 from utils.service_container import ServiceProvider
-
-if TYPE_CHECKING:
-    from core.host import Host
 
 
 class AgentFactory:
@@ -47,7 +44,7 @@ class AgentFactory:
 
         self._configure_kernel_services(kernel_service_provider, model_agent)
         self._add_executive_function(
-            host, model_agent, kernel, kernel_service_provider)
+            host, model_agent, kernel_service_provider)
 
         agent_plugins: list[KernelPlugin] = []
         agent_logger = logging.getLogger(f"Agent {model_agent.name}:")
@@ -73,6 +70,7 @@ class AgentFactory:
             host=host,
             model_agent=model_agent,
             agent_plugins=agent_plugins,
+            service_provider=kernel_service_provider
         )
 
         return agent
@@ -117,7 +115,7 @@ class AgentFactory:
                         else:
                             kernel_plugin = self._create_kernel_plugin_compiled_instance(
                                 service_provider,
-                                plugin_instance,
+                                plugin_type,
                                 plugin.name
                             )
                             agent_plugins.append(kernel_plugin)
