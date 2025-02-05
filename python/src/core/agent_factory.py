@@ -50,7 +50,9 @@ class AgentFactory:
         agent_logger = logging.getLogger(f"Agent {model_agent.name}:")
         kernel = Kernel(plugins=agent_plugins, agent_id=model_agent.id)
 
-        kernel_service_provider.services.add_singleton(lambda _: kernel)
+        kernel_service_provider.services.add_singleton(
+            Kernel, lambda _: kernel)
+        self._configure_credentials_service(kernel, model_agent)
 
         # Create agent
         agent = Agent(
@@ -81,12 +83,27 @@ class AgentFactory:
         model_agent: 'AgentModel'
     ) -> None:
         kernel_service_provider.services.add_singleton(
+            AgienceCredentialService,
             lambda sp: AgienceCredentialService(
+                model_agent.id,
+                sp.get_required_service(Authority),
+                sp.get_required_service(Broker)
+            )
+        )
+
+    def _configure_credentials_service(
+        self,
+        kernel: Kernel,
+        model_agent: 'AgentModel'
+    ) -> None:
+        kernel.add_service(
+            AgienceCredentialService(
                 model_agent.id,
                 self.authority,
                 self.broker
-            )
+            ),
         )
+        pass
 
     def _initialize_plugins(self, host: 'Host', agent_plugins: list[KernelPlugin], model_agent: AgentModel, service_provider: ExtendedServiceProvider):
         for plugin in model_agent.plugins:
@@ -205,7 +222,10 @@ class AgentFactory:
         plugin_type: Type,
         plugin_name: str
     ) -> 'KernelPlugin':
+        # Instantiate the plugin (ChatCompletionPlugin) here
+        # But it depends on AgienceCredentialService
         plugin_instance = service_provider.get_required_service(plugin_type)
+        # plugin_instance = plugin_type()
         return KernelPlugin.from_object(plugin_name=plugin_name, plugin_instance=plugin_instance)
 
     # TODO: Fix this

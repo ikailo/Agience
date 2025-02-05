@@ -166,7 +166,7 @@ async def main() -> None:
     # Start the host
     await host.start()
 
-    interaction_service = container.get_required_service(IInteractionService)
+    interaction_service = container.get_required_service(InteractiveConsole)
     await interaction_service.start()
 
 

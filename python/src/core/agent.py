@@ -51,7 +51,7 @@ class Agent(AgentModel):
                 "model": "gpt-4",
                 "temperature": 0.7,
                 "max_tokens": 2000,
-                "tool_call_behavior": "auto"
+                "tool_call_behavior": "auto",
             }
         )
 
@@ -103,7 +103,9 @@ class Agent(AgentModel):
                 name = message.data["credential_name"]
                 credential = message.data["encrypted_credential"]
 
+                print("here")
                 credential_service: AgienceCredentialService = await self._kernel.get_service(AgienceCredentialService)
+                print("lol")
                 await credential_service.add_encrypted_credential(name, credential)
         except Exception as e:
             self._logger.error(f"Error processing broker message: {str(e)}")

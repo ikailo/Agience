@@ -159,7 +159,9 @@ class Broker:
                     loop.run_until_complete(container.callback(message))
 
             except Exception as e:
-                self._logger.error(f"Message handling error: {str(e)}")
+                # print(e)
+                self._logger.error(f"Message handling error: {
+                                   str(e)}", exc_info=e)
                 raise
 
     def _on_disconnect(self, client, userdata, disconnect_flags, rc):
