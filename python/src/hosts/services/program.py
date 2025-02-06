@@ -67,7 +67,7 @@ async def main(args: List[str]):
         )
 
         agent_factory = AgentFactory(
-            service_provider=None,
+            main_service_provider=None,
             broker=broker,
             authority=authority,
             logger=logging.getLogger("agent_factory")

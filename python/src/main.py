@@ -44,7 +44,7 @@ async def main():
                           logger=logging.getLogger("authority"), authority_uri_internal=None, broker_uri_internal=None)
 
     agent_factory = AgentFactory(
-        service_provider=None, broker=broker, authority=authority, logger=logging.getLogger("agent_factory"))
+        main_service_provider=None, broker=broker, authority=authority, logger=logging.getLogger("agent_factory"))
 
     # Initialize Host with ID and Secret
     host = Host(host_id=HOST_ID, host_secret=HOST_SECRET,

@@ -93,7 +93,7 @@ def configure_core_services(services: ServiceCollection, app_config: AppConfig):
             broker=broker,
             authority=authority,
             logger=logging.getLogger("agent_factory"),
-            service_provider=sp
+            main_service_provider=sp
         )
     services.add_singleton_factory(AgentFactory, agent_factory_factory)
 

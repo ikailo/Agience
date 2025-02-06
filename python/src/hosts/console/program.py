@@ -83,7 +83,7 @@ async def main() -> None:
     )
 
     agent_factory = AgentFactory(
-        service_provider=None,
+        main_service_provider=None,
         broker=broker,
         authority=authority,
         logger=logging.getLogger("agent_factory")
