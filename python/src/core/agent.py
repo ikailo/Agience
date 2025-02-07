@@ -15,6 +15,7 @@ from core.topic_generator import TopicGenerator
 
 from core.services.agience_chat_completion_service import AgienceChatCompletionService
 from core.services.agience_credential_service import AgienceCredentialService
+from core.services.extended_service_provider import ExtendedServiceProvider
 
 
 class Agent(AgentModel):
@@ -27,6 +28,7 @@ class Agent(AgentModel):
         persona: str,
         kernel: Kernel,
         logger: Logger,
+        service_provider: ExtendedServiceProvider,
         **data: Any
     ):
         super().__init__(
@@ -45,6 +47,8 @@ class Agent(AgentModel):
         self._is_connected = False
         self._chat_history = ChatHistory()
         self._topic_generator = TopicGenerator(authority.id, id)
+
+        self._service_provider = service_provider
 
         self._prompt_execution_settings = PromptExecutionSettings(
             extension_data={
@@ -132,9 +136,9 @@ class Agent(AgentModel):
             # Add the user's message to the chat history
             self._chat_history.add_user_message(user_message)
 
-            # Get the chat completion service
-            chat_completion: AgienceChatCompletionService = self._kernel.get_service(
-                type=ChatCompletionClientBase)
+            chat_completion: ChatCompletionClientBase = self._service_provider.get_required_service(
+                ChatCompletionClientBase
+            )
 
             # Get the response from the chat completion service
             result = await chat_completion.get_chat_message_contents(
@@ -152,7 +156,8 @@ class Agent(AgentModel):
             return None
 
         except Exception as e:
-            self._logger.error(f"Error in prompt_async: {str(e)}")
+            self._logger.error(f"Error in prompt_async: {
+                               str(e)}", exc_info=True)
             raise
 
     # TODO: Cleanup properly (not priority)

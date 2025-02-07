@@ -12,7 +12,7 @@ from semantic_kernel.functions import kernel_function
 
 
 class ChatCompletionPlugin:
-    def __init__(self, credential_service: 'AgienceCredentialService', kernel: Kernel):
+    def __init__(self, credential_service: AgienceCredentialService, kernel: Kernel):
         self._credential_service = credential_service
         self._kernel = kernel
 

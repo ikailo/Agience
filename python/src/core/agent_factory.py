@@ -25,34 +25,34 @@ from utils.service_container import ServiceProvider
 class AgentFactory:
     def __init__(
         self,
-        service_provider: ServiceProvider,
+        main_service_provider: ServiceProvider,
         broker: Broker,
         authority: Authority,
         logger: Optional[logging.Logger] = None
     ):
-        self.service_provider = service_provider.create_scope()
+        self.service_provider = main_service_provider.create_scope()
         self.broker = broker
         self.authority = authority
         self.logger = logger
         self.agents: List[Agent] = []
 
     def create_agent(self, model_agent: AgentModel) -> Agent:
-        kernel_service_provider = ExtendedServiceProvider(
+
+        agent_service_provider = ExtendedServiceProvider(
             self.service_provider
         )
-        host = kernel_service_provider.get_required_service(Host)
+        host = agent_service_provider.get_required_service(Host)
 
-        self._configure_kernel_services(kernel_service_provider, model_agent)
-        self._add_executive_function(
-            host, model_agent, kernel_service_provider)
+        self._configure_kernel_services(agent_service_provider, model_agent)
 
         agent_plugins: list[KernelPlugin] = []
-        agent_logger = logging.getLogger(f"Agent {model_agent.name}:")
         kernel = Kernel(plugins=agent_plugins, agent_id=model_agent.id)
 
-        kernel_service_provider.services.add_singleton(
+        agent_service_provider.services.add_singleton_factory(
             Kernel, lambda _: kernel)
-        self._configure_credentials_service(kernel, model_agent)
+
+        self._add_executive_function(
+            host, model_agent, agent_service_provider)
 
         # Create agent
         agent = Agent(
@@ -62,48 +62,36 @@ class AgentFactory:
             self.broker,
             model_agent.persona,
             kernel,
-            agent_logger
+            service_provider=agent_service_provider,
+            logger=logging.getLogger(f"Agent {model_agent.name}:"),
         )
 
-        kernel_service_provider.services.add_singleton(lambda _: agent)
+        agent_service_provider.services.add_singleton(lambda _: agent)
         self.agents.append(agent)
 
-        self._initialize_plugins(
-            host=host,
-            model_agent=model_agent,
-            agent_plugins=agent_plugins,
-            service_provider=kernel_service_provider
-        )
+        # TODO: Fix later
+        # self._initialize_plugins(
+        #     host=host,
+        #     model_agent=model_agent,
+        #     agent_plugins=agent_plugins,
+        #     service_provider=kernel_service_provider
+        # )
 
         return agent
 
     def _configure_kernel_services(
         self,
-        kernel_service_provider: ExtendedServiceProvider,
+        agent_service_provider: ExtendedServiceProvider,
         model_agent: 'AgentModel'
     ) -> None:
-        kernel_service_provider.services.add_singleton(
+        agent_service_provider.services.add_singleton_factory(
             AgienceCredentialService,
-            lambda sp: AgienceCredentialService(
-                model_agent.id,
-                sp.get_required_service(Authority),
-                sp.get_required_service(Broker)
-            )
-        )
-
-    def _configure_credentials_service(
-        self,
-        kernel: Kernel,
-        model_agent: 'AgentModel'
-    ) -> None:
-        kernel.add_service(
-            AgienceCredentialService(
+            lambda _: AgienceCredentialService(
                 model_agent.id,
                 self.authority,
                 self.broker
-            ),
+            )
         )
-        pass
 
     def _initialize_plugins(self, host: 'Host', agent_plugins: list[KernelPlugin], model_agent: AgentModel, service_provider: ExtendedServiceProvider):
         for plugin in model_agent.plugins:
@@ -171,14 +159,14 @@ class AgentFactory:
                 # .replace(
                 #     "Async", "").replace("async", "") if matching_function else ""
 
-                def create_compiled_factory(sp: ServiceProvider) -> ChatCompletionClientBase:
+                def create_compiled_factory(sp: ExtendedServiceProvider) -> ChatCompletionClientBase:
                     kernel_plugin = self._create_kernel_plugin_compiled_instance(
-                        # TODO: Fix this dynamic creation
-                        service_provider=service_provider,
+                        service_provider=sp,
                         plugin_type=plugin_type,
                         plugin_name=plugin_name
                     )
 
+                    # TODO: Fix this
                     if kernel_plugin.functions.get(executive_function_name):
                         return AgienceChatCompletionService(executive_function_name)
                     raise ValueError(f"Executive function '{
@@ -208,24 +196,41 @@ class AgentFactory:
                 factory = create_prompt_factory
 
         if factory is not None:
-            service_provider.services.add_scoped(
-                ChatCompletionClientBase, factory
+            service_provider.services.add_singleton_factory(
+                ChatCompletionClientBase, lambda _: factory(service_provider)
             )
+
         else:
             self.logger.warning(f"Could not find a plugin with the executive function id {
                 model_agent.executive_function_id}")
 
-    # TODO: This method is not implemented
     def _create_kernel_plugin_compiled_instance(
         self,
         service_provider: ExtendedServiceProvider,
         plugin_type: Type,
         plugin_name: str
     ) -> 'KernelPlugin':
-        # Instantiate the plugin (ChatCompletionPlugin) here
-        # But it depends on AgienceCredentialService
+
+        def construct_plugin(sp: ExtendedServiceProvider) -> Any:
+            # Get constructor parameters
+            import inspect
+            sig = inspect.signature(plugin_type.__init__)
+            params = sig.parameters
+
+            plugin_instance = plugin_type(**{
+                name: sp.get_required_service(param.annotation)
+                for name, param in params.items()
+                if name != 'self'  # Skip 'self' parameter
+            })
+
+            return plugin_instance
+
+        service_provider.services.add_singleton_factory(
+            plugin_type,
+            lambda _: construct_plugin(service_provider)
+        )
+
         plugin_instance = service_provider.get_required_service(plugin_type)
-        # plugin_instance = plugin_type()
         return KernelPlugin.from_object(plugin_name=plugin_name, plugin_instance=plugin_instance)
 
     # TODO: Fix this

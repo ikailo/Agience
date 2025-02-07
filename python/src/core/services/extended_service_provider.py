@@ -6,7 +6,7 @@ class ExtendedServiceProvider:
     def __init__(self, provider: 'ServiceProvider'):
         self._provider = provider
         self._collection = ServiceCollection()
-        self._collection.add_scoped(ServiceProvider, lambda sp: self)
+        self._collection.add_scoped(ServiceProvider, lambda _: self)
 
     @property
     def services(self) -> ServiceCollection:
