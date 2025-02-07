@@ -156,8 +156,8 @@ class AgentFactory:
                 )
                 executive_function_name = matching_function.name if matching_function else ""
 
-                # .replace(
-                #     "Async", "").replace("async", "") if matching_function else ""
+                executive_function_name = executive_function_name.replace(
+                    "Async", "").replace("_async", "") if matching_function else ""
 
                 def create_compiled_factory(sp: ExtendedServiceProvider) -> ChatCompletionClientBase:
                     kernel_plugin = self._create_kernel_plugin_compiled_instance(
@@ -166,9 +166,11 @@ class AgentFactory:
                         plugin_name=plugin_name
                     )
 
-                    # TODO: Fix this
-                    if kernel_plugin.functions.get(executive_function_name):
-                        return AgienceChatCompletionService(executive_function_name)
+                    executive_function = kernel_plugin.functions.get(
+                        executive_function_name)
+
+                    if executive_function:
+                        return AgienceChatCompletionService(chat_completion_function=executive_function, ai_model_id=model_agent.id)
                     raise ValueError(f"Executive function '{
                                      executive_function_name}' not found")
 
