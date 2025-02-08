@@ -107,9 +107,7 @@ class Agent(AgentModel):
                 name = message.data["credential_name"]
                 credential = message.data["encrypted_credential"]
 
-                print("here")
-                credential_service: AgienceCredentialService = await self._kernel.get_service(AgienceCredentialService)
-                print("lol")
+                credential_service: AgienceCredentialService = await self._service_provider.get_service(AgienceCredentialService)
                 await credential_service.add_encrypted_credential(name, credential)
         except Exception as e:
             self._logger.error(f"Error processing broker message: {str(e)}")

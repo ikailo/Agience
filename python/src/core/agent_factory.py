@@ -69,13 +69,12 @@ class AgentFactory:
         agent_service_provider.services.add_singleton(lambda _: agent)
         self.agents.append(agent)
 
-        # TODO: Fix later
-        # self._initialize_plugins(
-        #     host=host,
-        #     model_agent=model_agent,
-        #     agent_plugins=agent_plugins,
-        #     service_provider=kernel_service_provider
-        # )
+        self._initialize_plugins(
+            host=host,
+            model_agent=model_agent,
+            agent_plugins=agent_plugins,
+            service_provider=agent_service_provider
+        )
 
         return agent
 
@@ -166,11 +165,16 @@ class AgentFactory:
                         plugin_name=plugin_name
                     )
 
-                    executive_function = kernel_plugin.functions.get(
+                    executive_function: KernelFunction = kernel_plugin.functions.get(
                         executive_function_name)
 
                     if executive_function:
-                        return AgienceChatCompletionService(chat_completion_function=executive_function, ai_model_id=model_agent.id)
+                        agience_chat_completion_service = AgienceChatCompletionService(
+                            chat_completion_function=executive_function,
+                            ai_model_id=model_agent.id
+                        )
+
+                        return agience_chat_completion_service
                     raise ValueError(f"Executive function '{
                                      executive_function_name}' not found")
 
@@ -198,8 +202,12 @@ class AgentFactory:
                 factory = create_prompt_factory
 
         if factory is not None:
+            service = factory(service_provider)
+            kernel: Kernel = service_provider.get_required_service(Kernel)
+            kernel.add_service(service)
+
             service_provider.services.add_singleton_factory(
-                ChatCompletionClientBase, lambda _: factory(service_provider)
+                ChatCompletionClientBase, lambda _: service
             )
 
         else:
@@ -222,7 +230,8 @@ class AgentFactory:
             plugin_instance = plugin_type(**{
                 name: sp.get_required_service(param.annotation)
                 for name, param in params.items()
-                if name != 'self'  # Skip 'self' parameter
+                # Skip both 'self' and 'data''  # Skip 'self' parameter (might skip kwargs too)
+                if name not in ['self', 'data', 'kwargs']
             })
 
             return plugin_instance
@@ -235,7 +244,6 @@ class AgentFactory:
         plugin_instance = service_provider.get_required_service(plugin_type)
         return KernelPlugin.from_object(plugin_name=plugin_name, plugin_instance=plugin_instance)
 
-    # TODO: Fix this
     def _create_kernel_plugin_compiled(self, plugin_instance: Any, plugin_name: str) -> KernelPlugin:
         return KernelPlugin.from_object(plugin_name=plugin_name, plugin_instance=plugin_instance)
 

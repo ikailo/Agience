@@ -208,7 +208,7 @@ class Broker:
             self._mqtt_client.loop_stop()
             self._connected = False
 
-    def publish(self, message: BrokerMessage):
+    async def publish(self, message: BrokerMessage):
         asyncio.create_task(self.publish_async(message))
 
     async def publish_async(self, message: BrokerMessage):

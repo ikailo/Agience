@@ -210,7 +210,6 @@ class Host(HostModel):
         for agent in agents:
             await self.receive_agent_connect(agent)
 
-    # TODO: AgentFactory is not implemented
     async def receive_agent_connect(self, model_agent: 'Agent'):
         # Create and configure agent
         agent = self._agent_factory.create_agent(model_agent)
