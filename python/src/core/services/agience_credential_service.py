@@ -1,14 +1,13 @@
 from typing import Dict, Optional
 import uuid
-import json
 import asyncio
-from typing import Any
-from base64 import b64decode
+import base64
 
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+from jwcrypto.jwk import JWK
 
 from core.authority import Authority
 from core.broker import Broker
@@ -26,25 +25,20 @@ class AgienceCredentialService:
         self._topic_generator = TopicGenerator(
             self._authority.id, self._agent_id)
 
-        private_key = rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=2048
-        )
-
-        self._decryption_key = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-
-        self._encryption_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-
         self._key_id = str(uuid.uuid4())
+        key: JWK = JWK.generate(kty='RSA', size=2048, kid=self._key_id)
+
+        private_key_dict = key.export_private(as_dict=True)
+        self._decryption_key: JWK = JWK(**private_key_dict)
+
+        public_key_dict = key.export_public(as_dict=True)
+        self._encryption_key = JWK(**public_key_dict)
+
+        self._encryption_jwk = self._encryption_key.export()
 
     async def get_credential(self, name: str) -> Optional[str]:
+        # self._ensure_caller_has_access(name)
+
         if name in self._credentials:
             return self._credentials[name]
 
@@ -66,10 +60,7 @@ class AgienceCredentialService:
         data.add("type", "credential_request")
         data.add("agent_id", self._agent_id)
         data.add("credential_name", credential_name)
-        data.add("jwk", json.dumps({
-            "kid": self._key_id,
-            "key": self._encryption_key.decode()
-        }))
+        data.add("jwk", self._encryption_jwk)
 
         message = BrokerMessage(
             type=BrokerMessageType.EVENT,
@@ -79,31 +70,54 @@ class AgienceCredentialService:
 
         await self._broker.publish(message)
 
-    def _decrypt_with_jwk(self, encrypted_data: str) -> str:
+    def _decrypt_with_jwk(self, encrypted_credential: str) -> str:
         try:
-            # Load the private key
-            private_key = load_pem_private_key(
-                self._decryption_key,
+            pem_data = self._decryption_key.export_to_pem(
+                private_key=True,
                 password=None
             )
+            private_key = load_pem_private_key(pem_data, password=None)
 
-            # Decode the encrypted data
-            encrypted_bytes = b64decode(encrypted_data)
+            encrypted_bytes = base64.b64decode(encrypted_credential)
 
-            # Decrypt using PKCS1 v1.5 padding
-            decrypted_data = private_key.decrypt(
+            decrypted_bytes = private_key.decrypt(
                 encrypted_bytes,
-                asymmetric_padding.PKCS1v15()
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
             )
 
-            return decrypted_data.decode('utf-8')
+            return decrypted_bytes.decode('utf-8')
 
         except Exception as e:
+            print(e)
             raise ValueError(f"Decryption failed: {str(e)}")
 
     # TODO: Python doesn't have direct stack trace attribute inspection
     # Consider alternative authorization approaches
     # Not used in the current implementation
     # Low priority
+
     def _ensure_caller_has_access(self, connection_name: str) -> None:
-        pass
+        import inspect
+
+        frame = inspect.currentframe()
+        if frame is None:
+            raise Exception("Caller information could not be determined.")
+
+        caller_frame = frame.f_back
+        if caller_frame is None:
+            raise Exception("Caller information could not be determined.")
+
+        # Get the method that called this function
+        method = caller_frame.f_code
+
+        # Check for AgienceConnection attribute/decorator
+        # Note: This would need to be implemented differently in Python
+        # as Python handles attributes/decorators differently than C#
+        if not hasattr(method, 'agience_connection') or \
+           method.agience_connection != connection_name:
+            raise Exception(f"Caller does not have access to the credential: {
+                            connection_name}.")

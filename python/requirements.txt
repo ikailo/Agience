@@ -7,3 +7,4 @@ ntplib
 websockets
 python-dotenv
 certifi
+jwcrypto
