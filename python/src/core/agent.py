@@ -3,6 +3,7 @@ from logging import Logger
 import asyncio
 
 from semantic_kernel import Kernel
+from semantic_kernel.functions import FunctionResult
 from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecutionSettings
 from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
@@ -140,15 +141,15 @@ class Agent(AgentModel):
             )
 
             # Get the response from the chat completion service
-            result = await chat_completion.get_chat_message_contents(
+            result: FunctionResult = await chat_completion.get_chat_message_contents(
                 chat_history=self._chat_history,
                 execution_settings=self._prompt_execution_settings,
                 kernel=self._kernel,
                 cancellation_token=cancellation_token
             )
 
-            if result and result[0]:
-                assistant_message = str(result[0].content)
+            if result:
+                assistant_message = str(result)
                 self._chat_history.add_assistant_message(assistant_message)
                 return assistant_message
 

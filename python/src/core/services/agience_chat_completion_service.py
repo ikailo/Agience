@@ -3,7 +3,7 @@ import logging
 from typing import Dict, List, Optional, AsyncIterable, Any
 
 from semantic_kernel.kernel import Kernel
-from semantic_kernel.functions import KernelFunction
+from semantic_kernel.functions import KernelFunction, FunctionResult
 from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecutionSettings
 from semantic_kernel.contents import ChatMessageContent, StreamingChatMessageContent
 from semantic_kernel.contents.chat_history import ChatHistory
@@ -26,7 +26,7 @@ class AgienceChatCompletionService(ChatCompletionClientBase):
         execution_settings: Optional[PromptExecutionSettings] = None,
         cancellation_token: Optional[asyncio.Event] = None,
         **kwargs,
-    ) -> List[ChatMessageContent]:
+    ) -> FunctionResult:
         if getattr(kernel, '_in_completion', False):
             return []
 
