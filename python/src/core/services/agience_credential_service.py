@@ -70,6 +70,7 @@ class AgienceCredentialService:
 
         await self._broker.publish(message)
 
+    # TODO: Fix failing decryption (high priority)
     def _decrypt_with_jwk(self, encrypted_credential: str) -> str:
         try:
             pem_data = self._decryption_key.export_to_pem(
@@ -99,7 +100,6 @@ class AgienceCredentialService:
     # Consider alternative authorization approaches
     # Not used in the current implementation
     # Low priority
-
     def _ensure_caller_has_access(self, connection_name: str) -> None:
         import inspect
 
