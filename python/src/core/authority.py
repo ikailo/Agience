@@ -175,6 +175,7 @@ class Authority:
         # Note: You'll need to implement the encryption method based on your needs
         encrypted_credential = self._encrypt_with_jwk(credential, jwk)
 
+        # TODO: fix this
         await self._broker.publish_async(BrokerMessage(
             type=BrokerMessageType.EVENT,
             topic=self._topic_generator.publish_to_agent(agent_id),

@@ -15,10 +15,13 @@ class AgienceConnection:
     def __call__(self, func: T) -> T:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            wrapper.connection_name = self.name
             return func(*args, **kwargs)
 
         # Store the connection name as metadata on the function
+        wrapper.connection_name = self.name
         wrapper.__agience_connection_name__ = self.name
+
         return wrapper  # type: ignore
 
 # Example usage:

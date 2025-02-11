@@ -3,6 +3,7 @@ from logging import Logger
 import asyncio
 
 from semantic_kernel import Kernel
+from semantic_kernel.functions import FunctionResult
 from semantic_kernel.connectors.ai.prompt_execution_settings import PromptExecutionSettings
 from semantic_kernel.contents.chat_history import ChatHistory
 from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
@@ -12,7 +13,10 @@ from core.models.messages.broker_message import BrokerMessage, BrokerMessageType
 from core.authority import Authority
 from core.broker import Broker
 from core.topic_generator import TopicGenerator
+
+from core.services.agience_chat_completion_service import AgienceChatCompletionService
 from core.services.agience_credential_service import AgienceCredentialService
+from core.services.extended_service_provider import ExtendedServiceProvider
 
 
 class Agent(AgentModel):
@@ -25,6 +29,7 @@ class Agent(AgentModel):
         persona: str,
         kernel: Kernel,
         logger: Logger,
+        service_provider: ExtendedServiceProvider,
         **data: Any
     ):
         super().__init__(
@@ -44,12 +49,14 @@ class Agent(AgentModel):
         self._chat_history = ChatHistory()
         self._topic_generator = TopicGenerator(authority.id, id)
 
+        self._service_provider = service_provider
+
         self._prompt_execution_settings = PromptExecutionSettings(
             extension_data={
-                "model": "gpt-4",  # Can be configured as needed
+                "model": "gpt-4",
                 "temperature": 0.7,
                 "max_tokens": 2000,
-                "tool_call_behavior": "auto"
+                "tool_call_behavior": "auto",
             }
         )
 
@@ -89,9 +96,7 @@ class Agent(AgentModel):
                                    self.id}: {str(e)}")
                 raise
 
-    # TODO: Implement AgienceCredentialService
     async def _broker_receive_message(self, message: BrokerMessage) -> None:
-        """Handle incoming broker messages"""
         try:
             # Handle incoming credential
             if (message.type == BrokerMessageType.EVENT
@@ -103,7 +108,8 @@ class Agent(AgentModel):
                 name = message.data["credential_name"]
                 credential = message.data["encrypted_credential"]
 
-                credential_service = await self._kernel.get_service(AgienceCredentialService)
+                credential_service: AgienceCredentialService = self._service_provider.get_service(
+                    AgienceCredentialService)
                 await credential_service.add_encrypted_credential(name, credential)
         except Exception as e:
             self._logger.error(f"Error processing broker message: {str(e)}")
@@ -121,8 +127,6 @@ class Agent(AgentModel):
                                    self.id}: {str(e)}")
                 raise
 
-    # TODO: chat completion needs some fixes
-    # Ref - https://learn.microsoft.com/en-us/semantic-kernel/concepts/ai-services/chat-completion
     async def prompt_async(
         self,
         user_message: str,
@@ -132,28 +136,28 @@ class Agent(AgentModel):
             # Add the user's message to the chat history
             self._chat_history.add_user_message(user_message)
 
-            # Get the chat completion service
-            chat_completion = self._kernel.get_service(
-                type=ChatCompletionClientBase)
+            chat_completion: ChatCompletionClientBase = self._service_provider.get_required_service(
+                ChatCompletionClientBase
+            )
 
             # Get the response from the chat completion service
-            result = await chat_completion.complete_chat(
-                self._chat_history,
-                self._prompt_execution_settings,
+            result: FunctionResult = await chat_completion.get_chat_message_contents(
+                chat_history=self._chat_history,
+                execution_settings=self._prompt_execution_settings,
                 kernel=self._kernel,
                 cancellation_token=cancellation_token
             )
 
-            if result and result.messages:
-                assistant_message = str(result.messages[-1].content)
-                # Add the assistant's message to the chat history
+            if result:
+                assistant_message = str(result)
                 self._chat_history.add_assistant_message(assistant_message)
                 return assistant_message
 
             return None
 
         except Exception as e:
-            self._logger.error(f"Error in prompt_async: {str(e)}")
+            self._logger.error(f"Error in prompt_async: {
+                               str(e)}", exc_info=True)
             raise
 
     # TODO: Cleanup properly (not priority)
