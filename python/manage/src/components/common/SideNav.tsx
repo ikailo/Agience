@@ -1,18 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
+import { navItems } from '../../config/navigation';
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: string;
-}
-
-const navItems: NavItem[] = [
-  { path: '/', label: 'Home', icon: '🏠' },
-  { path: '/agent', label: 'Agent', icon: '🤖' },
-  { path: '/topics', label: 'Topics', icon: '📝' },
-  { path: '/hosts', label: 'Hosts', icon: '💻' },
-  { path: '/plugins', label: 'Plugins', icon: '🔌' },
-];
 
 interface SideNavProps {
   isOpen: boolean;
@@ -37,7 +25,7 @@ export const SideNav: React.FC<SideNavProps> = ({ isOpen }) => {
                   to={item.path}
                   className={`flex items-center px-4 py-2 transition-colors relative
                     ${isActive 
-                      ? 'text-blue-600 dark:text-blue-400' 
+                      ? 'sm:bg-blue-50 sm:dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' 
                       : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700'
                     }`}
                 >
@@ -47,9 +35,11 @@ export const SideNav: React.FC<SideNavProps> = ({ isOpen }) => {
                   )}
                   
                   {/* Icon with active state */}
-                  <span className={`text-xl ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`}>
-                    {item.icon}
-                  </span>
+                  <img 
+                    src={item.icon} 
+                    alt={`${item.label} icon`}
+                    className={`w-6 h-6 ${isActive ? 'brightness-[0.4] dark:filter dark:brightness-0 dark:invert' : ''}`}
+                  />
                   
                   {/* Label */}
                   <span className={`ml-3 ${!isOpen ? 'hidden' : 'block'}`}>
