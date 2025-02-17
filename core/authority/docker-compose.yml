@@ -9,12 +9,51 @@ volumes:
 
 services:
     
+  database:  
+    container_name: db-relational
+    image: db-relational
+    restart: on-failure
+    build:
+      context: ./db-relational
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-}
+      - POSTGRES_USER=${POSTGRES_USER:-}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+    ports:
+      - "5432:5432"
+    volumes:      
+      - authority-data:/var/lib/postgresql/data
+    networks:
+      - agience-net
+      
+  broker:
+    container_name: mq-broker
+    image: mq-broker
+    restart: on-failure
+    build:
+      context: ./mq-broker 
+    environment:
+      - AUTHORITY_HOST=${AUTHORITY_HOST:-identity-api}
+      - AUTHORITY_PORT=${AUTHORITY_PORT:-5001}
+      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
+      - BROKER_JWT_GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
+      - BROKER_JWT_ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
+      - BROKER_MQTT_LISTEN_PORT=${BROKER_MQTT_LISTEN_PORT:-1883}
+      - BROKER_WS_LISTEN_PORT=${BROKER_WS_LISTEN_PORT:-1884}
+    ports:            
+      - "1883:1883"
+      - "1884:1884"
+    networks:
+      - agience-net
+    depends_on:
+      - "database"
+
   identity:
     container_name: identity-api
     image: identity-api
     restart: on-failure
     build:
-      dockerfile: identity-api/Dockerfile
+      context: ./identity-api
     ports:
       - "5001:5001"
     environment:
@@ -26,55 +65,15 @@ services:
       - "database"
 
   manage:
-    container_name: manage-ui  
+    container_name: manage-ui
     image: manage-ui
     restart: on-failure
     build:
-      dockerfile: manage-ui/Dockerfile
+      context: ./manage-ui
     ports:
       - "5002:5002"
     networks:
       - agience-net
-      
-  database:  
-    container_name: db-relational
-    image: db-relational
-    restart: on-failure
-    build:
-      context: ./db-relational 
-      dockerfile: ./Dockerfile
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-}
-      - POSTGRES_USER=${POSTGRES_USER:-}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
-    ports:
-      - "5432:5432"
-    volumes:      
-      - authority-data:/var/lib/postgresql/data
-    networks:
-      - agience-net
-
-  broker:
-    container_name: mq-broker
-    image: mq-broker
-    restart: on-failure
-    build:
-      dockerfile: mq-broker/Dockerfile      
-    environment:
-      - AUTHORITY_HOST=${AUTHORITY_HOST:-}
-      - AUTHORITY_PORT=${AUTHORITY_PORT:-}
-      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-}
-      - BROKER_JWT_GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-}
-      - BROKER_JWT_ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-}
-      - BROKER_MQTT_LISTEN_PORT=${BROKER_MQTT_LISTEN_PORT:-}
-      - BROKER_WS_LISTEN_PORT=${BROKER_WS_LISTEN_PORT:-}
-    ports:      
-      - "1884:1884"      
-      - "1883:1883"
-    networks:
-      - agience-net
-    depends_on:
-      - "database"
 
 #  stream:
 #    container_name: media-stream
