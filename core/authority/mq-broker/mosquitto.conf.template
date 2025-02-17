@@ -1,0 +1,23 @@
+allow_anonymous false
+
+log_type all
+log_dest stdout
+
+auth_plugin /mosquitto/go-auth.so
+auth_opt_log_level ${BROKER_AUTH_LOG_LEVEL:-info}
+auth_opt_backends jwt
+auth_opt_jwt_mode remote
+auth_opt_jwt_host ${AUTHORITY_HOST:-identity-api}
+auth_opt_jwt_port ${AUTHORITY_PORT:-5001}
+auth_opt_jwt_getuser_uri ${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
+auth_opt_jwt_aclcheck_uri ${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
+
+#External MQTT listener
+listener ${BROKER_MQTT_LISTEN_PORT:-1883} 0.0.0.0
+protocol mqtt
+socket_domain ipv4
+
+#External websockets listener
+listener ${BROKER_WS_LISTEN_PORT:-1884} 0.0.0.0
+protocol websockets
+socket_domain ipv4

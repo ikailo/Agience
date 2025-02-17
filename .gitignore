@@ -402,8 +402,5 @@ FodyWeavers.xsd
 *.crt
 *.key
 *.pfx
-.env.*
-!.env.sample
-icecast.*.secrets.xml
-!icecast.secrets.xml # this is a placeholder to supress a VS error
-!icecast.sample.secrets.xml
+.env*
+!.env.example

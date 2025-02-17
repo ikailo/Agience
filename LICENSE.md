@@ -8,7 +8,7 @@ This repository contains various types of content, each covered by different lic
 ### AGPL-3.0 License
 The software is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Under this license, if you use, modify, or distribute the software, you **must** contribute any modifications back to the community by making the source code publicly available under the same AGPL-3.0 license.
 
-A full copy of the AGPL-3.0 license can be found in the `LICENSE-AGPL-3.0.txt` file.
+A full copy of the AGPL-3.0 license can be found at [/licenses/LICENSE-AGPL-3.0.txt](/licenses/LICENSE-AGPL-3.0.txt)
 
 [Learn more about AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html)
 
@@ -43,6 +43,6 @@ To obtain a Community Commercial License, or if you have any questions, please c
 ### Creative Commons Attribution 4.0 International License
 All documentation, as well as any supplementary materials, are licensed under the **Creative Commons Attribution 4.0 International (CC BY 4.0)** license. You are free to share and adapt the documentation for any purpose, even commercially, as long as appropriate credit is given.
 
-A full copy of the CC BY 4.0 license can be found in the `LICENSE-CC-BY-4.0.txt` file.
+A full copy of the CC BY 4.0 license can be found at [/licenses/LICENSE-CC-BY-4.0.txt](/licenses/LICENSE-CC-BY-4.0.txt)
 
 [Learn more about CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)

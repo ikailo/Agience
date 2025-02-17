@@ -1,0 +1,1 @@
+FROM infiniteproject/icecast

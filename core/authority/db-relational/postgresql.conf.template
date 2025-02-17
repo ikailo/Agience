@@ -1,0 +1,2 @@
+listen_addresses = '*'
+hba_file = '/etc/postgresql/pg_hba.conf'
