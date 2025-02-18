@@ -1,4 +1,7 @@
 import type { Config } from 'tailwindcss'
+import formsPlugin from '@tailwindcss/forms'
+//tailwindcss formsPlugin correct way for vite project: https://github.com/tailwindlabs/tailwindcss-forms/issues/151 by thecrypticace
+
 
 const config: Config = {
   content: [
@@ -9,7 +12,7 @@ const config: Config = {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [formsPlugin],
 }
 
 export default config 
