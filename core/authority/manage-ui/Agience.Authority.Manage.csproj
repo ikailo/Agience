@@ -22,7 +22,8 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\Models\Agience.Authority.Models.csproj" />
+    <ProjectReference Include="..\..\sdk\dotnet\Agience.Core.csproj" />
+    <ProjectReference Include="..\manage-models\Agience.Authority.Models.csproj" />
   </ItemGroup>
 
 

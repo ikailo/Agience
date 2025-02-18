@@ -11,24 +11,24 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj files separately and restore dependencies
-COPY Authority/Identity/Agience.Authority.Identity.csproj Authority/Identity/
-COPY Authority/Models/Agience.Authority.Models.csproj Authority/Models/
-COPY Core/Agience.Core.csproj Core/
+COPY authority/identity-api/Agience.Authority.Identity.csproj authority/identity-api/
+COPY authority/manage-models/Agience.Authority.Models.csproj authority/manage-models/
+COPY sdk/dotnet/Agience.Core.csproj sdk/dotnet/
 
-RUN dotnet restore "Authority/Identity/Agience.Authority.Identity.csproj"
+RUN dotnet restore "authority/identity-api/Agience.Authority.Identity.csproj"
 
 # Install EF tools globally
 RUN dotnet tool install --global dotnet-ef
 ENV PATH="$PATH:/root/.dotnet/tools"
 
 # Copy the rest of the source code for Identity and Core
-COPY Authority/Identity/ Authority/Identity/
-COPY Authority/Models/ Authority/Models/
-COPY Core/ Core/
+COPY authority/identity-api/ authority/identity-api/
+COPY authority/manage-models/ authority/manage-models/
+COPY ./sdk/dotnet/ sdk/dotnet/
 
 # Build and publish
-RUN dotnet build "Authority/Identity/Agience.Authority.Identity.csproj" -c Release -o /app/build
-RUN dotnet publish "Authority/Identity/Agience.Authority.Identity.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet build "authority/identity-api/Agience.Authority.Identity.csproj" -c Release -o /app/build
+RUN dotnet publish "authority/identity-api/Agience.Authority.Identity.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Final stage - runtime
 FROM base AS final

@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Agience.Core.csproj" />
+    <ProjectReference Include="..\..\sdk\dotnet\Agience.Core.csproj" />
   </ItemGroup>
 
 </Project>

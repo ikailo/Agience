@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Agience.Core.csproj" />
-    <ProjectReference Include="..\..\Plugins\Core\Agience.Plugins.Core.csproj" />
+    <ProjectReference Include="..\..\..\plugins\dotnet\Agience.Plugins.Core.csproj" />
+    <ProjectReference Include="..\..\..\sdk\dotnet\Agience.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,10 +3,11 @@
 namespace Agience.Authority.Identity
 {
     public class AppConfig
-    {
-        public string? AuthorityUriInternal { get; set; }
-        public string? BrokerUriInternal { get; set; }
-        public string? AuthorityUri { get; set; }
+    {        
+        [ConfigurationKeyName("AUTHORITY_ISSUER")] public string? AuthorityIssuer { get; set; }
+        [ConfigurationKeyName("AUTHORITY_HOST")] public string? AuthorityHost { get; set; }
+        [ConfigurationKeyName("AUTHORITY_PORT")] public string? AuthorityPort { get; set; }
+        public string? BrokerUriInternal { get; set; }        
         public string? BrokerUri { get; set; }
         public bool? BypassAuthorityService { get; set; }
         public string? CustomNtpHost { get; set; }

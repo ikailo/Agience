@@ -35,11 +35,11 @@
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Core\Agience.Core.csproj" />
-    <ProjectReference Include="..\Models\Agience.Authority.Models.csproj" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Migrations\" />
+    <ProjectReference Include="..\..\sdk\dotnet\Agience.Core.csproj" />
+    <ProjectReference Include="..\manage-models\Agience.Authority.Models.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.local.json">

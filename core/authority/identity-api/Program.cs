@@ -34,7 +34,7 @@ internal class Program
             builder.Configuration
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-            .AddDotNetEnv($".env.{builder.Environment.EnvironmentName}")
+            //.AddDotNetEnv($".env.{builder.Environment.EnvironmentName}")
             .AddEnvironmentVariables();
 
             if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName.ToLower() == "debug")
