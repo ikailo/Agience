@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { TabNavigation } from '../components/common/TabNavigation';
-import { AgentDetailsForm, AgentFormData } from '../components/agents/AgentDetailsForm';
+import { AgentDetailsTab } from '../components/agents/AgentDetailsTab';
 import { AgentPluginsTab } from '../components/agents/AgentPluginsTab';
 import { AgentTopicsTab } from '../components/agents/AgentTopicsTab';
 import { AgentCredentialsTab } from '../components/agents/AgentCredentialsTab';
+import { AgentFormData } from '../components/agents/AgentDetailsForm';
 
 const tabs = [
   { id: 'details', label: 'Details' },
@@ -36,12 +37,7 @@ export default function Agent() {
       />
 
       <div className="mt-6">
-        {activeTab === 'details' && (
-          <AgentDetailsForm
-            onSave={handleSave}
-            onDelete={handleDelete}
-          />
-        )}
+        {activeTab === 'details' && <AgentDetailsTab />}
         {activeTab === 'plugins' && <AgentPluginsTab />}
         {activeTab === 'topics' && <AgentTopicsTab />}
         {activeTab === 'credentials' && <AgentCredentialsTab />}
