@@ -4,14 +4,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UserSecretsId>38ced442-cf32-4289-bb08-57d4a78831b3</UserSecretsId>
-    <Configurations>Local;Preview;Development;Debug</Configurations>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>..\..</DockerfileContext>
-    <DockerComposeProjectPath>..\..\docker-compose.dcproj</DockerComposeProjectPath>
+    <Configurations>Local;Preview;Development;Debug</Configurations>    
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove=".git" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Duende.IdentityServer" Version="6.3.10" />
@@ -35,20 +29,7 @@
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\sdk\dotnet\Agience.Core.csproj" />
-    <ProjectReference Include="..\manage-models\Agience.Authority.Models.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="appsettings.local.json">
-      <DependentUpon>appsettings.json</DependentUpon>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="appsettings.development.json">
-      <DependentUpon>appsettings.json</DependentUpon>
-    </None>
-  </ItemGroup>
+    <ProjectReference Include="..\manage-models-dotnet\Agience.Authority.Models.csproj" />
+  </ItemGroup>     
 </Project>

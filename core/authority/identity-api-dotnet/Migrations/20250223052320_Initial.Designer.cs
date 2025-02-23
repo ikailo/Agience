@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Agience.Authority.Identity.Migrations
 {
     [DbContext(typeof(AgienceDbContext))]
-    [Migration("20241219204621_migration_404018659")]
-    partial class migration_404018659
+    [Migration("20250223052320_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

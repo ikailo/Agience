@@ -16,7 +16,7 @@ using Agience.Authority.Identity.Data.Repositories;
 using Agience.Core.Models.Entities.Abstract;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-
+using System.Net;
 
 namespace Agience.Authority.Identity;
 
@@ -29,6 +29,26 @@ internal static class HostingExtensions
         builder.Services.AddSingleton(appConfig);
 
         if (string.IsNullOrWhiteSpace(appConfig.AuthorityUri)) { throw new ArgumentNullException(nameof(appConfig.AuthorityUri)); }
+
+       builder.WebHost.ConfigureKestrel(options =>
+        {
+            var endpointUri = new Uri(appConfig.AuthorityUriInternal);
+            
+            // Always bind to 0.0.0.0 regardless of the hostname in the URI.
+
+            if (endpointUri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase))
+            {
+                options.Listen(IPAddress.Any, endpointUri.Port);
+            }
+            else if (endpointUri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
+            {
+                options.Listen(IPAddress.Any, endpointUri.Port, listenOptions =>
+                {
+                    listenOptions.UseHttps(); // TODO: Configure certificate
+                });
+            }
+        });
+
 
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -97,15 +117,14 @@ internal static class HostingExtensions
             });
         }
 
-        Uri authorityDbUri = new Uri(appConfig.AuthorityDbUri ?? throw new ArgumentNullException("AuthorityDbUri"));
-
         var connectionString =
-             $"Host={authorityDbUri.Host};" +
-             $"Port={authorityDbUri.Port};" +
-             $"Database={appConfig.AuthorityDbDatabase};" +
+             $"Host={appConfig.AuthorityDbHost};" +
+             $"Port={appConfig.AuthorityDbPort};" +
+             $"Database={appConfig.AuthorityDbDatabaseName};" +
              $"Username={appConfig.AuthorityDbUsername};" +
              $"Password={appConfig.AuthorityDbPassword};";
-
+        
+        /*
         if (builder.Environment.EnvironmentName.Equals("debug", StringComparison.OrdinalIgnoreCase))
         {
             connectionString += "SSL Mode=Require;Trust Server Certificate=true;";
@@ -113,7 +132,7 @@ internal static class HostingExtensions
         else
         {
             connectionString += "SSL Mode=VerifyFull;";
-        }
+        }*/
 
         builder.Services.AddDbContext<AgienceDbContext>(options =>
         {

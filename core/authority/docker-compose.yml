@@ -4,21 +4,21 @@ networks:
     driver: bridge
 
 volumes:
-  authority-data:    
+  authority-data:
   icecast-logs:
 
 services:
     
-  database:  
-    container_name: db-relational
-    image: db-relational
+  database-sql:  
+    container_name: database-sql
+    image: database-sql
     restart: on-failure
     build:
-      context: ./db-relational
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-}
-      - POSTGRES_USER=${POSTGRES_USER:-}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+      context: ./database-sql
+    environment:      
+      - POSTGRES_DB=${AUTHORITY_DATABASE_NAME:-agience-authority}
+      - POSTGRES_USER=${AUTHORITY_DATABASE_USERNAME:-}
+      - POSTGRES_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
     ports:
       - "5432:5432"
     volumes:      
@@ -26,12 +26,12 @@ services:
     networks:
       - agience-net
       
-  broker:
-    container_name: mq-broker
-    image: mq-broker
+  broker-mqtt:
+    container_name: broker-mqtt
+    image: broker-mqtt
     restart: on-failure
     build:
-      context: ./mq-broker 
+      context: ./broker-mqtt
     environment:
       - AUTHORITY_HOST=${AUTHORITY_HOST:-identity-api}
       - AUTHORITY_PORT=${AUTHORITY_PORT:-5001}
@@ -40,30 +40,28 @@ services:
       - BROKER_JWT_ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
       - BROKER_MQTT_LISTEN_PORT=${BROKER_MQTT_LISTEN_PORT:-1883}
       - BROKER_WS_LISTEN_PORT=${BROKER_WS_LISTEN_PORT:-1884}
-    ports:            
+    ports:
       - "1883:1883"
       - "1884:1884"
     networks:
       - agience-net
     depends_on:
-      - "database"
+      - database-sql
+      - identity-api
 
-  identity:
+  identity-api:
     container_name: identity-api
     image: identity-api
     restart: on-failure
     build:
       context: ../
-      dockerfile: ./authority/identity-api/Dockerfile
+      dockerfile: ./authority/identity-api-dotnet/Dockerfile
     ports:
-      - "5001:5001"
-    environment:
-      - AGIENCE_INITIALIZE=${AGIENCE_INITIALIZE:-false}
+      - "5001:5001"    
     networks:
       - agience-net
-    depends_on:
-      - "broker"
-      - "database"
+    depends_on:      
+      - database-sql
 
   manage:
     container_name: manage-ui

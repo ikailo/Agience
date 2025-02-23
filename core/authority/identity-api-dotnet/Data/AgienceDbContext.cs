@@ -202,6 +202,7 @@ namespace Agience.Authority.Identity.Data
             });
         }
 
+        /*
         public void SeedDatabase(AgienceIdProvider idProvider, Dictionary<string, string> args)
         {
             if (Environment.GetEnvironmentVariable("AGIENCE_INITIALIZE")?.ToUpper() == "TRUE")
@@ -277,6 +278,6 @@ namespace Agience.Authority.Identity.Data
 
                 Environment.Exit(0);
             }
-        }
+        }*/
     }
 }

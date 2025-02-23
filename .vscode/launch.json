@@ -1,39 +1,27 @@
 {
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [        
         {
             "name": "Identity",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-identity",
-            "program": "${workspaceFolder}/core/authority/identity-api/bin/Debug/net8.0/Agience.Authority.Identity.dll",
+            "program": "${workspaceFolder}/core/authority/identity-api-dotnet/bin/Debug/net8.0/Agience.Authority.Identity.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/core/authority/identity-api/bin/Debug/net8.0/",
+            "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet/",
             "stopAtEntry": false,
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Debug"
+                "ASPNETCORE_ENVIRONMENT": "Debug",
+                "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env"
             }
-        },
-        {
-            "name": "Manage",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build-manage",
-            "program": "${workspaceFolder}/bin/Debug/net.0/Agience.Authority.Identity.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "stopAtEntry": false,
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Debug"
-            }
-        }
+        }        
+    ],
+    "compounds": [
+      {
+        "name": "Launch All",
+        "configurations": [          
+          "Identity",
+        ]
+      }
     ]
 }

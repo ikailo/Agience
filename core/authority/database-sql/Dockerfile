@@ -6,8 +6,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the template configuration files into the container
-COPY ./pg_hba.conf.template /etc/postgresql/pg_hba.conf.template
-COPY ./postgresql.conf.template /etc/postgresql/postgresql.conf.template
+COPY ./pg_hba.conf.template /usr/share/postgresql/templates/pg_hba.conf.template
+COPY ./postgresql.conf.template /usr/share/postgresql/templates/postgresql.conf.template
 
 # Copy the entrypoint into the container
 COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh

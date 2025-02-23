@@ -2,15 +2,17 @@
 using Serilog;
 using Microsoft.EntityFrameworkCore;
 using DotNetEnv.Configuration;
+using System.Runtime.InteropServices;
+using Microsoft.Extensions.Options;
 
 namespace Agience.Authority.Identity;
 internal class Program
 {
     private static async Task Main(string[] args)
     {
-        //Log.Logger = new LoggerConfiguration()
-            //.WriteTo.Console()
-           // .CreateBootstrapLogger();
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.Console()
+            .CreateBootstrapLogger();
 
         Log.Information("Starting up");
 
@@ -24,22 +26,22 @@ internal class Program
             }
 
             builder.Logging.ClearProviders();
-            //builder.Logging.AddConsole();
+            builder.Logging.AddConsole();
 
             builder.Host.UseSerilog((ctx, lc) => lc
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
                 .Enrich.FromLogContext()
                 .ReadFrom.Configuration(ctx.Configuration));
 
-            builder.Configuration
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-            //.AddDotNetEnv($".env.{builder.Environment.EnvironmentName}")
-            .AddEnvironmentVariables();
+            builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-            if (builder.Environment.IsDevelopment() || builder.Environment.EnvironmentName.ToLower() == "debug")
-            {
-                builder.Configuration.AddUserSecrets<Program>();
+            var envFilePath = Environment.GetEnvironmentVariable("ENV_FILE_PATH");
+
+            if (envFilePath != null) {
+                builder.Configuration.AddDotNetEnv(envFilePath);
+            }
+            else {
+                builder.Configuration.AddEnvironmentVariables();
             }
 
             var app = builder.ConfigureServices();
@@ -48,6 +50,7 @@ internal class Program
 
             app.ConfigurePipeline(appConfig);
 
+            /*
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;
@@ -99,7 +102,7 @@ internal class Program
                 {
                     Log.Error(ex, "An error occurred while migrating or initializing the database.");
                 }
-            }
+            }*/
 
             await app.RunAsync();
         }
