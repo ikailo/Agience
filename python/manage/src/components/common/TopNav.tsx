@@ -1,5 +1,6 @@
 import { useTheme } from '../../hooks/useTheme';
 import { UserProfile } from './UserProfile';
+import { useAuth } from '../../auth/AuthContext';
 
 interface TopNavProps {
   onToggleSidebar: () => void;
@@ -7,6 +8,7 @@ interface TopNavProps {
 
 export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 shadow z-10">
@@ -46,6 +48,12 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <UserProfile name="John Doe" />
+          <button
+            onClick={() => logout()}
+            className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+          >
+            Sign Out
+          </button>
         </div>
       </nav>
     </header>
