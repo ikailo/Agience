@@ -37,3 +37,5 @@ WORKDIR /app
 # Copy the published output
 COPY --from=build /app/publish .
 COPY --from=build /src /src
+
+ENTRYPOINT [ "dotnet", "Agience.Authority.Identity.dll" ]

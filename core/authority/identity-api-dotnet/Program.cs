@@ -21,7 +21,7 @@ internal class Program
             var builder = WebApplication.CreateBuilder(args);
 
             if (Environment.GetEnvironmentVariable("EF_MIGRATION")?.ToUpper() == "TRUE")
-            {   
+            {
                 return;
             }
 
@@ -33,19 +33,27 @@ internal class Program
                 .Enrich.FromLogContext()
                 .ReadFrom.Configuration(ctx.Configuration));
 
-            builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                var envFilePath = Environment.GetEnvironmentVariable("ENV_FILE_PATH");
+                var workingDirectory = Environment.GetEnvironmentVariable("WORKING_DIRECTORY");
 
-            var envFilePath = Environment.GetEnvironmentVariable("ENV_FILE_PATH");
+            // Load appsettings.json (with automatic reload support)
+            builder.Configuration.AddJsonFile($"{workingDirectory}appsettings.json", optional: false, reloadOnChange: true);
 
-            if (envFilePath != null) {
-                builder.Configuration.AddDotNetEnv(envFilePath);
-            }
-            else {
-                builder.Configuration.AddEnvironmentVariables();
-            }
-
-            var app = builder.ConfigureServices();
+            // Load .env file if ENV_FILE_PATH is set
             
+
+            if (!string.IsNullOrWhiteSpace(envFilePath) && File.Exists(envFilePath))
+            {
+                DotNetEnv.Env.Load(envFilePath);
+            }
+
+            // Add environment variables
+            builder.Configuration.AddEnvironmentVariables();
+
+            // Now bind AppConfig
+            var app = builder.ConfigureServices();
+
+
             var appConfig = app.Services.GetRequiredService<AppConfig>();
 
             app.ConfigurePipeline(appConfig);

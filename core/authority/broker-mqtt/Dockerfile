@@ -1,5 +1,8 @@
 FROM iegomez/mosquitto-go-auth:2.1.0-mosquitto_2.0.15
 
+EXPOSE 1884
+EXPOSE 8884
+
 # Install envsubst (for config substitution)
 RUN apt-get update --allow-releaseinfo-change && \
     apt-get install -y gettext-base && \

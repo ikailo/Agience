@@ -31,23 +31,28 @@ services:
     image: broker-mqtt
     restart: on-failure
     build:
-      context: ./broker-mqtt
+      context: ./broker-mqtt      
     environment:
-      - AUTHORITY_HOST=${AUTHORITY_HOST:-identity-api}
-      - AUTHORITY_PORT=${AUTHORITY_PORT:-5001}
+      - BROKER_AUTHORITY_HOST=${BROKER_AUTHORITY_HOST:-identity-api}
+      - BROKER_AUTHORITY_PORT=${BROKER_AUTHORITY_PORT:-5001}
       - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
       - BROKER_JWT_GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
       - BROKER_JWT_ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
-      - BROKER_MQTT_LISTEN_PORT=${BROKER_MQTT_LISTEN_PORT:-1883}
-      - BROKER_WS_LISTEN_PORT=${BROKER_WS_LISTEN_PORT:-1884}
+      - BROKER_INTERNAL_PORT=${BROKER_INTERNAL_PORT:-8884}
+      - BROKER_EXTERNAL_PORT=${BROKER_EXTERNAL_PORT:-1884}
     ports:
-      - "1883:1883"
       - "1884:1884"
+      - "8884:8884"
+    volumes:
+      - ${BROKER_EXTERNAL_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/external.key:ro
+      - ${BROKER_EXTERNAL_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/external.crt:ro
+      - ${BROKER_INTERNAL_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/internal.key:ro
+      - ${BROKER_INTERNAL_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/internal.crt:ro
+      - ${BROKER_INTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/internal.crt:ro
     networks:
       - agience-net
     depends_on:
       - database-sql
-      - identity-api
 
   identity-api:
     container_name: identity-api
@@ -56,12 +61,27 @@ services:
     build:
       context: ../
       dockerfile: ./authority/identity-api-dotnet/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
+      - AUTHORITY_ISSUER_URI=${AUTHORITY_ISSUER_URI:-https://localhost:5001}
+      - AUTHORITY_HOST=${AUTHORITY_HOST:-localhost}
+      - AUTHORITY_PORT=${AUTHORITY_PORT:-5001}
+      - AUTHORITY_BROKER_URI=${AUTHORITY_BROKER_URI:-https://localhost:1884}
+      - AUTHORITY_BYPASS_SERVICE=${AUTHORITY_BYPASS_SERVICE:-TRUE}
+      - AUTHORITY_DATABASE_HOST=${AUTHORITY_DATABASE_HOST:-localhost}
+      - AUTHORITY_DATABASE_PORT=${AUTHORITY_DATABASE_PORT:-5432}
+      - AUTHORITY_DATABASE_NAME=${AUTHORITY_DATABASE_NAME:-agience-authority}
+      - AUTHORITY_DATABASE_USERNAME=${AUTHORITY_DATABASE_USERNAME:-}
+      - AUTHORITY_DATABASE_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
     ports:
       - "5001:5001"    
     networks:
       - agience-net
     depends_on:      
       - database-sql
+      - broker-mqtt
 
   manage:
     container_name: manage-ui

@@ -7,9 +7,9 @@ namespace Agience.Authority.Identity.Data
     {
         private static int _counter = 0;
         private static readonly object _lockObj = new object();
-        private readonly string _authorityUri;
+        private readonly Uri _authorityUri;
 
-        public AgienceIdProvider(string authorityUri)
+        public AgienceIdProvider(Uri authorityUri)
         {
             _authorityUri = authorityUri;
         }
@@ -19,7 +19,7 @@ namespace Agience.Authority.Identity.Data
             lock (_lockObj)
             {
                 string seed =
-                    _authorityUri +
+                    _authorityUri.AbsoluteUri +
                     agienceEntityType +
                     DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") +
                     _counter++ +

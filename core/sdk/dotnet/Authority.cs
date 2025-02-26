@@ -16,47 +16,40 @@ namespace Agience.Core
     public class Authority
     {
         private const string BROKER_URI_KEY = "broker_uri";
-        private const string FILES_URI_KEY = "files_uri";
         private const string OPENID_CONFIG_PATH = "/.well-known/openid-configuration";
-
-
-        private readonly IServiceScopeFactory _serviceScopeFactory;
                
         public string Id => _authorityUri.Host;
         public string? TokenEndpoint { get; private set; }
-        public string? BrokerUri { get; private set; }
-        public string? FilesUri { get; private set; }
+        public Uri? BrokerUri { get; private set; }        
         public bool IsConnected { get; private set; }
         public string Timestamp => _broker.Timestamp;
 
-        private readonly Uri _authorityUri; // Expect without trailing slash
-        private readonly Uri? _authorityUriInternal; // For internal connections
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly Uri _authorityUri;
+        private readonly Uri? _authorityUriInternal;
         private readonly Broker _broker;
         private readonly ILogger<Authority> _logger;
-        //private readonly IMapper _mapper;
         private readonly TopicGenerator _topicGenerator;
 
         public Authority() { }
 
-        public Authority(string authorityUri, Broker broker, IServiceScopeFactory serviceScopeFactory, ILogger<Authority> logger, string? authorityUriInternal = null, string? brokerUriInternal = null)
-        {
-            _authorityUri = !string.IsNullOrEmpty(authorityUri) ? new Uri(authorityUri) : throw new ArgumentNullException(nameof(authorityUri));
-            _authorityUriInternal = authorityUriInternal == null ? null : new Uri(authorityUriInternal!);
-            _broker = broker ?? throw new ArgumentNullException(nameof(broker));
-            _serviceScopeFactory = serviceScopeFactory;
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));            
-            //_mapper = AutoMapperConfig.GetMapper();
-            BrokerUri = brokerUriInternal;
-
-            _topicGenerator = new TopicGenerator(Id, Id);
-        }
+        public Authority(Uri authorityUri, Broker broker, IServiceScopeFactory serviceScopeFactory, ILogger<Authority> logger, Uri? authorityUriInternal = null, Uri? brokerUriInternal = null)
+    {
+        _authorityUri = authorityUri ?? throw new ArgumentNullException(nameof(authorityUri));        
+        _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _authorityUriInternal = authorityUriInternal;
+        BrokerUri = brokerUriInternal;
+        _topicGenerator = new TopicGenerator(Id, Id);
+    }
 
         private IAuthorityRecordsRepository GetAuthorityRecordsRepository() => 
             _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<IAuthorityRecordsRepository>();
 
         internal async Task InitializeWithBackoff(double maxDelaySeconds = 16)
         {
-            if (!string.IsNullOrEmpty(BrokerUri) && !string.IsNullOrEmpty(TokenEndpoint))
+            if (BrokerUri != null && !string.IsNullOrEmpty(TokenEndpoint))
             {
                 _logger.LogInformation("Authority already initialized.");
                 return;
@@ -79,8 +72,8 @@ namespace Agience.Core
 
                     var configuration = await configurationManager.GetConfigurationAsync();
                     
-                    BrokerUri ??= configuration?.AdditionalData[BROKER_URI_KEY].ToString(); // Don't reset it if it's already set
-                    FilesUri ??= configuration?.AdditionalData[FILES_URI_KEY].ToString(); // Don't reset it if it's already set
+                    BrokerUri ??= new Uri(configuration?.AdditionalData[BROKER_URI_KEY].ToString()); // Don't reset it if it's already set
+                    //FilesUri ??= configuration?.AdditionalData[FILES_URI_KEY].ToString(); // Don't reset it if it's already set
 
                     // TODO: Better way needed to handle overrides/internal endpoints
 
@@ -123,12 +116,12 @@ namespace Agience.Core
         {
             if (!IsConnected)
             {
-                if (string.IsNullOrEmpty(BrokerUri))
+                if (BrokerUri == null)
                 {
                     await InitializeWithBackoff();
                 }
 
-                var brokerUri = BrokerUri ?? throw new ArgumentNullException("BrokerUri");
+                var brokerUri = BrokerUri ?? throw new ArgumentNullException(nameof(BrokerUri));
 
                 await _broker.Connect(accessToken, brokerUri);
 

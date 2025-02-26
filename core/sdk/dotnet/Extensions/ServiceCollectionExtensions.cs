@@ -12,12 +12,12 @@ namespace Agience.Core.Extensions
     {
         public static void AddAgienceHostSingleton(
             this IServiceCollection services,
-            string authorityUri,
+            Uri authorityUri,
             string hostId,
             string hostSecret,
             string? customNtpHost = null,
-            string? authorityUriInternal = null,
-            string? brokerUriInternal = null)
+            Uri? authorityUriInternal = null,
+            Uri? brokerUriInternal = null)
         {
             //services.AddSingleton<IKernelStore, KernelStore>();
 
@@ -59,10 +59,10 @@ namespace Agience.Core.Extensions
 
         public static void AddAgienceAuthoritySingleton(
             this IServiceCollection services,
-            string authorityUri,
+            Uri authorityUri,
             string? customNtpHost = null,
-            string? authorityUriInternal = null,
-            string? brokerUriInternal = null)
+            Uri? authorityUriInternal = null,
+            Uri? brokerUriInternal = null)
         {
             services.AddSingleton(sp =>
             {

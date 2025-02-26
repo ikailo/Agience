@@ -24,10 +24,9 @@
           }
         },
         "problemMatcher": []
-      },
-      ,
+      },    
       {
-        "label": "Create Agience Migration Initial",
+        "label": "Create Agience Migration - Initial",
         "type": "shell",
         "command": "dotnet ef migrations add Initial",
         "options": {

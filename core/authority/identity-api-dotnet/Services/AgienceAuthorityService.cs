@@ -37,7 +37,7 @@ namespace Agience.Authority.Identity.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_appConfig.BypassAuthorityService ?? false || Environment.GetEnvironmentVariable("AGIENCE_INITIALIZE")?.ToUpper() == "TRUE")
+            if (_appConfig.BypassAuthorityService || Environment.GetEnvironmentVariable("AGIENCE_INITIALIZE")?.ToUpper() == "TRUE")
             {
                 _logger.LogInformation("Agience Initialization. Bypassing Authority Service."); 
                 return;
@@ -86,7 +86,7 @@ namespace Agience.Authority.Identity.Services
 
             var validatedRequest = new ValidatedRequest
             {
-                IssuerName = _appConfig.AuthorityUri ?? throw new ArgumentNullException(nameof(_appConfig.AuthorityUri)),
+                IssuerName = (_appConfig.IssuerUri ?? throw new ArgumentNullException(nameof(_appConfig.IssuerUri))).AbsoluteUri,
                 ClientId = client.ClientId,
                 Client = client,
                 AccessTokenLifetime = client.AccessTokenLifetime,
