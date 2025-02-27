@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Button } from '../common/Button';
+import { AgentCredentials } from './AgentCredentials';
 import { AgentCredentialsTable } from './AgentCredentialsTable';
 
 // Dummy data
@@ -18,23 +21,28 @@ const dummyCredentials = [
   },
 ];
 
-export const AgentCredentialsTab: React.FC = () => {
+export const AgentCredentialsTab = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const handleSaveCredential = (credentialData: any) => {
+    console.log('Saving credential:', credentialData);
+    // Handle saving logic here
+    setIsModalOpen(false);
+  };
+
   const handleToggleAuthorize = (id: string) => {
     console.log('Toggle authorize for:', id);
     // Implement toggle logic
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white">
-          Credentials Management
-        </h2>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">
-          Add Credential
-        </button>
-      </div>
-      
+    <div className="space-y-6">
+      <AgentCredentials 
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+        onSaveCredential={handleSaveCredential}
+      />
+
       {/* Mobile view */}
       <div className="sm:hidden">
         {dummyCredentials.map((credential) => (

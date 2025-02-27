@@ -69,37 +69,45 @@ export const PluginDetails = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-900 dark:bg-gray-800">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Provider</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Provider
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody className="bg-gray-800 dark:bg-gray-900 divide-y divide-gray-700">
+          <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
             {plugins.map(plugin => (
-              <tr key={plugin.id} className="hover:bg-gray-700 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+              <tr key={plugin.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {plugin.name}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-300">
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                   {plugin.description}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-300">
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                   {plugin.provider}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                   <button
                     onClick={() => handleEdit(plugin)}
-                    className="text-blue-400 hover:text-blue-300 mr-4"
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 mr-4"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(plugin.id)}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                   >
                     Delete
                   </button>

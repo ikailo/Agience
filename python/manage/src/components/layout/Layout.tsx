@@ -26,12 +26,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
 
-      <button 
-        onClick={() => logout()}
-        className="text-white hover:text-gray-300"
-      >
-        Sign Out
-      </button>
     </div>
   );
 }; 
