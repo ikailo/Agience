@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { TopNav } from '../common/TopNav';
 import { SideNav } from '../common/SideNav';
-import { useAuth } from '../../auth/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,7 +8,6 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">

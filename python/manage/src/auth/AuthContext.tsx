@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext } from 'react';
 import { User } from 'oidc-client-ts';
 
 interface AuthContextType {
