@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [        
+        {
+            "name": "Identity",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-identity",
+            "program": "${workspaceFolder}/core/authority/identity-api-dotnet/bin/Debug/net8.0/Agience.Authority.Identity.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet/",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Debug",
+                "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
+                "ENV_FILE_NAME": ".env"
+            }
+        }        
+    ],
+    "compounds": [
+      {
+        "name": "Launch All",
+        "configurations": [          
+          "Identity",
+        ]
+      }
+    ]
+}

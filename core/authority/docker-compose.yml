@@ -1,0 +1,120 @@
+networks:    
+  agience-net:
+    name: agience-net
+    driver: bridge
+
+volumes:
+  authority-data:
+  icecast-logs:
+
+services:
+    
+  database-sql:  
+    container_name: database-sql
+    image: database-sql
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/database-sql/Dockerfile
+    environment:      
+      - POSTGRES_DB=${AUTHORITY_DATABASE_NAME:-agience-authority}
+      - POSTGRES_USER=${AUTHORITY_DATABASE_USERNAME:-}
+      - POSTGRES_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
+    ports:
+      - "5432:5432"
+    volumes:      
+      - authority-data:/var/lib/postgresql/data
+    networks:
+      - agience-net
+      
+  broker-mqtt:
+    container_name: broker-mqtt
+    image: broker-mqtt
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/broker-mqtt/Dockerfile
+    environment:
+      - AUTHORITY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}
+      - AUTHORITY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}
+      - AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
+      - GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
+      - ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
+      - BROKER_PORT=${BROKER_PORT:-1884}
+    ports:
+      - "1884:1884"
+    volumes:
+      - ${BROKER_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.key:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.crt:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/ssl.crt:ro
+    networks:
+      - agience-net
+    depends_on:
+      - database-sql
+
+  identity-api:
+    container_name: identity-api
+    image: identity-api
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/identity-api-dotnet/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
+      - AUTHORITY_ISSUER_URI=${AUTHORITY_ISSUER_URI:-https://localhost:5001}
+      - AUTHORITY_PRIMARY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}      
+      - AUTHORITY_PRIMARY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}      
+      - AUTHORITY_SECONDARY_HOST=${AUTHORITY_SECONDARY_HOST:-localhost}
+      - AUTHORITY_SECONDARY_PORT=${AUTHORITY_SECONDARY_PORT:-8001}
+      - BROKER_PUBLIC_URI=${BROKER_PUBLIC_URI:-https://localhost:1884}
+      - BROKER_HOST=${BROKER_HOST:-broker-mqtt}
+      - BROKER_PORT=${BROKER_PORT:-1884}
+      - AUTHORITY_BYPASS_SERVICE=${AUTHORITY_BYPASS_SERVICE:-TRUE}
+      - AUTHORITY_DATABASE_HOST=${AUTHORITY_DATABASE_HOST:-localhost}
+      - AUTHORITY_DATABASE_PORT=${AUTHORITY_DATABASE_PORT:-5432}
+      - AUTHORITY_DATABASE_NAME=${AUTHORITY_DATABASE_NAME:-agience-authority}
+      - AUTHORITY_DATABASE_USERNAME=${AUTHORITY_DATABASE_USERNAME:-}
+      - AUTHORITY_DATABASE_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      - AUTHORITY_PRIMARY_PFX_PATH=/app/https/primary.pfx
+      - AUTHORITY_SECONDARY_PFX_PATH=/app/https/secondary.pfx
+    ports:
+      - "5001:5001"
+      - "8001:8001"
+    volumes:
+      - ${AUTHORITY_PRIMARY_PFX_PATH:-/dev/null}:/app/https/primary.pfx:ro
+      - ${AUTHORITY_SECONDARY_PFX_PATH:-/dev/null}:/app/https/secondary.pfx:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/broker.crt:ro
+    networks:
+      - agience-net
+    depends_on:      
+      - database-sql
+      - broker-mqtt
+
+  manage:
+    container_name: manage-ui
+    image: manage-ui
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/manage-ui/Dockerfile
+    ports:
+      - "5002:5002"
+    networks:
+      - agience-net
+
+#  stream:
+#    container_name: media-stream
+#    image: media-stream
+#    restart: on-failure
+#    build:      
+#      dockerfile: media-stream/Dockerfile            
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - icecast-logs:/var/log/icecast
+#    networks:
+#      - agience-net
+#    depends_on:
+#      - "identity"

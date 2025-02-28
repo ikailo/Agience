@@ -1,0 +1,24 @@
+allow_anonymous false
+
+log_type all
+log_dest stdout
+
+auth_plugin /mosquitto/go-auth.so
+auth_opt_log_level ${AUTH_LOG_LEVEL}
+auth_opt_backends jwt
+auth_opt_jwt_mode remote
+auth_opt_jwt_host ${AUTHORITY_HOST}
+auth_opt_jwt_port ${AUTHORITY_PORT}
+auth_opt_jwt_with_tls true
+#auth_opt_jwt_verify_peer true
+auth_opt_jwt_getuser_uri ${GETUSER_PATH}
+auth_opt_jwt_aclcheck_uri ${ACLCHECK_PATH}
+auth_opt_jwt_http_timeout 60
+
+# Websockets listener
+listener ${BROKER_PORT} 0.0.0.0
+protocol websockets
+socket_domain ipv4
+certfile /etc/mosquitto/certs/ssl.crt
+cafile /etc/mosquitto/certs/ssl.crt
+keyfile /etc/mosquitto/certs/ssl.key
