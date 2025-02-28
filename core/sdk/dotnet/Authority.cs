@@ -33,16 +33,18 @@ namespace Agience.Core
 
         public Authority() { }
 
-        public Authority(Uri authorityUri, Broker broker, IServiceScopeFactory serviceScopeFactory, ILogger<Authority> logger, Uri? authorityUriInternal = null, Uri? brokerUriInternal = null)
-    {
-        _authorityUri = authorityUri ?? throw new ArgumentNullException(nameof(authorityUri));        
-        _broker = broker ?? throw new ArgumentNullException(nameof(broker));
-        _serviceScopeFactory = serviceScopeFactory ?? throw new ArgumentNullException(nameof(serviceScopeFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _authorityUriInternal = authorityUriInternal;
-        BrokerUri = brokerUriInternal;
-        _topicGenerator = new TopicGenerator(Id, Id);
-    }
+        public Authority(string authorityUri, Broker broker, IServiceScopeFactory serviceScopeFactory, ILogger<Authority> logger, Uri? authorityUriInternal = null, Uri? brokerUriInternal = null)
+        {
+            _authorityUri = !string.IsNullOrEmpty(authorityUri) ? new Uri(authorityUri) : throw new ArgumentNullException(nameof(authorityUri));
+            _authorityUriInternal = authorityUriInternal;
+            _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));            
+            //_mapper = AutoMapperConfig.GetMapper();
+            BrokerUri = brokerUriInternal;
+
+            _topicGenerator = new TopicGenerator(Id, Id);
+        }
 
         private IAuthorityRecordsRepository GetAuthorityRecordsRepository() => 
             _serviceScopeFactory.CreateScope().ServiceProvider.GetRequiredService<IAuthorityRecordsRepository>();

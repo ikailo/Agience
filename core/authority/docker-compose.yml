@@ -14,7 +14,8 @@ services:
     image: database-sql
     restart: on-failure
     build:
-      context: ./database-sql
+      context: ../
+      dockerfile: ./authority/database-sql/Dockerfile
     environment:      
       - POSTGRES_DB=${AUTHORITY_DATABASE_NAME:-agience-authority}
       - POSTGRES_USER=${AUTHORITY_DATABASE_USERNAME:-}
@@ -31,24 +32,21 @@ services:
     image: broker-mqtt
     restart: on-failure
     build:
-      context: ./broker-mqtt      
+      context: ../
+      dockerfile: ./authority/broker-mqtt/Dockerfile
     environment:
-      - BROKER_AUTHORITY_HOST=${BROKER_AUTHORITY_HOST:-identity-api}
-      - BROKER_AUTHORITY_PORT=${BROKER_AUTHORITY_PORT:-5001}
-      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
-      - BROKER_JWT_GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
-      - BROKER_JWT_ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
-      - BROKER_INTERNAL_PORT=${BROKER_INTERNAL_PORT:-8884}
-      - BROKER_EXTERNAL_PORT=${BROKER_EXTERNAL_PORT:-1884}
+      - AUTHORITY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}
+      - AUTHORITY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}
+      - AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
+      - GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
+      - ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
+      - BROKER_PORT=${BROKER_PORT:-1884}
     ports:
       - "1884:1884"
-      - "8884:8884"
     volumes:
-      - ${BROKER_EXTERNAL_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/external.key:ro
-      - ${BROKER_EXTERNAL_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/external.crt:ro
-      - ${BROKER_INTERNAL_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/internal.key:ro
-      - ${BROKER_INTERNAL_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/internal.crt:ro
-      - ${BROKER_INTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/internal.crt:ro
+      - ${BROKER_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.key:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.crt:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/ssl.crt:ro
     networks:
       - agience-net
     depends_on:
@@ -64,9 +62,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
       - AUTHORITY_ISSUER_URI=${AUTHORITY_ISSUER_URI:-https://localhost:5001}
-      - AUTHORITY_HOST=${AUTHORITY_HOST:-localhost}
-      - AUTHORITY_PORT=${AUTHORITY_PORT:-5001}
-      - AUTHORITY_BROKER_URI=${AUTHORITY_BROKER_URI:-https://localhost:1884}
+      - AUTHORITY_PRIMARY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}      
+      - AUTHORITY_PRIMARY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}      
+      - AUTHORITY_SECONDARY_HOST=${AUTHORITY_SECONDARY_HOST:-localhost}
+      - AUTHORITY_SECONDARY_PORT=${AUTHORITY_SECONDARY_PORT:-8001}
+      - BROKER_PUBLIC_URI=${BROKER_PUBLIC_URI:-https://localhost:1884}
+      - BROKER_HOST=${BROKER_HOST:-broker-mqtt}
+      - BROKER_PORT=${BROKER_PORT:-1884}
       - AUTHORITY_BYPASS_SERVICE=${AUTHORITY_BYPASS_SERVICE:-TRUE}
       - AUTHORITY_DATABASE_HOST=${AUTHORITY_DATABASE_HOST:-localhost}
       - AUTHORITY_DATABASE_PORT=${AUTHORITY_DATABASE_PORT:-5432}
@@ -75,8 +77,15 @@ services:
       - AUTHORITY_DATABASE_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      - AUTHORITY_PRIMARY_PFX_PATH=/app/https/primary.pfx
+      - AUTHORITY_SECONDARY_PFX_PATH=/app/https/secondary.pfx
     ports:
-      - "5001:5001"    
+      - "5001:5001"
+      - "8001:8001"
+    volumes:
+      - ${AUTHORITY_PRIMARY_PFX_PATH:-/dev/null}:/app/https/primary.pfx:ro
+      - ${AUTHORITY_SECONDARY_PFX_PATH:-/dev/null}:/app/https/secondary.pfx:ro
+      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/broker.crt:ro
     networks:
       - agience-net
     depends_on:      
@@ -88,7 +97,8 @@ services:
     image: manage-ui
     restart: on-failure
     build:
-      context: ./manage-ui
+      context: ../
+      dockerfile: ./authority/manage-ui/Dockerfile
     ports:
       - "5002:5002"
     networks:

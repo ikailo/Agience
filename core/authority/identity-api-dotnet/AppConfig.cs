@@ -6,25 +6,40 @@ namespace Agience.Authority.Identity
     {
 
         [ConfigurationKeyName("AUTHORITY_ISSUER_URI")]
-        public Uri? IssuerUri { get; set; }
+        public string? IssuerUri { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_EXTERNAL_URI")]
-        public Uri? ExternalUri { get; set; }
+        [ConfigurationKeyName("AUTHORITY_SECONDARY_HOST")]
+        public string? ExternalHost { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_EXTERNAL_PFX_PATH")]
-        public string? ExternalCertPath { get; set; }
+        [ConfigurationKeyName("AUTHORITY_SECONDARY_PORT")]
+        public int? ExternalPort { get; set; }
 
-        [ConfigurationKeyName("BROKER_EXTERNAL_URI")]
-        public string? ExternalBrokerUri { get; set; }
+        public Uri? ExternalUri => string.IsNullOrEmpty(ExternalHost) ? null : new Uri($"https://{ExternalHost}:{ExternalPort}");
 
-        [ConfigurationKeyName("AUTHORITY_INTERNAL_URI")]
-        public Uri? InternalUri { get; set; }
+        [ConfigurationKeyName("AUTHORITY_SECONDARY_PFX_PATH")]
+        public string? ExternalCertPath { get; set; }       
 
-        [ConfigurationKeyName("AUTHORITY_INTERNAL_PFX_PATH")]
+        [ConfigurationKeyName("AUTHORITY_PRIMARY_HOST")]
+        public string? InternalHost { get; set; }
+
+        [ConfigurationKeyName("AUTHORITY_PRIMARY_PORT")]
+        public int InternalPort { get; set; }
+
+        public Uri InternalUri => new Uri($"https://{InternalHost}:{InternalPort}");
+
+        [ConfigurationKeyName("AUTHORITY_PRIMARY_PFX_PATH")]
         public string? InternalCertPath { get; set; }
 
-        [ConfigurationKeyName("BROKER_INTERNAL_URI")]
-        public Uri? InternalBrokerUri { get; set; }
+        [ConfigurationKeyName("BROKER_PUBLIC_URI")]
+        public Uri? ExternalBrokerUri { get; set; }
+
+        [ConfigurationKeyName("BROKER_HOST")]
+        public string? InternalBrokerHost { get; set; }
+
+        [ConfigurationKeyName("BROKER_PORT")]
+        public int InternalBrokerPort { get; set; }       
+        
+        public Uri InternalBrokerUri => new Uri($"https://{InternalBrokerHost}:{InternalBrokerPort}");
 
         [ConfigurationKeyName("AUTHORITY_BYPASS_AUTHORITY_SERVICE")]
         public bool BypassAuthorityService { get; set; }
@@ -44,22 +59,22 @@ namespace Agience.Authority.Identity
         [ConfigurationKeyName("AUTHORITY_DATABASE_PASSWORD")]
         public string? DatabasePassword { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_GOOGLE_OAUTH_CLIENT_ID")]
+        [ConfigurationKeyName("GOOGLE_OAUTH_CLIENT_ID")]
         public string? GoogleClientId { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_GOOGLE_OAUTH_CLIENT_SECRET")]
+        [ConfigurationKeyName("GOOGLE_OAUTH_CLIENT_SECRET")]
         public string? GoogleClientSecret { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_CUSTOM_NTP_HOST")]
+        [ConfigurationKeyName("CUSTOM_NTP_HOST")]
         public string? CustomNtpHost { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_MAILCHIMP_API_KEY")]
+        [ConfigurationKeyName("MAILCHIMP_API_KEY")]
         public string? MailchimpApiKey { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_MAILCHIMP_AUDIENCE_ID")]
+        [ConfigurationKeyName("MAILCHIMP_AUDIENCE_ID")]
         public string? MailchimpAudienceId { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_MAILCHIMP_TAGS")]
+        [ConfigurationKeyName("MAILCHIMP_TAGS")]
         public string? MailchimpTags { get; set; }
 
 

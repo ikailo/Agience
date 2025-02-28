@@ -9,10 +9,10 @@ RUN apt-get update --allow-releaseinfo-change && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the template conf file into the container
-COPY ./mosquitto.conf.template /usr/share/mosquitto/templates/mosquitto.conf.template
+COPY ./authority/broker-mqtt/mosquitto.conf.template /usr/share/mosquitto/templates/mosquitto.conf.template
 
 # Copy the entrypoint into the container
-COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./authority/broker-mqtt/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Use existing entrypoint

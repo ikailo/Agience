@@ -8,12 +8,12 @@
             "preLaunchTask": "build-identity",
             "program": "${workspaceFolder}/core/authority/identity-api-dotnet/bin/Debug/net8.0/Agience.Authority.Identity.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/core/authority/",
+            "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet/",
             "stopAtEntry": false,
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Debug",
-                "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env",
-                "WORKING_DIRECTORY": "identity-api-dotnet/"
+                "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
+                "ENV_FILE_NAME": ".env"
             }
         }        
     ],

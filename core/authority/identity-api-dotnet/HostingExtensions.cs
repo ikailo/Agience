@@ -12,6 +12,7 @@ using Agience.Core.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Agience.Core.Interfaces;
 using Agience.Authority.Identity.Data.Repositories;
+using Microsoft.AspNetCore.HostFiltering;
 
 namespace Agience.Authority.Identity;
 
@@ -30,17 +31,31 @@ internal static class HostingExtensions
             options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.All;
         });
 
-        builder.WebHost.ConfigureKestrel(options =>
+        builder.Services.Configure<HostFilteringOptions>(options =>
         {
+            options.AllowedHosts.Add(new Uri(appConfig.IssuerUri).Host);
+            
+            options.AllowedHosts.Add(appConfig.InternalUri.Host);
+
+            if (appConfig.ExternalUri != null) {
+                   options.AllowedHosts.Add(appConfig.ExternalUri.Host);
+            }
+        });
+
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {   
+            var buildContextPath = Environment.GetEnvironmentVariable("BUILD_CONTEXT_PATH") ?? string.Empty;
+
             if (appConfig.InternalUri == null || string.IsNullOrWhiteSpace(appConfig.InternalCertPath))
             {
-                throw new ArgumentNullException("InternalUri/InternalCertPath", "Internal URI and Certificate Path are required.");
+                throw new ArgumentNullException(nameof(appConfig.InternalUri));
             }
 
             // Always bind InternalUri
             options.ListenAnyIP(appConfig.InternalUri.Port, listenOptions =>
             {
-                listenOptions.UseHttps(appConfig.InternalCertPath);
+                listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.InternalCertPath));
             });
 
             // Bind ExternalUri only if it is set
@@ -53,7 +68,7 @@ internal static class HostingExtensions
 
                 options.ListenAnyIP(appConfig.ExternalUri.Port, listenOptions =>
                 {
-                    listenOptions.UseHttps(appConfig.ExternalCertPath);
+                    listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.ExternalCertPath));
                 });
             }
         });
@@ -81,7 +96,7 @@ internal static class HostingExtensions
 
         builder.Services.AddIdentityServer(options =>
         {
-            options.IssuerUri = appConfig.IssuerUri.AbsoluteUri;
+            options.IssuerUri = appConfig.IssuerUri;
             options.Discovery.CustomEntries.Add("broker_uri", appConfig.ExternalBrokerUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalBrokerUri)));
             //options.Discovery.CustomEntries.Add("files_uri", appConfig.ExternalFilesUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalFilesUri)));
             //options.Discovery.CustomEntries.Add("stream_uri", appConfig.ExternalStreamUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalStreamUri)));
@@ -177,15 +192,22 @@ internal static class HostingExtensions
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
            {
-               options.Authority = appConfig.IssuerUri.AbsoluteUri;
+               options.Authority = appConfig.IssuerUri;
                options.RequireHttpsMetadata = true;
 
-               options.MetadataAddress = $"{appConfig.InternalUri ?? throw new ArgumentNullException(nameof(appConfig.InternalUri))}/.well-known/openid-configuration";
+               if (appConfig.ExternalUri != null)
+               {
+                   options.MetadataAddress = $"{appConfig.ExternalUri?.GetLeftPart(UriPartial.Authority)}/.well-known/openid-configuration";
+               }
+               else
+               {
+                   options.MetadataAddress = $"{appConfig.InternalUri?.GetLeftPart(UriPartial.Authority)}/.well-known/openid-configuration";
+               }
 
                options.TokenValidationParameters = new TokenValidationParameters
                {
                    ValidateIssuer = true,
-                   ValidIssuer = appConfig.IssuerUri.AbsoluteUri,
+                   ValidIssuer = appConfig.IssuerUri,
                    ValidateAudience = true,
                    ValidAudiences = new List<string> { "manage-api", "connect-mqtt" },
                    ValidateLifetime = true,
@@ -194,6 +216,20 @@ internal static class HostingExtensions
 
                options.Events = new JwtBearerEvents
                {
+                   OnTokenValidated = context =>
+                  {
+                      var identity = context.Principal.Identity as System.Security.Claims.ClaimsIdentity;
+                      foreach (var claim in identity.Claims)
+                      {
+                          Console.WriteLine($"{claim.Type}: {claim.Value}");
+                      }
+                      return Task.CompletedTask;
+                  },
+                   OnAuthenticationFailed = context =>
+                   {
+                       Console.WriteLine("Authentication failed: " + context.Exception.Message);
+                       return Task.CompletedTask;
+                   },
                    OnChallenge = context =>
                    {
                        if (!context.Response.HasStarted)

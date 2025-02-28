@@ -12,7 +12,7 @@ namespace Agience.Core.Extensions
     {
         public static void AddAgienceHostSingleton(
             this IServiceCollection services,
-            Uri authorityUri,
+            string authorityUri,
             string hostId,
             string hostSecret,
             string? customNtpHost = null,
@@ -59,7 +59,7 @@ namespace Agience.Core.Extensions
 
         public static void AddAgienceAuthoritySingleton(
             this IServiceCollection services,
-            Uri authorityUri,
+            string? authorityUri,
             string? customNtpHost = null,
             Uri? authorityUriInternal = null,
             Uri? brokerUriInternal = null)
