@@ -1,12 +1,19 @@
 import { useTheme } from '../../hooks/useTheme';
 import { UserProfile } from './UserProfile';
+import { useAuth } from '../../auth/AuthContext';
+import { getInitials } from '../../utils/initials';
 
 interface TopNavProps {
   onToggleSidebar: () => void;
 }
 
+// Helper function to get initials from a name
+
 export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const fullName = user?.profile?.name || 'User';
+  const initials = getInitials(fullName);
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-gray-50 dark:bg-gray-800 shadow z-10">
@@ -45,7 +52,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onToggleSidebar }) => {
           >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <UserProfile name="John Doe" />
+          <UserProfile name={fullName} initials={initials} />
         </div>
       </nav>
     </header>
