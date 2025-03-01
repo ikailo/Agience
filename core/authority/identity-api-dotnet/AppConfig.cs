@@ -5,69 +5,130 @@ namespace Agience.Authority.Identity
     public class AppConfig
     {
 
-        [ConfigurationKeyName("AUTHORITY_ISSUER_URI")]
-        public string? IssuerUri { get; set; }
-
-        [ConfigurationKeyName("AUTHORITY_SECONDARY_HOST")]
-        public string? ExternalHost { get; set; }
-
-        [ConfigurationKeyName("AUTHORITY_SECONDARY_PORT")]
-        public int? ExternalPort { get; set; }
-
-        public Uri? ExternalUri => string.IsNullOrEmpty(ExternalHost) ? null : new Uri($"https://{ExternalHost}:{ExternalPort}");
-
-        [ConfigurationKeyName("AUTHORITY_SECONDARY_PFX_PATH")]
-        public string? ExternalCertPath { get; set; }       
-
-        [ConfigurationKeyName("AUTHORITY_PRIMARY_HOST")]
-        public string? InternalHost { get; set; }
-
-        [ConfigurationKeyName("AUTHORITY_PRIMARY_PORT")]
-        public int InternalPort { get; set; }
-
-        public Uri InternalUri => new Uri($"https://{InternalHost}:{InternalPort}");
-
-        [ConfigurationKeyName("AUTHORITY_PRIMARY_PFX_PATH")]
-        public string? InternalCertPath { get; set; }
+        // Public URIs
+        [ConfigurationKeyName("AUTHORITY_PUBLIC_URI")]
+        public string? AuthorityPublicUri { get; set; }
 
         [ConfigurationKeyName("BROKER_PUBLIC_URI")]
-        public Uri? ExternalBrokerUri { get; set; }
+        public Uri? BrokerPublicUri { get; set; }
 
-        [ConfigurationKeyName("BROKER_HOST")]
-        public string? InternalBrokerHost { get; set; }
+        // LAN (Internal) Settings
+        [ConfigurationKeyName("LAN_AUTHORITY_HOST")]
+        public string? LanAuthorityHost { get; set; }
 
-        [ConfigurationKeyName("BROKER_PORT")]
-        public int InternalBrokerPort { get; set; }       
-        
-        public Uri InternalBrokerUri => new Uri($"https://{InternalBrokerHost}:{InternalBrokerPort}");
+        [ConfigurationKeyName("LAN_AUTHORITY_PORT")]
+        public int LanAuthorityPort { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_BYPASS_AUTHORITY_SERVICE")]
-        public bool BypassAuthorityService { get; set; }
+        [ConfigurationKeyName("LAN_BROKER_HOST")]
+        public string? LanBrokerHost { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_DATABASE_HOST")]
-        public string? DatabaseHost { get; set; }
+        [ConfigurationKeyName("LAN_BROKER_PORT")]
+        public int LanBrokerPort { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_DATABASE_PORT")]
-        public int DatabasePort { get; set; }
+        [ConfigurationKeyName("LAN_DATABASE_HOST")]
+        public string? LanDatabaseHost { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_DATABASE_NAME")]
+        [ConfigurationKeyName("LAN_DATABASE_PORT")]
+        public int LanDatabasePort { get; set; }
+
+        [ConfigurationKeyName("LAN_MANAGE_HOST")]
+        public string? LanManageHost { get; set; }
+
+        // LAN Certificate Paths
+        [ConfigurationKeyName("LAN_PFX_PATH")]
+        public string? LanPfxPath { get; set; }
+
+        [ConfigurationKeyName("LAN_CRT_PATH")]
+        public string? LanCrtPath { get; set; }
+
+        [ConfigurationKeyName("LAN_KEY_PATH")]
+        public string? LanKeyPath { get; set; }
+
+        // LAN External Settings
+        [ConfigurationKeyName("LAN_EXTERNAL_MANAGE")]
+        public bool LanExternalManage { get; set; }
+
+        [ConfigurationKeyName("LAN_EXTERNAL_AUTHORITY")]
+        public bool LanExternalAuthority { get; set; }
+
+        [ConfigurationKeyName("LAN_EXTERNAL_HOST")]
+        public string? LanExternalHost { get; set; }
+
+        [ConfigurationKeyName("LAN_EXTERNAL_PFX_PATH")]
+        public string? LanExternalPfxPath { get; set; }
+
+        [ConfigurationKeyName("LAN_EXTERNAL_CRT_PATH")]
+        public string? LanExternalCrtPath { get; set; }
+
+        [ConfigurationKeyName("LAN_EXTERNAL_KEY_PATH")]
+        public string? LanExternalKeyPath { get; set; }
+
+        // WAN (External) Settings
+        [ConfigurationKeyName("WAN_ENABLED")]
+        public bool WanEnabled { get; set; }
+
+        [ConfigurationKeyName("WAN_HOST")]
+        public string? WanHost { get; set; }
+
+        [ConfigurationKeyName("WAN_AUTHORITY_PORT")]
+        public int WanAuthorityPort { get; set; }
+
+        public Uri? WanAuthorityUri =>
+            !string.IsNullOrWhiteSpace(WanHost)
+                ? new Uri($"https://{WanHost}:{WanAuthorityPort}")
+                : null;
+
+        [ConfigurationKeyName("WAN_BROKER_PORT")]
+        public int WanBrokerPort { get; set; }
+
+        public Uri? WanBrokerUri =>
+            !string.IsNullOrWhiteSpace(WanHost)
+                ? new Uri($"https://{WanHost}:{WanBrokerPort}")
+                : null;
+
+        [ConfigurationKeyName("WAN_DATABASE_PORT")]
+        public int WanDatabasePort { get; set; }
+
+        [ConfigurationKeyName("WAN_MANAGE_PORT")]
+        public int WanManagePort { get; set; }
+
+        // WAN Certificate Paths
+        [ConfigurationKeyName("WAN_PFX_PATH")]
+        public string? WanPfxPath { get; set; }
+
+        [ConfigurationKeyName("WAN_CRT_PATH")]
+        public string? WanCrtPath { get; set; }
+
+        [ConfigurationKeyName("WAN_KEY_PATH")]
+        public string? WanKeyPath { get; set; }
+
+        // Database Settings
+        public string? DatabaseHost =>
+            LanExternalAuthority
+                ? WanHost
+                : LanDatabaseHost;
+
+        [ConfigurationKeyName("DATABASE_NAME")]
         public string? DatabaseName { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_DATABASE_USERNAME")]
+        [ConfigurationKeyName("DATABASE_USERNAME")]
         public string? DatabaseUsername { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_DATABASE_PASSWORD")]
+        [ConfigurationKeyName("DATABASE_PASSWORD")]
         public string? DatabasePassword { get; set; }
 
+        // Google OAuth Settings
         [ConfigurationKeyName("GOOGLE_OAUTH_CLIENT_ID")]
-        public string? GoogleClientId { get; set; }
+        public string? GoogleOAuthClientId { get; set; }
 
         [ConfigurationKeyName("GOOGLE_OAUTH_CLIENT_SECRET")]
-        public string? GoogleClientSecret { get; set; }
+        public string? GoogleOAuthClientSecret { get; set; }
 
-        [ConfigurationKeyName("CUSTOM_NTP_HOST")]
+        // Optional NTP Server (if defined)
+        [ConfigurationKeyName("NTP_HOST")]
         public string? CustomNtpHost { get; set; }
 
+        // Mailchimp API Settings (if defined)
         [ConfigurationKeyName("MAILCHIMP_API_KEY")]
         public string? MailchimpApiKey { get; set; }
 
@@ -77,6 +138,8 @@ namespace Agience.Authority.Identity
         [ConfigurationKeyName("MAILCHIMP_TAGS")]
         public string? MailchimpTags { get; set; }
 
+        [ConfigurationKeyName("AUTHORITY_BYPASS_AUTHORITY_SERVICE")]
+        public bool BypassAuthorityService { get; set; }
 
         internal IEnumerable<IdentityResource> IdentityResources =>
         new List<IdentityResource>

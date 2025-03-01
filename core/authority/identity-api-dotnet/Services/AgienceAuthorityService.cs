@@ -86,7 +86,7 @@ namespace Agience.Authority.Identity.Services
 
             var validatedRequest = new ValidatedRequest
             {
-                IssuerName = _appConfig.IssuerUri ?? throw new ArgumentNullException(nameof(_appConfig.IssuerUri)),
+                IssuerName = _appConfig.AuthorityPublicUri ?? throw new ArgumentNullException(nameof(_appConfig.AuthorityPublicUri)),
                 ClientId = client.ClientId,
                 Client = client,
                 AccessTokenLifetime = client.AccessTokenLifetime,

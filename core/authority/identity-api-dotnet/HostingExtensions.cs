@@ -24,7 +24,7 @@ internal static class HostingExtensions
         builder.Configuration.Bind(appConfig);
         builder.Services.AddSingleton(appConfig);
 
-        if (appConfig.IssuerUri == null) { throw new ArgumentNullException(nameof(appConfig.IssuerUri)); }
+        if (appConfig.AuthorityPublicUri == null) { throw new ArgumentNullException(nameof(appConfig.AuthorityPublicUri)); }
 
         builder.Services.Configure<ForwardedHeadersOptions>(options =>
         {
@@ -33,47 +33,82 @@ internal static class HostingExtensions
 
         builder.Services.Configure<HostFilteringOptions>(options =>
         {
-            options.AllowedHosts.Add(new Uri(appConfig.IssuerUri).Host);
-            
-            options.AllowedHosts.Add(appConfig.InternalUri.Host);
+            // Always allow the public host
+            options.AllowedHosts.Add(new Uri(appConfig.AuthorityPublicUri).Host);
 
-            if (appConfig.ExternalUri != null) {
-                   options.AllowedHosts.Add(appConfig.ExternalUri.Host);
+            // If Identity is running externally, use the external host. Otherwise use the authority host.
+            if (appConfig.LanExternalAuthority && !string.IsNullOrEmpty(appConfig.LanExternalHost))
+            {
+                options.AllowedHosts.Add(appConfig.LanExternalHost);
+            }
+            else if (!string.IsNullOrEmpty(appConfig.LanAuthorityHost))
+            {
+                options.AllowedHosts.Add(appConfig.LanAuthorityHost);
+            }
+
+            // Additionally, if WAN is enabled, add the WAN host for broker access.
+            if (appConfig.WanEnabled && !string.IsNullOrWhiteSpace(appConfig.WanHost))
+            {
+                options.AllowedHosts.Add(appConfig.WanHost);
             }
         });
 
 
+        // --- Modified Kestrel Configuration ---
         builder.WebHost.ConfigureKestrel(options =>
-        {   
+        {
             var buildContextPath = Environment.GetEnvironmentVariable("BUILD_CONTEXT_PATH") ?? string.Empty;
-
-            if (appConfig.InternalUri == null || string.IsNullOrWhiteSpace(appConfig.InternalCertPath))
+            
+            if (appConfig.WanEnabled)
             {
-                throw new ArgumentNullException(nameof(appConfig.InternalUri));
-            }
-
-            // Always bind InternalUri
-            options.ListenAnyIP(appConfig.InternalUri.Port, listenOptions =>
-            {
-                listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.InternalCertPath));
-            });
-
-            // Bind ExternalUri only if it is set
-            if (appConfig.ExternalUri != null)
-            {
-                if (string.IsNullOrWhiteSpace(appConfig.ExternalCertPath))
+                if (string.IsNullOrWhiteSpace(appConfig.WanPfxPath))
                 {
-                    throw new ArgumentNullException(nameof(appConfig.ExternalCertPath), "External URI is set but External Certificate Path is missing.");
+                    throw new ArgumentNullException(nameof(appConfig.WanPfxPath));
                 }
 
-                options.ListenAnyIP(appConfig.ExternalUri.Port, listenOptions =>
+                options.ListenAnyIP(appConfig.WanAuthorityPort, listenOptions =>
                 {
-                    listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.ExternalCertPath));
+                    listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.WanPfxPath));
+                });
+            }
+
+            // If Identity is running externally, use the external host. Otherwise use the authority host.
+            if (appConfig.LanExternalAuthority)
+            {
+                if (string.IsNullOrWhiteSpace(appConfig.LanExternalPfxPath))
+                {
+                    throw new ArgumentNullException(nameof(appConfig.LanExternalPfxPath));
+                }
+
+                options.ListenAnyIP(appConfig.LanAuthorityPort, listenOptions =>
+                {
+                    listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.LanExternalPfxPath));
+                });
+
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(appConfig.LanPfxPath))
+                {
+                    throw new ArgumentNullException(nameof(appConfig.LanPfxPath));
+                }
+
+                options.ListenAnyIP(appConfig.LanAuthorityPort, listenOptions =>
+                {
+                    listenOptions.UseHttps(Path.Combine(buildContextPath, appConfig.LanPfxPath));
                 });
             }
         });
 
-        builder.Services.AddAgienceAuthoritySingleton(appConfig.IssuerUri, appConfig.CustomNtpHost, appConfig.InternalUri, appConfig.InternalBrokerUri);
+        Uri? authorityUri = null;
+        Uri? brokerUri = null;
+
+        if (!appConfig.LanExternalAuthority) {
+            authorityUri = new Uri($"https://{appConfig.LanAuthorityHost}:{appConfig.LanAuthorityPort}");
+            brokerUri = new Uri($"https://{appConfig.LanBrokerHost}:{appConfig.LanBrokerPort}");
+        }
+
+        builder.Services.AddAgienceAuthoritySingleton(appConfig.AuthorityPublicUri, appConfig.CustomNtpHost, authorityUri, brokerUri);
         builder.Services.AddHostedService<AgienceAuthorityService>();
 
         builder.Services.AddAutoMapper(cfg =>
@@ -96,8 +131,8 @@ internal static class HostingExtensions
 
         builder.Services.AddIdentityServer(options =>
         {
-            options.IssuerUri = appConfig.IssuerUri;
-            options.Discovery.CustomEntries.Add("broker_uri", appConfig.ExternalBrokerUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalBrokerUri)));
+            options.IssuerUri = appConfig.AuthorityPublicUri;
+            options.Discovery.CustomEntries.Add("broker_uri", appConfig.BrokerPublicUri ?? throw new ArgumentNullException(nameof(appConfig.BrokerPublicUri)));
             //options.Discovery.CustomEntries.Add("files_uri", appConfig.ExternalFilesUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalFilesUri)));
             //options.Discovery.CustomEntries.Add("stream_uri", appConfig.ExternalStreamUri ?? throw new ArgumentNullException(nameof(appConfig.ExternalStreamUri)));
             options.Authentication.CookieLifetime = TimeSpan.FromDays(30); // TODO: Manage sessions better.
@@ -117,7 +152,7 @@ internal static class HostingExtensions
             .AddSecretValidator<HostSecretValidator>()
             .AddJwtBearerClientAuthentication();
 
-        builder.Services.AddSingleton(new AgienceIdProvider(appConfig.IssuerUri));
+        builder.Services.AddSingleton(new AgienceIdProvider(appConfig.AuthorityPublicUri));
         builder.Services.AddSingleton<AgienceKeyMaterialService>();
         builder.Services.AddScoped<StateValidator>();
 
@@ -137,20 +172,11 @@ internal static class HostingExtensions
 
         var connectionString =
              $"Host={appConfig.DatabaseHost};" +
-             $"Port={appConfig.DatabasePort};" +
+             $"Port={appConfig.LanDatabasePort};" +
              $"Database={appConfig.DatabaseName};" +
              $"Username={appConfig.DatabaseUsername};" +
-             $"Password={appConfig.DatabasePassword};";
-
-        /*
-        if (builder.Environment.EnvironmentName.Equals("debug", StringComparison.OrdinalIgnoreCase))
-        {
-            connectionString += "SSL Mode=Require;Trust Server Certificate=true;";
-        }
-        else
-        {
-            connectionString += "SSL Mode=VerifyFull;";
-        }*/
+             $"Password={appConfig.DatabasePassword};" +
+             $"SSL Mode=VerifyFull;";
 
         builder.Services.AddDbContext<AgienceDbContext>(options =>
         {
@@ -183,8 +209,8 @@ internal static class HostingExtensions
                 options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
                 options.ForwardSignOut = IdentityServerConstants.DefaultCookieAuthenticationScheme;
 
-                options.ClientId = appConfig.GoogleClientId ?? string.Empty;
-                options.ClientSecret = appConfig.GoogleClientSecret ?? string.Empty;
+                options.ClientId = appConfig.GoogleOAuthClientId ?? string.Empty;
+                options.ClientSecret = appConfig.GoogleOAuthClientId ?? string.Empty;
                 options.Scope.Add(IdentityServerConstants.StandardScopes.OpenId);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Profile);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Email);
@@ -192,22 +218,22 @@ internal static class HostingExtensions
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
            {
-               options.Authority = appConfig.IssuerUri;
+               options.Authority = appConfig.AuthorityPublicUri;
                options.RequireHttpsMetadata = true;
 
-               if (appConfig.ExternalUri != null)
+               if (appConfig.LanExternalAuthority)
                {
-                   options.MetadataAddress = $"{appConfig.ExternalUri?.GetLeftPart(UriPartial.Authority)}/.well-known/openid-configuration";
+                   options.MetadataAddress = $"https://{appConfig.WanBrokerUri}:{appConfig.WanBrokerPort}/.well-known/openid-configuration";
                }
                else
                {
-                   options.MetadataAddress = $"{appConfig.InternalUri?.GetLeftPart(UriPartial.Authority)}/.well-known/openid-configuration";
+                   options.MetadataAddress = $"https://{appConfig.LanBrokerHost}:{appConfig.LanBrokerPort}/.well-known/openid-configuration";
                }
 
                options.TokenValidationParameters = new TokenValidationParameters
                {
                    ValidateIssuer = true,
-                   ValidIssuer = appConfig.IssuerUri,
+                   ValidIssuer = appConfig.AuthorityPublicUri,
                    ValidateAudience = true,
                    ValidAudiences = new List<string> { "manage-api", "connect-mqtt" },
                    ValidateLifetime = true,

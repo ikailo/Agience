@@ -77,7 +77,7 @@ namespace Agience.Authority.Identity.Controllers.Manage
 
             // Construct the authorization URL
             var clientId = authorizer.ClientId;
-            var redirectUri = $"{_appConfig.IssuerUri}{authorizer.RedirectUriPath}";
+            var redirectUri = $"{_appConfig.AuthorityPublicUri}{authorizer.RedirectUriPath}";
             var authorizationEndpoint = authorizer.AuthUri;
             var scope = authorizer.Scopes;
 
@@ -141,7 +141,7 @@ namespace Agience.Authority.Identity.Controllers.Manage
             var clientId = authorizer.ClientId;
             var clientSecret = authorizer.ClientSecret;
             var tokenEndpoint = authorizer.TokenUri;
-            var redirectUri = $"{_appConfig.IssuerUri}{authorizer.RedirectUriPath}";
+            var redirectUri = $"{_appConfig.AuthorityPublicUri}{authorizer.RedirectUriPath}";
             var client = _httpClientFactory.CreateClient();
 
             string content =               

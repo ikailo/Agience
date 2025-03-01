@@ -28,11 +28,11 @@ namespace Agience.Authority.Identity.Data
 
             var connectionString =
                 $"Host={appConfig.DatabaseHost};" +
-                $"Port={appConfig.DatabasePort};" +
+                $"Port={appConfig.LanDatabasePort};" +
                 $"Database={appConfig.DatabaseName};" +
                 $"Username={appConfig.DatabaseUsername};" +
-                $"Password={appConfig.DatabasePassword};";
-                //authorityDbUri.Scheme == Uri.UriSchemeHttps ? $"SSL Mode=VerifyFull;" : string.Empty;
+                $"Password={appConfig.DatabasePassword};" +
+                $"SSL Mode=VerifyFull;";
 
             var optionsBuilder = new DbContextOptionsBuilder<AgienceDbContext>();
             optionsBuilder.UseLazyLoadingProxies();

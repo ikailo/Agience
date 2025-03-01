@@ -40,7 +40,7 @@ namespace Agience.Authority.Identity.Data
                 ClientClaimsPrefix = "",
                 Claims = new List<ClientClaim> {
                     new ClientClaim(JwtClaimTypes.Role, "host"),
-                    new ClientClaim("authority_id", _appConfig.IssuerUri ?? throw new ArgumentNullException(nameof(_appConfig.IssuerUri))),
+                    new ClientClaim("authority_id", _appConfig.AuthorityPublicUri ?? throw new ArgumentNullException(nameof(_appConfig.AuthorityPublicUri))),
                     new ClientClaim("host_id", host.Id)
                 }
             };

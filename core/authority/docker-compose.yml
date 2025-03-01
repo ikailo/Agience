@@ -35,18 +35,25 @@ services:
       context: ../
       dockerfile: ./authority/broker-mqtt/Dockerfile
     environment:
-      - AUTHORITY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}
-      - AUTHORITY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}
-      - AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
-      - GETUSER_PATH=${BROKER_JWT_GETUSER_PATH:-/broker/connect/check}
-      - ACLCHECK_PATH=${BROKER_JWT_ACLCHECK_PATH:-/broker/acl/check}
-      - BROKER_PORT=${BROKER_PORT:-1884}
+      - LAN_AUTHORITY_HOST=${LAN_AUTHORITY_HOST:-identity-api}
+      - LAN_EXTERNAL_HOST=${LAN_EXTERNAL_HOST:-host.docker.internal}
+      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-5001}
+      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
+      - BROKER_GETUSER_PATH=${BROKER_GETUSER_PATH:-/broker/connect/check}
+      - BROKER_ACLCHECK_PATH=${BROKER_ACLCHECK_PATH:-/broker/acl/check}
+      - LAN_BROKER_PORT=${LAN_BROKER_PORT:-8884}
+      - WAN_BROKER_PORT=${WAN_BROKER_PORT:-1884}
+      - WAN_ENABLED=${WAN_ENABLED:-false}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
     ports:
       - "1884:1884"
     volumes:
-      - ${BROKER_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.key:ro
-      - ${BROKER_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/ssl.crt:ro
-      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/ssl.crt:ro
+      - ${LAN_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/lan.crt:ro
+      - ${LAN_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/lan.key:ro
+      - ${WAN_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/wan.key:ro
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan.crt:ro
+      - ${LAN_EXTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan-external.crt:ro
     networks:
       - agience-net
     depends_on:
@@ -61,11 +68,11 @@ services:
       dockerfile: ./authority/identity-api-dotnet/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
-      - AUTHORITY_ISSUER_URI=${AUTHORITY_ISSUER_URI:-https://localhost:5001}
-      - AUTHORITY_PRIMARY_HOST=${AUTHORITY_PRIMARY_HOST:-identity-api}      
-      - AUTHORITY_PRIMARY_PORT=${AUTHORITY_PRIMARY_PORT:-5001}      
-      - AUTHORITY_SECONDARY_HOST=${AUTHORITY_SECONDARY_HOST:-localhost}
-      - AUTHORITY_SECONDARY_PORT=${AUTHORITY_SECONDARY_PORT:-8001}
+      - AUTHORITY_PUBLIC_URI=${AUTHORITY_PUBLIC_URI:-https://localhost:5001}
+      - AUTHORITY_LAN_HOST=${AUTHORITY_LAN_HOST:-identity-api}      
+      - AUTHORITY_LAN_PORT=${AUTHORITY_LAN_PORT:-5001}      
+      - AUTHORITY_WAN_HOST=${AUTHORITY_WAN_HOST:-}
+      - AUTHORITY_WAN_PORT=${AUTHORITY_WAN_PORT:-}
       - BROKER_PUBLIC_URI=${BROKER_PUBLIC_URI:-https://localhost:1884}
       - BROKER_HOST=${BROKER_HOST:-broker-mqtt}
       - BROKER_PORT=${BROKER_PORT:-1884}
