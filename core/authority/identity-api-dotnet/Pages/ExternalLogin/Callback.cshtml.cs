@@ -121,7 +121,8 @@ public class Callback : PageModel
         {
             _logger.LogInformation("User found in database.");
 
-            user.LastLogin = DateTime.UtcNow;
+            user.LastLogin = DateTime.UtcNow;            
+            user.CreatedDate = null;
             _ = await _users.UpdateAsync(user, default); // TODO: Await not necessary.
         }
 

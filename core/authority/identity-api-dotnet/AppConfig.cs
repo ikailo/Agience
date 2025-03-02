@@ -86,11 +86,11 @@ namespace Agience.Authority.Identity
                 ? new Uri($"https://{WanHost}:{WanBrokerPort}")
                 : null;
 
-        [ConfigurationKeyName("WAN_DATABASE_PORT")]
-        public int WanDatabasePort { get; set; }
+        //[ConfigurationKeyName("WAN_DATABASE_PORT")]
+        //public int WanDatabasePort { get; set; }
 
-        [ConfigurationKeyName("WAN_MANAGE_PORT")]
-        public int WanManagePort { get; set; }
+        //[ConfigurationKeyName("WAN_MANAGE_PORT")]
+        //public int WanManagePort { get; set; }
 
         // WAN Certificate Paths
         [ConfigurationKeyName("WAN_PFX_PATH")]
@@ -138,7 +138,7 @@ namespace Agience.Authority.Identity
         [ConfigurationKeyName("MAILCHIMP_TAGS")]
         public string? MailchimpTags { get; set; }
 
-        [ConfigurationKeyName("AUTHORITY_BYPASS_AUTHORITY_SERVICE")]
+        [ConfigurationKeyName("BYPASS_AUTHORITY_SERVICE")]
         public bool BypassAuthorityService { get; set; }
 
         internal IEnumerable<IdentityResource> IdentityResources =>

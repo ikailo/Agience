@@ -14,15 +14,17 @@ namespace Agience.Authority.Identity.Data
 
             var envFilePath = Environment.GetEnvironmentVariable("ENV_FILE_PATH");
 
-            if (envFilePath != null) {
+            if (envFilePath != null)
+            {
                 configuration.AddDotNetEnv(envFilePath);
             }
-            else {
+            else
+            {
                 configuration.AddEnvironmentVariables();
             }
 
             var config = configuration.Build();
-            
+
             var appConfig = new AppConfig();
             config.Bind(appConfig);
 

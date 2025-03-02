@@ -106,7 +106,7 @@ namespace Agience.Core
 
             var accessToken = await GetAccessToken() ?? throw new ArgumentNullException("accessToken");
 
-            await _broker.Connect(accessToken, _authority.BrokerUri!);
+            await _broker.Connect(accessToken, _authority.BrokerUri.Host!, _authority.BrokerUri.Port);
 
             if (_broker.IsConnected)
             {

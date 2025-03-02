@@ -7,14 +7,13 @@ auth_plugin /mosquitto/go-auth.so
 auth_opt_log_level ${BROKER_AUTH_LOG_LEVEL}
 auth_opt_backends jwt
 auth_opt_jwt_mode remote
-auth_opt_jwt_host ${LAN_AUTHORITY_HOST}
-auth_opt_jwt_host ${LAN_EXTERNAL_HOST}
+${AUTH_OPT_JWT_HOST}
 auth_opt_jwt_port ${LAN_AUTHORITY_PORT}
 auth_opt_jwt_with_tls true
-#auth_opt_jwt_verify_peer true
+auth_opt_jwt_verify_peer true
 auth_opt_jwt_getuser_uri ${BROKER_GETUSER_PATH}
 auth_opt_jwt_aclcheck_uri ${BROKER_ACLCHECK_PATH}
-auth_opt_jwt_http_timeout 60
+auth_opt_jwt_http_timeout 300
 
 # LAN Websockets listener
 listener ${LAN_BROKER_PORT} 0.0.0.0

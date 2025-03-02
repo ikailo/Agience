@@ -17,13 +17,18 @@ services:
       context: ../
       dockerfile: ./authority/database-sql/Dockerfile
     environment:      
-      - POSTGRES_DB=${AUTHORITY_DATABASE_NAME:-agience-authority}
-      - POSTGRES_USER=${AUTHORITY_DATABASE_USERNAME:-}
-      - POSTGRES_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
+      - POSTGRES_DB=${DATABASE_NAME:-agience-authority}
+      - POSTGRES_USER=${DATABASE_USERNAME:-}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
     ports:
       - "5432:5432"
     volumes:      
       - authority-data:/var/lib/postgresql/data
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/share/postgresql/certs/lan.crt:ro
+      - ${LAN_KEY_PATH:-/dev/null}:/usr/share/postgresql/certs/lan.key:ro
+      - ${WAN_CRT_PATH:-/dev/null}:/usr/share/postgresql/certs/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/usr/share/postgresql/certs/wan.key:ro
     networks:
       - agience-net
       
@@ -37,7 +42,7 @@ services:
     environment:
       - LAN_AUTHORITY_HOST=${LAN_AUTHORITY_HOST:-identity-api}
       - LAN_EXTERNAL_HOST=${LAN_EXTERNAL_HOST:-host.docker.internal}
-      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-5001}
+      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-8001}
       - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
       - BROKER_GETUSER_PATH=${BROKER_GETUSER_PATH:-/broker/connect/check}
       - BROKER_ACLCHECK_PATH=${BROKER_ACLCHECK_PATH:-/broker/acl/check}
@@ -46,18 +51,16 @@ services:
       - WAN_ENABLED=${WAN_ENABLED:-false}
       - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
     ports:
-      - "1884:1884"
+      - "${WAN_BROKER_PORT:-1884}:${WAN_BROKER_PORT:-1884}"
     volumes:
-      - ${LAN_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/lan.crt:ro
-      - ${LAN_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/lan.key:ro
-      - ${WAN_CRT_PATH:-/dev/null}:/etc/mosquitto/certs/wan.crt:ro
-      - ${WAN_KEY_PATH:-/dev/null}:/etc/mosquitto/certs/wan.key:ro
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/share/mosquitto/certs/lan.crt:ro
+      - ${LAN_KEY_PATH:-/dev/null}:/usr/share/mosquitto/certs/lan.key:ro
+      - ${WAN_CRT_PATH:-/dev/null}:/usr/share/mosquitto/certs/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/usr/share/mosquitto/certs/wan.key:ro
       - ${LAN_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan.crt:ro
       - ${LAN_EXTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan-external.crt:ro
     networks:
       - agience-net
-    depends_on:
-      - database-sql
 
   identity-api:
     container_name: identity-api
@@ -69,30 +72,49 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
       - AUTHORITY_PUBLIC_URI=${AUTHORITY_PUBLIC_URI:-https://localhost:5001}
-      - AUTHORITY_LAN_HOST=${AUTHORITY_LAN_HOST:-identity-api}      
-      - AUTHORITY_LAN_PORT=${AUTHORITY_LAN_PORT:-5001}      
-      - AUTHORITY_WAN_HOST=${AUTHORITY_WAN_HOST:-}
-      - AUTHORITY_WAN_PORT=${AUTHORITY_WAN_PORT:-}
       - BROKER_PUBLIC_URI=${BROKER_PUBLIC_URI:-https://localhost:1884}
-      - BROKER_HOST=${BROKER_HOST:-broker-mqtt}
-      - BROKER_PORT=${BROKER_PORT:-1884}
-      - AUTHORITY_BYPASS_SERVICE=${AUTHORITY_BYPASS_SERVICE:-TRUE}
-      - AUTHORITY_DATABASE_HOST=${AUTHORITY_DATABASE_HOST:-localhost}
-      - AUTHORITY_DATABASE_PORT=${AUTHORITY_DATABASE_PORT:-5432}
-      - AUTHORITY_DATABASE_NAME=${AUTHORITY_DATABASE_NAME:-agience-authority}
-      - AUTHORITY_DATABASE_USERNAME=${AUTHORITY_DATABASE_USERNAME:-}
-      - AUTHORITY_DATABASE_PASSWORD=${AUTHORITY_DATABASE_PASSWORD:-}
+      - LAN_AUTHORITY_HOST=${LAN_AUTHORITY_HOST:-identity-api}
+      - LAN_BROKER_HOST=${LAN_BROKER_HOST:-broker-mqtt}
+      - LAN_DATABASE_HOST=${LAN_DATABASE_HOST:-database-sql}      
+      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-8001}
+      - LAN_BROKER_PORT=${LAN_BROKER_PORT:-8884}
+      - LAN_DATABASE_PORT=${LAN_DATABASE_PORT:-5432}
+      - LAN_PFX_PATH=${LAN_PFX_PATH:-}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
+      - LAN_EXTERNAL_HOST=${LAN_EXTERNAL_HOST:-host.docker.internal}
+      - LAN_EXTERNAL_PFX_PATH=${LAN_EXTERNAL_PFX_PATH:-}
+      - WAN_ENABLED=${WAN_ENABLED:-true}
+      - WAN_HOST=${WAN_HOST:-localhost}
+      - WAN_AUTHORITY_PORT=${WAN_AUTHORITY_PORT:-5001}
+      - WAN_BROKER_PORT=${WAN_BROKER_PORT:-1884}
+      - WAN_PFX_PATH=${WAN_PFX_PATH:-}
+      - BYPASS_AUTHORITY_SERVICE=${BYPASS_AUTHORITY_SERVICE:-false}
+      - DATABASE_NAME=${DATABASE_NAME:-agience-authority}
+      - DATABASE_USERNAME=${DATABASE_USERNAME:-}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-}
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
-      - AUTHORITY_PRIMARY_PFX_PATH=/app/https/primary.pfx
-      - AUTHORITY_SECONDARY_PFX_PATH=/app/https/secondary.pfx
+      - NTP_HOST=${NTP_HOST:-}
+      - MAILCHIMP_API_KEY=${MAILCHIMP_API_KEY:-}
+      - MAILCHIMP_AUDIENCE_ID=${MAILCHIMP_AUDIENCE_ID:-}
+      - MAILCHIMP_TAGS=${MAILCHIMP_TAGS:-}
+      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-}
+      - BROKER_GETUSER_PATH=${BROKER_GETUSER_PATH:-}
+      - BROKER_ACLCHECK_PATH=${BROKER_ACLCHECK_PATH:-}
+      - LAN_PFX_PATH=/app/https/lan.pfx
+      - WAN_PFX_PATH=/app/https/wan.pfx
+      - LAN_EXTERNAL_PFX_PATH=/app/https/lan-external.pfx     
+      - LAN_CRT_PATH=/usr/local/share/ca-certificates/lan.crt
+      - LAN_EXTERNAL_CRT_PATH=/usr/local/share/ca-certificates/lan-external.crt
     ports:
       - "5001:5001"
       - "8001:8001"
     volumes:
-      - ${AUTHORITY_PRIMARY_PFX_PATH:-/dev/null}:/app/https/primary.pfx:ro
-      - ${AUTHORITY_SECONDARY_PFX_PATH:-/dev/null}:/app/https/secondary.pfx:ro
-      - ${BROKER_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/broker.crt:ro
+      - ${LAN_PFX_PATH:-/dev/null}:/app/https/lan.pfx:ro
+      - ${WAN_PFX_PATH:-/dev/null}:/app/https/wan.pfx:ro
+      - ${LAN_EXTERNAL_PFX_PATH:-/dev/null}:/app/https/lan-external.pfx:ro      
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan.crt:ro
+      - ${LAN_EXTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan-external.crt:ro
     networks:
       - agience-net
     depends_on:      

@@ -125,7 +125,7 @@ namespace Agience.Core
 
                 var brokerUri = BrokerUri ?? throw new ArgumentNullException(nameof(BrokerUri));
 
-                await _broker.Connect(accessToken, brokerUri);
+                await _broker.Connect(accessToken, brokerUri.Host, brokerUri.Port);
 
                 if (_broker.IsConnected)
                 {

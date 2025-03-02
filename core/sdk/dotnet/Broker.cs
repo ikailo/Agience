@@ -57,7 +57,7 @@ namespace Agience.Core
             _mqttClient.ApplicationMessageReceivedAsync += _client_ApplicationMessageReceivedAsync;
         }
 
-        internal async Task Connect(string token, Uri brokerUri)
+        internal async Task Connect(string token, string brokerHost, int brokerPort)
         {
             await StartNtpClock();
 
@@ -65,10 +65,10 @@ namespace Agience.Core
 
             if (!_mqttClient.IsConnected)
             {
-                _logger.LogInformation($"Connecting to {brokerUri}");
+                _logger.LogInformation($"Connecting to {brokerHost}:{brokerPort}");
 
                 var options = new MqttClientOptionsBuilder()
-                    .WithWebSocketServer(configure => { configure.WithUri(brokerUri.Host + ":" + brokerUri.Port); })
+                    .WithWebSocketServer(configure => { configure.WithUri($"{brokerHost}:{brokerPort}"); })
                     .WithTlsOptions(configure => { configure.UseTls(true); })
                     .WithCredentials(token, "<no_password>")
                     .WithProtocolVersion(MqttProtocolVersion.V500)

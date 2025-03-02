@@ -47,6 +47,8 @@ namespace Agience.Authority.Identity.Services
             {
                 _logger.LogInformation("Starting Authority");
 
+                //Thread.Sleep(10000);
+
                 await _authority.Connect(await GenerateJwtTokenAsync());
 
                 _logger.LogInformation("Authority Connected");

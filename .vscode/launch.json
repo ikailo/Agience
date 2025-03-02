@@ -13,7 +13,8 @@
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Debug",
                 "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
-                "ENV_FILE_NAME": ".env"
+                "ENV_FILE_NAME": ".env",
+                "ENV_OVERRIDE_EXISTING:": "false"
             }
         }        
     ],

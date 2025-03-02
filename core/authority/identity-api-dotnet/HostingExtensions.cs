@@ -37,17 +37,17 @@ internal static class HostingExtensions
             options.AllowedHosts.Add(new Uri(appConfig.AuthorityPublicUri).Host);
 
             // If Identity is running externally, use the external host. Otherwise use the authority host.
-            if (appConfig.LanExternalAuthority && !string.IsNullOrEmpty(appConfig.LanExternalHost))
+            if (appConfig.LanExternalAuthority && !string.IsNullOrEmpty(appConfig.LanExternalHost) && !options.AllowedHosts.Contains(appConfig.LanExternalHost))
             {
                 options.AllowedHosts.Add(appConfig.LanExternalHost);
             }
-            else if (!string.IsNullOrEmpty(appConfig.LanAuthorityHost))
+            else if (!string.IsNullOrEmpty(appConfig.LanAuthorityHost) && !options.AllowedHosts.Contains(appConfig.LanAuthorityHost))
             {
                 options.AllowedHosts.Add(appConfig.LanAuthorityHost);
             }
 
             // Additionally, if WAN is enabled, add the WAN host for broker access.
-            if (appConfig.WanEnabled && !string.IsNullOrWhiteSpace(appConfig.WanHost))
+            if (appConfig.WanEnabled && !string.IsNullOrWhiteSpace(appConfig.WanHost) && !options.AllowedHosts.Contains(appConfig.WanHost))
             {
                 options.AllowedHosts.Add(appConfig.WanHost);
             }
@@ -58,7 +58,7 @@ internal static class HostingExtensions
         builder.WebHost.ConfigureKestrel(options =>
         {
             var buildContextPath = Environment.GetEnvironmentVariable("BUILD_CONTEXT_PATH") ?? string.Empty;
-            
+
             if (appConfig.WanEnabled)
             {
                 if (string.IsNullOrWhiteSpace(appConfig.WanPfxPath))
@@ -103,7 +103,13 @@ internal static class HostingExtensions
         Uri? authorityUri = null;
         Uri? brokerUri = null;
 
-        if (!appConfig.LanExternalAuthority) {
+        if (appConfig.LanExternalAuthority)
+        {
+            authorityUri = new Uri($"https://{appConfig.WanHost}:{appConfig.WanAuthorityPort}");
+            brokerUri = new Uri($"https://{appConfig.WanHost}:{appConfig.WanBrokerPort}");
+        }
+        else
+        {
             authorityUri = new Uri($"https://{appConfig.LanAuthorityHost}:{appConfig.LanAuthorityPort}");
             brokerUri = new Uri($"https://{appConfig.LanBrokerHost}:{appConfig.LanBrokerPort}");
         }
@@ -210,7 +216,7 @@ internal static class HostingExtensions
                 options.ForwardSignOut = IdentityServerConstants.DefaultCookieAuthenticationScheme;
 
                 options.ClientId = appConfig.GoogleOAuthClientId ?? string.Empty;
-                options.ClientSecret = appConfig.GoogleOAuthClientId ?? string.Empty;
+                options.ClientSecret = appConfig.GoogleOAuthClientSecret ?? string.Empty;
                 options.Scope.Add(IdentityServerConstants.StandardScopes.OpenId);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Profile);
                 options.Scope.Add(IdentityServerConstants.StandardScopes.Email);
@@ -223,11 +229,11 @@ internal static class HostingExtensions
 
                if (appConfig.LanExternalAuthority)
                {
-                   options.MetadataAddress = $"https://{appConfig.WanBrokerUri}:{appConfig.WanBrokerPort}/.well-known/openid-configuration";
+                   options.MetadataAddress = $"https://{appConfig.WanHost}:{appConfig.WanAuthorityPort}/.well-known/openid-configuration";
                }
                else
                {
-                   options.MetadataAddress = $"https://{appConfig.LanBrokerHost}:{appConfig.LanBrokerPort}/.well-known/openid-configuration";
+                   options.MetadataAddress = $"https://{appConfig.LanAuthorityHost}:{appConfig.LanAuthorityPort}/.well-known/openid-configuration";
                }
 
                options.TokenValidationParameters = new TokenValidationParameters
