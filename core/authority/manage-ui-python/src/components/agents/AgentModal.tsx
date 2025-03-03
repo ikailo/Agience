@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { AgentFormData } from '../../types/Agent';
 import { hostService } from '../../services/api/hostService';
 import { Host } from '../../types/Host';

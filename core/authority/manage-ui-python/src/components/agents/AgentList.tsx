@@ -67,11 +67,6 @@ export const AgentList: React.FC<AgentListProps> = ({
     }
   };
 
-  // Function to get host name from host ID
-  const getHostName = (hostId: string | null): string => {
-    if (!hostId) return 'No host';
-    return hosts[hostId]?.name || 'Unknown host';
-  };
 
   // Function to display host information
   const displayHostInfo = (hostId: string | null): string => {
