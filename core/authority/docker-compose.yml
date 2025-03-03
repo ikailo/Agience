@@ -106,6 +106,10 @@ services:
       - LAN_EXTERNAL_PFX_PATH=/app/https/lan-external.pfx     
       - LAN_CRT_PATH=/usr/local/share/ca-certificates/lan.crt
       - LAN_EXTERNAL_CRT_PATH=/usr/local/share/ca-certificates/lan-external.crt
+      - MANAGE_UI_ORIGIN_URI=${MANAGE_UI_ORIGIN_URI}
+      - MANAGE_UI_CLIENT_ID=${MANAGE_UI_CLIENT_ID}
+      - MANAGE_UI_REDIRECT_URI=${MANAGE_UI_REDIRECT_URI}
+      - MANAGE_UI_LOGOUT_REDIRECT_URI=${MANAGE_UI_LOGOUT_REDIRECT_URI}
     ports:
       - "5001:5001"
       - "8001:8001"
@@ -121,17 +125,17 @@ services:
       - database-sql
       - broker-mqtt
 
-  manage:
-    container_name: manage-ui
-    image: manage-ui
-    restart: on-failure
-    build:
-      context: ../
-      dockerfile: ./authority/manage-ui/Dockerfile
-    ports:
-      - "5002:5002"
-    networks:
-      - agience-net
+#  manage:
+#    container_name: manage-ui
+#    image: manage-ui
+#    restart: on-failure
+#    build:
+#      context: ../
+#      dockerfile: ./authority/manage-ui/Dockerfile
+#    ports:
+#      - "5002:5002"
+#    networks:
+#      - agience-net
 
 #  stream:
 #    container_name: media-stream

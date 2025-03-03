@@ -1,19 +1,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+import dotenvExpand from 'dotenv-expand';
+
+const env = dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenvExpand.expand(env);
+
+  // Filter only public variables (those starting with VITE_)
+  const publicEnv = Object.keys(process.env).reduce((acc, key) => {
+    if (key.startsWith('VITE_')) {
+      acc[key] = process.env[key] as string;
+    }
+    return acc;
+  }, {} as Record<string, string>);
 
 export default defineConfig({
   plugins: [react()],
-  envDir: './', // Explicitly set the env file directory
+  envDir: '../', // Explicitly set the env file directory
   server: {
-    port: 5173,
-    proxy: {
-      '/manage': {
-        target: 'https://localhost:5001',
-        changeOrigin: true,
-        secure: false, // if using self-signed certificate
-      }
-    }
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, "../", process.env.WAN_KEY_PATH || "")),
+      cert: fs.readFileSync(path.resolve(__dirname, "../", process.env.WAN_CRT_PATH || "")),
+    },
+    host: "localhost",
+    port: 5002
   },
   resolve: {
     alias: {
@@ -23,5 +35,9 @@ export default defineConfig({
       '@assets': path.resolve(__dirname, './src/assets'),
       '@utils': path.resolve(__dirname, './src/utils')
     }
+  },
+  // Inject only the public, expanded environment variables into the client bundle
+  define: {
+    'import.meta.env': JSON.stringify(publicEnv)
   }
 });

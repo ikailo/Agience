@@ -50,7 +50,7 @@ def process_conf_files(conf_dir, output_dir):
                 "-out", pfx_file,
                 "-inkey", key_file,
                 "-in", crt_file,
-                "-password", "pass:"  # using an empty password; modify if needed
+                "-password", "pass:"  # using an empty password for now
             ], f"Generating PFX for {domain}")
             
             print(f"Finished processing {domain}:")
