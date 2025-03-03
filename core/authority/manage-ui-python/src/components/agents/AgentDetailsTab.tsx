@@ -35,8 +35,8 @@ export const AgentDetailsTab: React.FC<AgentDetailsTabProps> = ({
       name: currentAgent.name,
       description: currentAgent.description,
       persona: currentAgent.persona,
-      host_id: currentAgent.host_id,
-      executive_function_id: currentAgent.executive_function_id,
+      hostId: currentAgent.hostId,
+      executiveFunctionId: currentAgent.executiveFunctionId,
       is_enabled: currentAgent.is_enabled,
       imagePreview: currentAgent.imageUrl,
     };

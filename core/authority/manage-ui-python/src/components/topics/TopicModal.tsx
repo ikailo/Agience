@@ -1,59 +1,51 @@
 import { useState, useEffect } from 'react';
-import { HostFormData } from '../../types/Host';
-import { useAuth } from '../../auth/AuthContext';
+import { Button } from '../common/Button';
+import { TopicFormData } from '../../types/Topic';
 
-interface HostModalProps {
+interface TopicModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (hostData: HostFormData) => Promise<void>;
-  initialData?: HostFormData;
+  onSave: (topicData: TopicFormData) => Promise<void>;
+  initialData?: TopicFormData;
   isEditing?: boolean;
 }
 
-export const HostModal: React.FC<HostModalProps> = ({
+export const TopicModal: React.FC<TopicModalProps> = ({
   isOpen,
   onClose,
   onSave,
   initialData,
   isEditing = false,
 }) => {
-  // Get the current user from auth context
-  const { user } = useAuth();
-  
   // Form state
-  const [formData, setFormData] = useState<HostFormData>({
+  const [formData, setFormData] = useState<TopicFormData>({
     name: '',
     description: '',
-    operatorId: user?.profile?.sub || '', // Set operatorId from the authenticated user
   });
   
   // Form validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Loading state for the save button
+  
+  // Loading state
   const [isSaving, setIsSaving] = useState(false);
 
   // Update form data when initialData changes
   useEffect(() => {
     if (initialData) {
-      // When editing, preserve the existing operatorId if available
-      setFormData({
-        ...initialData,
-        // If operatorId is not in initialData, use the current user's ID
-        operatorId: initialData.operatorId || user?.profile?.sub || '',
-      });
+      setFormData(initialData);
     } else {
-      // Reset to default values with current user's ID
+      // Reset to default values
       setFormData({
         name: '',
         description: '',
-        operatorId: user?.profile?.sub || '',
       });
     }
-  }, [initialData, user]);
+  }, [initialData]);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -73,11 +65,7 @@ export const HostModal: React.FC<HostModalProps> = ({
     const newErrors: Record<string, string> = {};
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Host name is required';
-    }
-    
-    if (!formData.description?.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.name = 'Topic name is required';
     }
     
     setErrors(newErrors);
@@ -94,14 +82,10 @@ export const HostModal: React.FC<HostModalProps> = ({
     
     try {
       setIsSaving(true);
-      // Make sure operatorId is included in the data sent to the API
-      await onSave({
-        ...formData,
-        operatorId: formData.operatorId || user?.profile?.sub || '',
-      });
+      await onSave(formData);
       onClose();
     } catch (error) {
-      console.error('Error saving host:', error);
+      console.error('Error saving topic:', error);
       // You could add error handling here, e.g., display an error message
     } finally {
       setIsSaving(false);
@@ -113,15 +97,15 @@ export const HostModal: React.FC<HostModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
         <div className="p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            {isEditing ? 'Edit Host' : 'Add New Host'}
+            {isEditing ? 'Edit Topic' : 'Add New Topic'}
           </h2>
           
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
-              {/* Host Name */}
+              {/* Topic Name */}
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Name <span className="text-red-500">*</span>
@@ -135,50 +119,43 @@ export const HostModal: React.FC<HostModalProps> = ({
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                     errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="Enter host name"
+                  placeholder="Enter topic name"
                 />
                 {errors.name && (
                   <p className="mt-1 text-sm text-red-500">{errors.name}</p>
                 )}
               </div>
               
-              {/* Host Description */}
+              {/* Topic Description */}
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description <span className="text-red-500">*</span>
+                  Description
                 </label>
                 <textarea
                   id="description"
                   name="description"
-                  value={formData.description || ''}
+                  value={formData.description}
                   onChange={handleChange}
                   rows={3}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  placeholder="Enter host description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  placeholder="Enter topic description (optional)"
                 />
-                {errors.description && (
-                  <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-                )}
               </div>
-              
-              {/* Note: operatorId field is removed from the UI but still included in the form data */}
             </div>
             
             {/* Action Buttons */}
             <div className="mt-6 flex justify-end space-x-3">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+                disabled={isSaving}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 type="submit"
                 disabled={isSaving}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <span className="flex items-center">
@@ -189,9 +166,9 @@ export const HostModal: React.FC<HostModalProps> = ({
                     Saving...
                   </span>
                 ) : (
-                  'Save Host'
+                  'Save'
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

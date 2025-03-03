@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { HostDetails } from '../components/hosts/HostDetails-do_not_use';
 import { HostKeys } from '../components/hosts/HostKeys';
 import { HostPlugins } from '../components/hosts/HostPlugins';
 import { HostDetailsTab } from '../components/hosts/HostDetailsTab';
