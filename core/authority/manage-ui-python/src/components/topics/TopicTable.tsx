@@ -1,22 +1,19 @@
+import React from 'react';
 import { useState } from 'react';
-
-interface Topic {
-  id: string;
-  name: string;
-  description: string;
-  address: string;
-}
+import { Topic } from '../../types/Topic';
 
 interface TopicTableProps {
   topics: Topic[];
-  onEdit: (id: string, topic: Topic) => void;
-  onDelete: (id: string) => void;
+  onEdit: (topic: Topic) => void;
+  onDelete: (topic: Topic) => void;
+  isLoading?: boolean;
 }
 
 export const TopicTable: React.FC<TopicTableProps> = ({
   topics,
   onEdit,
   onDelete,
+  isLoading = false
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Topic | null>(null);
@@ -28,7 +25,7 @@ export const TopicTable: React.FC<TopicTableProps> = ({
 
   const handleSave = () => {
     if (editForm && editingId) {
-      onEdit(editingId, editForm);
+      onEdit(editForm);
       setEditingId(null);
       setEditForm(null);
     }
@@ -39,84 +36,163 @@ export const TopicTable: React.FC<TopicTableProps> = ({
     setEditForm(null);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500 dark:border-teal-400"></div>
+      </div>
+    );
+  }
+
+  if (topics.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center border border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col items-center">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={1.5} 
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+            />
+          </svg>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
+            No topics configured yet
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            Click "Add Topic" to create your first topic
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
       {/* Desktop view */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden sm:block">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Topic</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Address</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-            {topics.map(topic => (
-              <tr key={topic.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                  {editingId === topic.id ? (
-                    <input
-                      type="text"
-                      value={editForm?.name}
-                      onChange={e => setEditForm(prev => ({ ...prev!, name: e.target.value }))}
-                      className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  ) : topic.name}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                  {editingId === topic.id ? (
-                    <input
-                      type="text"
-                      value={editForm?.description}
-                      onChange={e => setEditForm(prev => ({ ...prev!, description: e.target.value }))}
-                      className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  ) : topic.description}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                  {editingId === topic.id ? (
-                    <input
-                      type="text"
-                      value={editForm?.address}
-                      onChange={e => setEditForm(prev => ({ ...prev!, address: e.target.value }))}
-                      className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    />
-                  ) : topic.address}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  {editingId === topic.id ? (
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        onClick={handleSave}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {topics.map((topic) => (
+              <tr 
+                key={topic.id}
+                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900">
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-6 w-6 text-teal-600 dark:text-teal-300" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
                       >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 font-medium"
-                      >
-                        Cancel
-                      </button>
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+                        />
+                      </svg>
                     </div>
-                  ) : (
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        onClick={() => handleEditClick(topic)}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => onDelete(topic.id)}
-                        className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        Delete
-                      </button>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {topic.name}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <svg 
+                          className="inline-block mr-1 h-3 w-3" 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          stroke="currentColor"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                          />
+                        </svg>
+                        {new Date(topic.created_date).toLocaleDateString()}
+                      </div>
                     </div>
-                  )}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 dark:text-white">
+                    {topic.description ? (
+                      topic.description.length > 100 
+                        ? `${topic.description.substring(0, 100)}...` 
+                        : topic.description
+                    ) : (
+                      <span className="text-gray-500 dark:text-gray-400 italic">No description provided</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      onClick={() => onEdit(topic)}
+                      className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 transition-colors text-sm flex items-center"
+                    >
+                      <svg 
+                        className="mr-1 h-4 w-4" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+                        />
+                      </svg>
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDelete(topic)}
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors text-sm flex items-center"
+                    >
+                      <svg 
+                        className="mr-1 h-4 w-4" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+                        />
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -125,80 +201,102 @@ export const TopicTable: React.FC<TopicTableProps> = ({
       </div>
 
       {/* Mobile view */}
-      <div className="md:hidden space-y-4">
-        {topics.map(topic => (
-          <div 
-            key={topic.id} 
-            className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3 shadow-sm border border-gray-200 dark:border-gray-700"
-          >
-            {editingId === topic.id ? (
-              <>
-                <input
-                  type="text"
-                  value={editForm?.name}
-                  onChange={e => setEditForm(prev => ({ ...prev!, name: e.target.value }))}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
-                  placeholder="Name"
-                />
-                <input
-                  type="text"
-                  value={editForm?.description}
-                  onChange={e => setEditForm(prev => ({ ...prev!, description: e.target.value }))}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
-                  placeholder="Description"
-                />
-                <input
-                  type="text"
-                  value={editForm?.address}
-                  onChange={e => setEditForm(prev => ({ ...prev!, address: e.target.value }))}
-                  className="w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  placeholder="Address"
-                />
-              </>
-            ) : (
-              <>
-                <h3 className="text-gray-900 dark:text-white font-medium">{topic.name}</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm">{topic.description}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm font-mono">{topic.address}</p>
-              </>
-            )}
-            
-            <div className="flex justify-end pt-2 space-x-4">
-              {editingId === topic.id ? (
-                <>
+      <div className="sm:hidden">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          {topics.map((topic) => (
+            <div 
+              key={topic.id}
+              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-6 w-6 text-teal-600 dark:text-teal-300" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{topic.name}</h3>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <svg 
+                        className="inline-block mr-1 h-3 w-3" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+                        />
+                      </svg>
+                      {new Date(topic.created_date).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col space-y-2">
                   <button
-                    onClick={handleSave}
-                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    onClick={() => onEdit(topic)}
+                    className="text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 transition-colors text-sm flex items-center justify-end"
                   >
-                    Save
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleEditClick(topic)}
-                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                  >
+                    <svg 
+                      className="mr-1 h-4 w-4" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
+                      />
+                    </svg>
                     Edit
                   </button>
                   <button
-                    onClick={() => onDelete(topic.id)}
-                    className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    onClick={() => onDelete(topic)}
+                    className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors text-sm flex items-center justify-end"
                   >
+                    <svg 
+                      className="mr-1 h-4 w-4" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
+                      />
+                    </svg>
                     Delete
                   </button>
-                </>
-              )}
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                {topic.description || <span className="italic">No description provided</span>}
+              </p>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </>
+    </div>
   );
 }; 

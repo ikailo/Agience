@@ -1,13 +1,11 @@
-export interface Host {
+export interface Topic {
   id: string;
   name: string;
   description: string;
-  operatorId?: string; // Optional field
   created_date: string;
 }
 
-export interface HostFormData {
+export interface TopicFormData {
   name: string;
   description: string;
-  operatorId?: string;
 } 

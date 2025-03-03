@@ -16,10 +16,24 @@ export const agentService = {
       if (agentData.image) {
         const formData = new FormData();
         
+        // Convert camelCase to snake_case for API
+        const apiData = {
+          name: agentData.name,
+          description: agentData.description,
+          persona: agentData.persona,
+          host_id: agentData.hostId,  // Convert hostId to host_id
+          executive_function_id: agentData.executiveFunctionId,  // Convert executiveFunctionId to executive_function_id
+          is_enabled: agentData.is_enabled
+        };
+        
         // Add all agent data to form
-        Object.entries(agentData).forEach(([key, value]) => {
-          if (key === 'image' && value instanceof File) {
-            formData.append('image', value);
+        Object.entries(apiData).forEach(([key, value]) => {
+          if (key === 'image') {
+            // Check if value is a File by type assertion
+            const fileValue = value as unknown;
+            if (fileValue instanceof File) {
+              formData.append('image', fileValue as File);
+            }
           } else if (value !== undefined && value !== null) {
             formData.append(key, String(value));
           }
@@ -32,8 +46,16 @@ export const agentService = {
         });
         return response.data;
       } else {
-        // No image, just send JSON
-        const response = await apiClient.post<Agent>('/manage/agent', agentData);
+        // No image, just send JSON with snake_case keys
+        const apiData = {
+          name: agentData.name,
+          description: agentData.description,
+          persona: agentData.persona,
+          host_id: agentData.hostId,
+          executive_function_id: agentData.executiveFunctionId,
+          is_enabled: agentData.is_enabled
+        };
+        const response = await apiClient.post<Agent>('/manage/agent', apiData);
         return response.data;
       }
     } catch (error) {
@@ -50,36 +72,21 @@ export const agentService = {
    */
   updateAgent: async (id: string, agentData: AgentFormData): Promise<Agent> => {
     try {
-      // Create form data if there's an image to upload
-      if (agentData.image) {
-        const formData = new FormData();
-        
-        // Add all agent data to form
-        Object.entries(agentData).forEach(([key, value]) => {
-          if (key === 'image' && value instanceof File) {
-            formData.append('image', value);
-          } else if (value !== undefined && value !== null) {
-            formData.append(key, String(value));
-          }
-        });
-        
-        // Add ID to form data
-        formData.append('id', id);
-        
-        const response = await apiClient.put<Agent>(`/manage/agent/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        return response.data;
-      } else {
-        // No image, just send JSON
-        const response = await apiClient.put<Agent>(`/manage/agent/${id}`, {
-          ...agentData,
-          id // Include the ID in the request body as required by the API
-        });
-        return response.data;
-      }
+      // Convert camelCase to snake_case for API
+      const apiData = {
+        id: id,
+        name: agentData.name,
+        description: agentData.description,
+        persona: agentData.persona || null,
+        host_id: agentData.hostId || null,  // Convert from camelCase to snake_case
+        executive_function_id: agentData.executiveFunctionId || null,  // Convert from camelCase to snake_case
+        is_enabled: agentData.is_enabled
+      };
+      
+      console.log('Sending update data:', apiData);
+      
+      const response = await apiClient.put<Agent>(`/manage/agent/${id}`, apiData);
+      return response.data;
     } catch (error) {
       console.error(`Error updating agent with ID ${id}:`, error);
       throw error;

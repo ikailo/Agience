@@ -14,8 +14,8 @@ export interface AgentFormData {
   name: string;
   description: string;
   persona: string | null;
-  host_id: string | null;
-  executive_function_id: string | null;
+  hostId: string | null;
+  executiveFunctionId: string | null;
   is_enabled: boolean;
   image?: File;
   imagePreview?: string;
@@ -39,8 +39,8 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
     name: '',
     description: '',
     persona: '',
-    host_id: '',
-    executive_function_id: '',
+    hostId: '',
+    executiveFunctionId: '',
     is_enabled: false,
   });
   
@@ -235,13 +235,13 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
 
       {/* Host Dropdown */}
       <div>
-        <label htmlFor="host_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="hostId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Host
         </label>
         <select
-          id="host_id"
-          name="host_id"
-          value={formData.host_id || ''}
+          id="hostId"
+          name="hostId"
+          value={formData.hostId || ''}
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
@@ -251,7 +251,7 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
           ) : (
             hosts.map(host => (
               <option key={host.id} value={host.id}>
-                {host.name} {host.address ? `(${host.address})` : ''}
+                {host.name}
               </option>
             ))
           )}
@@ -275,13 +275,13 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
 
       {/* Executive Function Dropdown */}
       <div>
-        <label htmlFor="executive_function_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="executiveFunctionId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Executive Function
         </label>
         <select
-          id="executive_function_id"
-          name="executive_function_id"
-          value={formData.executive_function_id || ''}
+          id="executiveFunctionId"
+          name="executiveFunctionId"
+          value={formData.executiveFunctionId || ''}
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
