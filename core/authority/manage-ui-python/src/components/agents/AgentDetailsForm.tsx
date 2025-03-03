@@ -1,35 +1,77 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '../common/Button';
+import { hostService } from '../../services/api/hostService';
+import { Host } from '../../types/Host';
 
 interface AgentDetailsFormProps {
   onSave: (data: AgentFormData) => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  initialData?: AgentFormData;
+  isEditing?: boolean;
 }
 
 export interface AgentFormData {
   name: string;
   description: string;
-  persona: string;
-  host: string;
-  executiveFunction: string;
-  enabled: boolean;
+  persona: string | null;
+  host_id: string | null;
+  executive_function_id: string | null;
+  is_enabled: boolean;
   image?: File;
   imagePreview?: string;
 }
 
+// Mock executive functions for now
+const mockExecutiveFunctions = [
+  { id: 'ef1', name: 'Basic Conversation' },
+  { id: 'ef2', name: 'Task Management' },
+  { id: 'ef3', name: 'Data Analysis' },
+];
+
 export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
   onSave,
   onDelete,
+  initialData,
+  isEditing = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
     description: '',
     persona: '',
-    host: '',
-    executiveFunction: '',
-    enabled: false,
+    host_id: '',
+    executive_function_id: '',
+    is_enabled: false,
   });
+  
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [isLoadingHosts, setIsLoadingHosts] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch hosts when component mounts
+  useEffect(() => {
+    fetchHosts();
+  }, []);
+
+  // Initialize form with initial data if provided
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+    }
+  }, [initialData]);
+
+  // Function to fetch all hosts
+  const fetchHosts = async () => {
+    try {
+      setIsLoadingHosts(true);
+      const hostsData = await hostService.getAllHosts();
+      setHosts(hostsData);
+    } catch (err) {
+      console.error('Error fetching hosts:', err);
+    } finally {
+      setIsLoadingHosts(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -42,9 +84,58 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
     }
   };
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    
+    // Handle checkbox separately
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+    
+    // Clear error for this field when user types
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Agent name is required';
+    }
+    
+    if (!formData.description.trim()) {
+      newErrors.description = 'Description is required';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     onSave(formData);
+    window.location.reload();
   };
 
   return (
@@ -90,29 +181,41 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
       {/* Name Input */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Name
+          Name <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           id="name"
+          name="name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          onChange={handleChange}
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+            errors.name ? 'border-red-500' : ''
+          }`}
         />
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+        )}
       </div>
 
       {/* Description Input */}
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Description
+          Description <span className="text-red-500">*</span>
         </label>
         <textarea
           id="description"
+          name="description"
           rows={3}
           value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          onChange={handleChange}
+          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+            errors.description ? 'border-red-500' : ''
+          }`}
         />
+        {errors.description && (
+          <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+        )}
       </div>
 
       {/* Persona Input */}
@@ -122,42 +225,36 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
         </label>
         <textarea
           id="persona"
+          name="persona"
           rows={3}
-          value={formData.persona}
-          onChange={(e) => setFormData(prev => ({ ...prev, persona: e.target.value }))}
+          value={formData.persona || ''}
+          onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         />
       </div>
 
       {/* Host Dropdown */}
       <div>
-        <label htmlFor="host" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label htmlFor="host_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
           Host
         </label>
         <select
-          id="host"
-          value={formData.host}
-          onChange={(e) => setFormData(prev => ({ ...prev, host: e.target.value }))}
+          id="host_id"
+          name="host_id"
+          value={formData.host_id || ''}
+          onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         >
           <option value="">Select a host</option>
-          {/* Add host options here */}
-        </select>
-      </div>
-
-      {/* Executive Function Dropdown */}
-      <div>
-        <label htmlFor="executiveFunction" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Executive Function
-        </label>
-        <select
-          id="executiveFunction"
-          value={formData.executiveFunction}
-          onChange={(e) => setFormData(prev => ({ ...prev, executiveFunction: e.target.value }))}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-        >
-          <option value="">Select a function</option>
-          {/* Add function options here */}
+          {isLoadingHosts ? (
+            <option disabled>Loading hosts...</option>
+          ) : (
+            hosts.map(host => (
+              <option key={host.id} value={host.id}>
+                {host.name} {host.address ? `(${host.address})` : ''}
+              </option>
+            ))
+          )}
         </select>
       </div>
 
@@ -165,24 +262,48 @@ export const AgentDetailsForm: React.FC<AgentDetailsFormProps> = ({
       <div className="flex items-center">
         <input
           type="checkbox"
-          id="enabled"
-          checked={formData.enabled}
-          onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
+          id="is_enabled"
+          name="is_enabled"
+          checked={formData.is_enabled}
+          onChange={handleChange}
           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
         />
-        <label htmlFor="enabled" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+        <label htmlFor="is_enabled" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
           Enabled
         </label>
+      </div>
+
+      {/* Executive Function Dropdown */}
+      <div>
+        <label htmlFor="executive_function_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Executive Function
+        </label>
+        <select
+          id="executive_function_id"
+          name="executive_function_id"
+          value={formData.executive_function_id || ''}
+          onChange={handleChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        >
+          <option value="">Select a function</option>
+          {mockExecutiveFunctions.map(func => (
+            <option key={func.id} value={func.id}>
+              {func.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Action Buttons */}
       <div className="flex space-x-4">
         <Button type="submit" variant="primary">
-          Save
+          {isEditing ? 'Update' : 'Create'} Agent
         </Button>
-        <Button type="button" variant="danger" onClick={onDelete}>
-          Delete
-        </Button>
+        {isEditing && onDelete && (
+          <Button type="button" variant="danger" onClick={onDelete}>
+            Delete
+          </Button>
+        )}
       </div>
     </form>
   );

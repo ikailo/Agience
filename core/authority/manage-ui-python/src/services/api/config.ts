@@ -2,12 +2,11 @@ import axios from 'axios';
 
 // Create axios instance with default config
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_MANAGE_UI_ORIGIN_URI || 'https://localhost:5002',
+baseURL: import.meta.env.VITE_MANAGE_UI_ORIGIN_URI || 'https://localhost:5002',
   headers: {
     'Content-Type': 'application/json',
   },
 });
-
 // Add request interceptor for auth headers
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -16,7 +15,6 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
-
 // Add response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,

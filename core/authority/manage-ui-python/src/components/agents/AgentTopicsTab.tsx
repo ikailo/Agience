@@ -16,7 +16,11 @@ const dummyTopics = [
   },
 ];
 
-export const AgentTopicsTab: React.FC = () => {
+interface AgentTopicsTabProps {
+  agentId: string | null;
+}
+
+export const AgentTopicsTab: React.FC<AgentTopicsTabProps> = ({ agentId }) => {
   const handleEdit = (id: string) => {
     console.log('Edit topic:', id);
     // Implement edit logic

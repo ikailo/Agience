@@ -1,5 +1,10 @@
 import { AgentPluginsTable } from './AgentPluginsTable';
 
+// Add this interface at the top of the file
+interface AgentPluginsTabProps {
+  agentId: string | null;
+}
+
 // Dummy data
 const dummyPlugins = [
   {
@@ -14,7 +19,7 @@ const dummyPlugins = [
   },
 ];
 
-export const AgentPluginsTab: React.FC = () => {
+export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId }) => {
   const handleEdit = (id: string) => {
     console.log('Edit plugin:', id);
     // Implement edit logic

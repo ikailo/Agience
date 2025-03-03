@@ -20,7 +20,11 @@ const dummyCredentials = [
   },
 ];
 
-export const AgentCredentialsTab = () => {
+interface AgentCredentialsTabProps {
+  agentId: string | null;
+}
+
+export const AgentCredentialsTab: React.FC<AgentCredentialsTabProps> = ({ agentId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const handleSaveCredential = (credentialData: any) => {
