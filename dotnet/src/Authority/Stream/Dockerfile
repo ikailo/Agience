@@ -1,3 +1,0 @@
-FROM infiniteproject/icecast
-
-ARG BUILD_ENVIRONMENT

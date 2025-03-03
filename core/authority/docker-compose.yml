@@ -1,0 +1,153 @@
+networks:    
+  agience-net:
+    name: agience-net
+    driver: bridge
+
+volumes:
+  authority-data:
+  icecast-logs:
+
+services:
+    
+  database-sql:  
+    container_name: database-sql
+    image: database-sql
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/database-sql/Dockerfile
+    environment:      
+      - POSTGRES_DB=${DATABASE_NAME:-agience-authority}
+      - POSTGRES_USER=${DATABASE_USERNAME:-}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD:-}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
+    ports:
+      - "5432:5432"
+    volumes:      
+      - authority-data:/var/lib/postgresql/data
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/share/postgresql/certs/lan.crt:ro
+      - ${LAN_KEY_PATH:-/dev/null}:/usr/share/postgresql/certs/lan.key:ro
+      - ${WAN_CRT_PATH:-/dev/null}:/usr/share/postgresql/certs/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/usr/share/postgresql/certs/wan.key:ro
+    networks:
+      - agience-net
+      
+  broker-mqtt:
+    container_name: broker-mqtt
+    image: broker-mqtt
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/broker-mqtt/Dockerfile
+    environment:
+      - LAN_AUTHORITY_HOST=${LAN_AUTHORITY_HOST:-identity-api}
+      - LAN_EXTERNAL_HOST=${LAN_EXTERNAL_HOST:-host.docker.internal}
+      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-8001}
+      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-info}
+      - BROKER_GETUSER_PATH=${BROKER_GETUSER_PATH:-/broker/connect/check}
+      - BROKER_ACLCHECK_PATH=${BROKER_ACLCHECK_PATH:-/broker/acl/check}
+      - LAN_BROKER_PORT=${LAN_BROKER_PORT:-8884}
+      - WAN_BROKER_PORT=${WAN_BROKER_PORT:-1884}
+      - WAN_ENABLED=${WAN_ENABLED:-false}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
+    ports:
+      - "${WAN_BROKER_PORT:-1884}:${WAN_BROKER_PORT:-1884}"
+    volumes:
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/share/mosquitto/certs/lan.crt:ro
+      - ${LAN_KEY_PATH:-/dev/null}:/usr/share/mosquitto/certs/lan.key:ro
+      - ${WAN_CRT_PATH:-/dev/null}:/usr/share/mosquitto/certs/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/usr/share/mosquitto/certs/wan.key:ro
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan.crt:ro
+      - ${LAN_EXTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan-external.crt:ro
+    networks:
+      - agience-net
+
+  identity-api:
+    container_name: identity-api
+    image: identity-api
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/identity-api-dotnet/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Debug}
+      - AUTHORITY_PUBLIC_URI=${AUTHORITY_PUBLIC_URI:-https://localhost:5001}
+      - BROKER_PUBLIC_URI=${BROKER_PUBLIC_URI:-https://localhost:1884}
+      - LAN_AUTHORITY_HOST=${LAN_AUTHORITY_HOST:-identity-api}
+      - LAN_BROKER_HOST=${LAN_BROKER_HOST:-broker-mqtt}
+      - LAN_DATABASE_HOST=${LAN_DATABASE_HOST:-database-sql}      
+      - LAN_AUTHORITY_PORT=${LAN_AUTHORITY_PORT:-8001}
+      - LAN_BROKER_PORT=${LAN_BROKER_PORT:-8884}
+      - LAN_DATABASE_PORT=${LAN_DATABASE_PORT:-5432}
+      - LAN_PFX_PATH=${LAN_PFX_PATH:-}
+      - LAN_EXTERNAL_AUTHORITY=${LAN_EXTERNAL_AUTHORITY:-false}
+      - LAN_EXTERNAL_HOST=${LAN_EXTERNAL_HOST:-host.docker.internal}
+      - LAN_EXTERNAL_PFX_PATH=${LAN_EXTERNAL_PFX_PATH:-}
+      - WAN_ENABLED=${WAN_ENABLED:-true}
+      - WAN_HOST=${WAN_HOST:-localhost}
+      - WAN_AUTHORITY_PORT=${WAN_AUTHORITY_PORT:-5001}
+      - WAN_BROKER_PORT=${WAN_BROKER_PORT:-1884}
+      - WAN_PFX_PATH=${WAN_PFX_PATH:-}
+      - BYPASS_AUTHORITY_SERVICE=${BYPASS_AUTHORITY_SERVICE:-false}
+      - DATABASE_NAME=${DATABASE_NAME:-agience-authority}
+      - DATABASE_USERNAME=${DATABASE_USERNAME:-}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      - NTP_HOST=${NTP_HOST:-}
+      - MAILCHIMP_API_KEY=${MAILCHIMP_API_KEY:-}
+      - MAILCHIMP_AUDIENCE_ID=${MAILCHIMP_AUDIENCE_ID:-}
+      - MAILCHIMP_TAGS=${MAILCHIMP_TAGS:-}
+      - BROKER_AUTH_LOG_LEVEL=${BROKER_AUTH_LOG_LEVEL:-}
+      - BROKER_GETUSER_PATH=${BROKER_GETUSER_PATH:-}
+      - BROKER_ACLCHECK_PATH=${BROKER_ACLCHECK_PATH:-}
+      - LAN_PFX_PATH=/app/https/lan.pfx
+      - WAN_PFX_PATH=/app/https/wan.pfx
+      - LAN_EXTERNAL_PFX_PATH=/app/https/lan-external.pfx     
+      - LAN_CRT_PATH=/usr/local/share/ca-certificates/lan.crt
+      - LAN_EXTERNAL_CRT_PATH=/usr/local/share/ca-certificates/lan-external.crt
+      - MANAGE_UI_ORIGIN_URI=${MANAGE_UI_ORIGIN_URI}
+      - MANAGE_UI_CLIENT_ID=${MANAGE_UI_CLIENT_ID}
+      - MANAGE_UI_REDIRECT_URI=${MANAGE_UI_REDIRECT_URI}
+      - MANAGE_UI_LOGOUT_REDIRECT_URI=${MANAGE_UI_LOGOUT_REDIRECT_URI}
+    ports:
+      - "5001:5001"
+      - "8001:8001"
+    volumes:
+      - ${LAN_PFX_PATH:-/dev/null}:/app/https/lan.pfx:ro
+      - ${WAN_PFX_PATH:-/dev/null}:/app/https/wan.pfx:ro
+      - ${LAN_EXTERNAL_PFX_PATH:-/dev/null}:/app/https/lan-external.pfx:ro      
+      - ${LAN_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan.crt:ro
+      - ${LAN_EXTERNAL_CRT_PATH:-/dev/null}:/usr/local/share/ca-certificates/lan-external.crt:ro
+    networks:
+      - agience-net
+    depends_on:      
+      - database-sql
+      - broker-mqtt
+
+#  manage:
+#    container_name: manage-ui
+#    image: manage-ui
+#    restart: on-failure
+#    build:
+#      context: ../
+#      dockerfile: ./authority/manage-ui/Dockerfile
+#    ports:
+#      - "5002:5002"
+#    networks:
+#      - agience-net
+
+#  stream:
+#    container_name: media-stream
+#    image: media-stream
+#    restart: on-failure
+#    build:      
+#      dockerfile: media-stream/Dockerfile            
+#    ports:
+#      - "8000:8000"
+#    volumes:
+#      - icecast-logs:/var/log/icecast
+#    networks:
+#      - agience-net
+#    depends_on:
+#      - "identity"

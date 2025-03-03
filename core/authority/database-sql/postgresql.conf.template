@@ -1,0 +1,12 @@
+# Enable SSL connections
+ssl = on
+
+# SSL certificate and key file settings.
+ssl_cert_file = '${SSL_CERT_FILE}'
+ssl_key_file = '${SSL_KEY_FILE}'
+
+# Listen on all addresses
+listen_addresses = '*'
+
+# Specify the location of the host-based authentication file.
+hba_file = '/etc/postgresql/pg_hba.conf'
