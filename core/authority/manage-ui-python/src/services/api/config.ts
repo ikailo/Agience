@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000',
+  baseURL: '', // Empty string to use relative URLs with the proxy
   headers: {
     'Content-Type': 'application/json',
   },

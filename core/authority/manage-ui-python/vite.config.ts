@@ -6,7 +6,14 @@ export default defineConfig({
   plugins: [react()],
   envDir: './', // Explicitly set the env file directory
   server: {
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/manage': {
+        target: 'https://localhost:5001',
+        changeOrigin: true,
+        secure: false, // if using self-signed certificate
+      }
+    }
   },
   resolve: {
     alias: {

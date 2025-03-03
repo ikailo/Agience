@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { HostDetails } from '../components/hosts/HostDetails';
+import { HostDetails } from '../components/hosts/HostDetails-do_not_use';
 import { HostKeys } from '../components/hosts/HostKeys';
 import { HostPlugins } from '../components/hosts/HostPlugins';
+import { HostDetailsTab } from '../components/hosts/HostDetailsTab';
 
 
 const Hosts = () => {
@@ -55,7 +56,7 @@ const Hosts = () => {
 
       {/* Tab Content */}
       <div className="mt-4">
-        {activeTab === 'details' && <HostDetails />}
+        {activeTab === 'details' && <HostDetailsTab />}
         {activeTab === 'keys' && <HostKeys />}
         {activeTab === 'plugins' && <HostPlugins />}
       </div>
