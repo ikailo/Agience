@@ -85,12 +85,21 @@ namespace Agience.Authority.Identity
             !string.IsNullOrWhiteSpace(WanHost)
                 ? new Uri($"https://{WanHost}:{WanBrokerPort}")
                 : null;
+        
+        [ConfigurationKeyName("MANAGE_UI_CLIENT_ID")]
+        public string? ManageClientId { get; set; }
 
-        //[ConfigurationKeyName("WAN_DATABASE_PORT")]
-        //public int WanDatabasePort { get; set; }
+        [ConfigurationKeyName("MANAGE_UI_CLIENT_SECRET")]
+        public string? ManageClientSecret { get; set; }
 
-        //[ConfigurationKeyName("WAN_MANAGE_PORT")]
-        //public int WanManagePort { get; set; }
+        [ConfigurationKeyName("MANAGE_UI_REDIRECT_URI")]
+        public string? ManageRedirectUri { get; set; }
+
+        [ConfigurationKeyName("MANAGE_UI_LOGOUT_REDIRECT_URI")]
+        public string? ManageLogoutRedirectUri { get; set; }
+
+        [ConfigurationKeyName("MANAGE_UI_ORIGIN_URI")]
+        public string? ManageOriginUri { get; set; }
 
         // WAN Certificate Paths
         [ConfigurationKeyName("WAN_PFX_PATH")]

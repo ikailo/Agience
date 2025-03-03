@@ -301,8 +301,20 @@ internal static class HostingExtensions
                 policy.RequireAuthenticatedUser();
                 policy.RequireRole("host"); // Require the 'host' role
             });
-
         });
+
+        if (!string.IsNullOrEmpty(appConfig.ManageOriginUri))
+        {
+            builder.Services.AddCors(options =>
+                    {
+                        options.AddPolicy("allow-manage-ui", builder =>
+                        {
+                            builder.WithOrigins(appConfig.ManageOriginUri)
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                        });
+                    });
+        }
 
         return builder.Build();
     }
@@ -335,7 +347,7 @@ internal static class HostingExtensions
         }
         */
         app.UseSession();
-
+        app.UseCors("allow-manage-ui");
         app.UseIdentityServer();
         app.UseAuthentication();
 

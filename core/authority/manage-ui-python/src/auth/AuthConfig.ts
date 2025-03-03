@@ -14,10 +14,10 @@ console.log('OAuth Configuration:', {
 export const AuthConfig = {
   authority: env.OIDC_AUTHORITY,
   client_id: env.OIDC_CLIENT_ID,
-  client_secret: env.OIDC_CLIENT_SECRET,
+//  client_secret: env.OIDC_CLIENT_SECRET,
   redirect_uri: env.OIDC_REDIRECT_URI,
   post_logout_redirect_uri: env.OIDC_POST_LOGOUT_REDIRECT_URI,
-  scope: 'openid profile email',
+  scope: 'openid profile email manage',
   response_type: 'code',
   loadUserInfo: true,
   automaticSilentRenew: true,
@@ -33,7 +33,7 @@ export const AuthConfig = {
     client_id: env.OIDC_CLIENT_ID
   },
   extraQueryParams: {
-    access_type: 'offline',
-    prompt: 'consent'
+    access_type: 'offline'//,
+    //prompt: 'consent'
   }
 }; 

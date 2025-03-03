@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserManager } from 'oidc-client-ts';
 import { AuthConfig } from '../auth/AuthConfig';
@@ -6,9 +6,12 @@ import { Loading } from '../components/common/Loading';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
+  const callbackHandled = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      if (callbackHandled.current) return;
+      callbackHandled.current = true;
       const userManager = new UserManager(AuthConfig);
       
       try {
@@ -26,4 +29,4 @@ const AuthCallback = () => {
   return <Loading />;
 };
 
-export default AuthCallback; 
+export default AuthCallback;
