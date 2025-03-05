@@ -11,11 +11,48 @@
         ],
         "problemMatcher": "$msCompile",
         "group": "build"
+      },      
+      {
+        "label": "Agience: Deploy to Docker",
+        "command": "docker-compose",
+        "type": "shell",
+        "args": [
+          "up",
+          "-d"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}/core/authority"
+        }    
       },
       {
-        "label": "Initialize Agience",
+        "label": "npm-start",
         "type": "shell",
-        "command": "dotnet dev-certs https --trust; docker compose up --build -d database-sql; cd identity-api-dotnet; dotnet ef database update",
+        "isBackground": true,
+        "command": "npm run dev", 
+        "problemMatcher": {
+          "owner": "custom",
+          "pattern": {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "> vite",
+            "endsPattern": "ready in"
+          }
+        },       
+        "options": {
+          "cwd": "${workspaceFolder}/core/authority/manage-ui-python"
+        },
+        "args": [],        
+        "group": "build"
+      },
+      {
+        "label": "Agience: Initialize Database",
+        "type": "shell",
+        "command": "docker compose up --build -d database-sql; cd identity-api-dotnet; dotnet ef database update",
         "options": {
           "cwd": "${workspaceFolder}/core/authority",
           "env": {
@@ -26,7 +63,7 @@
         "problemMatcher": []
       },    
       {
-        "label": "Create Agience Migration - Initial",
+        "label": "Agience: Create Initial Migration",
         "type": "shell",
         "command": "dotnet ef migrations add Initial",
         "options": {
