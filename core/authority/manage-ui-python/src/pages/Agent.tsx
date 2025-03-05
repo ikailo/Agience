@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { TabNavigation } from '../components/common/TabNavigation';
 import AgentDetailsTab from '../components/agents/AgentDetailsTab';
 import { AgentPluginsTab } from '../components/agents/AgentPluginsTab';
-import { AgentTopicsTab } from '../components/agents/AgentTopicsTab';
-import { AgentCredentialsTab } from '../components/agents/AgentCredentialsTab';
+import AgentTopicsTab from '../components/agents/AgentTopicsTab';
+import AgentCredentialsTab from '../components/agents/AgentCredentialsTab';
 
 const tabs = [
   { id: 'details', label: 'Details' },
@@ -15,6 +15,7 @@ const tabs = [
 
 /**
  * Agent page component that provides tab navigation for agent configuration
+ * Supports both light and dark modes
  */
 export default function Agent() {
   const [activeTab, setActiveTab] = useState('details');
@@ -37,9 +38,15 @@ export default function Agent() {
 
       <div className="mt-6">
         {activeTab === 'details' && <AgentDetailsTab />}
-        {activeTab === 'plugins' && <AgentPluginsTab agentId={agentId} />}
-        {activeTab === 'topics' && <AgentTopicsTab agentId={agentId} />}
-        {activeTab === 'credentials' && <AgentCredentialsTab agentId={agentId} />}
+        {activeTab === 'plugins' && agentId && <AgentPluginsTab agentId={agentId} />}
+        {activeTab === 'topics' && agentId && <AgentTopicsTab agentId={agentId} />}
+        {activeTab === 'credentials' && agentId && <AgentCredentialsTab agentId={agentId} />}
+        
+        {activeTab !== 'details' && !agentId && (
+          <div className="p-6 bg-white dark:bg-gray-800 rounded-lg text-center shadow-lg">
+            <p className="text-gray-600 dark:text-gray-300">Please select an agent from the Details tab first.</p>
+          </div>
+        )}
       </div>
     </div>
   );

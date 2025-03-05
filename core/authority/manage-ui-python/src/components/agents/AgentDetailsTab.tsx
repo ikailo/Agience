@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { agentService } from '../../services/api/agentService';
+import { hostService } from '../../services/api/hostService';
 import { Agent, AgentFormData } from '../../types/Agent';
+import { Host } from '../../types/Host';
+import AgentList from './AgentList';
+import AgentForm from './AgentForm';
 
 /**
- * AgentDetailsTab component that displays a list of agents and a form to edit agent details
+ * AgentDetailsTab component that orchestrates the agent management UI
  */
 function AgentDetailsTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [hosts, setHosts] = useState<Host[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [formData, setFormData] = useState<AgentFormData>({
@@ -39,6 +44,18 @@ function AgentDetailsTab() {
   };
 
   /**
+   * Fetches all available hosts from the API
+   */
+  const fetchHosts = async () => {
+    try {
+      const hostList = await hostService.getAllHosts();
+      setHosts(hostList);
+    } catch (error) {
+      console.error('Error fetching hosts:', error);
+    }
+  };
+
+  /**
    * Fetches a specific agent's details by ID
    */
   const fetchAgentDetails = async (id: string) => {
@@ -63,9 +80,10 @@ function AgentDetailsTab() {
     }
   };
 
-  // Fetch all agents on component mount
+  // Fetch all agents and hosts on component mount
   useEffect(() => {
     fetchAgents();
+    fetchHosts();
   }, []);
 
   // Fetch agent details when ID changes in URL
@@ -122,7 +140,7 @@ function AgentDetailsTab() {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
     }
   };
 
@@ -175,134 +193,27 @@ function AgentDetailsTab() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      {/* Agent List Section */}
-      <div className="md:col-span-1 bg-gray-900 p-4 rounded-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white">Agent List</h2>
-          <button
-            onClick={handleCreateAgent}
-            className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-          >
-            New Agent
-          </button>
-        </div>
-        
-        {isLoading && agents.length === 0 ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto">
-            {agents.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">No agents found</p>
-            ) : (
-              agents.map(agent => (
-                <div
-                  key={agent.id}
-                  onClick={() => handleSelectAgent(agent.id)}
-                  className={`p-3 rounded cursor-pointer transition-colors ${
-                    selectedAgent?.id === agent.id
-                      ? 'bg-indigo-700 text-white'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  <div className="font-medium">{agent.name}</div>
-                  <div className="text-sm text-gray-400 truncate">
-                    {agent.description}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="lg:col-span-1">
+        <AgentList
+          agents={agents}
+          selectedAgentId={selectedAgent?.id || null}
+          isLoading={isLoading}
+          onSelectAgent={handleSelectAgent}
+          onCreateAgent={handleCreateAgent}
+        />
       </div>
-
-      {/* Agent Details Form Section */}
-      <div className="md:col-span-3">
-        <div className="bg-gray-800 p-6 rounded-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name Field */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {/* Description Field */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
-                Description
-              </label>
-              <input
-                type="text"
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {/* Persona Field */}
-            <div>
-              <label htmlFor="persona" className="block text-sm font-medium text-gray-300 mb-1">
-                Persona
-              </label>
-              <textarea
-                id="persona"
-                name="persona"
-                value={formData.persona || ''}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {/* Enabled Checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="is_enabled"
-                name="is_enabled"
-                checked={formData.is_enabled}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded"
-              />
-              <label htmlFor="is_enabled" className="ml-2 block text-sm text-gray-300">
-                Enabled
-              </label>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="mt-6 flex space-x-4">
-            <button
-              onClick={handleSave}
-              disabled={isLoading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
-            {selectedAgent && (
-              <button
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {isLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            )}
-          </div>
-        </div>
+      
+      <div className="lg:col-span-3">
+        <AgentForm
+          formData={formData}
+          selectedAgent={selectedAgent}
+          isLoading={isLoading}
+          hosts={hosts}
+          onChange={handleInputChange}
+          onSave={handleSave}
+          onDelete={handleDelete}
+        />
       </div>
     </div>
   );

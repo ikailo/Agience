@@ -2,7 +2,7 @@ export interface Topic {
   id: string;
   name: string;
   description: string;
-  created_date: string;
+  created_date?: string;
 }
 
 export interface TopicFormData {
