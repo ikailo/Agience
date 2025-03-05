@@ -6,13 +6,32 @@ import { Topic, TopicFormData } from '../../types/Topic';
  */
 export const topicService = {
   /**
+   * Fetches all topics from the API
+   * @returns Promise containing an array of Topic objects
+   */
+  getAllTopics: async (): Promise<Topic[]> => {
+    try {
+      const response = await apiClient.get<Topic[]>('/manage/topics');
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+      console.error('Error fetching topics:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Creates a new topic
    * @param topicData - The topic data to create
    * @returns Promise containing the created Topic object
    */
   createTopic: async (topicData: TopicFormData): Promise<Topic> => {
     try {
-      const response = await apiClient.post<Topic>('/manage/topic', topicData);
+      const requestData = {
+        name: topicData.name,
+        description: topicData.description
+      };
+      
+      const response = await apiClient.post<Topic>('/manage/topic', requestData);
       return response.data;
     } catch (error) {
       console.error('Error creating topic:', error);
@@ -28,10 +47,13 @@ export const topicService = {
    */
   updateTopic: async (id: string, topicData: TopicFormData): Promise<Topic> => {
     try {
-      const response = await apiClient.put<Topic>(`/manage/topic/${id}`, {
-        id,
-        ...topicData
-      });
+      const requestData = {
+        id: id,
+        name: topicData.name,
+        description: topicData.description
+      };
+      
+      const response = await apiClient.put<Topic>(`/manage/topic/${id}`, requestData);
       return response.data;
     } catch (error) {
       console.error(`Error updating topic with ID ${id}:`, error);
@@ -54,21 +76,7 @@ export const topicService = {
   },
 
   /**
-   * Fetches all topics from the API
-   * @returns Promise containing an array of Topic objects
-   */
-  getAllTopics: async (): Promise<Topic[]> => {
-    try {
-      const response = await apiClient.get<Topic[]>('/manage/topics');
-      return Array.isArray(response.data) ? response.data : [];
-    } catch (error) {
-      console.error('Error fetching topics:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Fetches a single topic by ID
+   * Fetches a specific topic by ID
    * @param id - The ID of the topic to fetch
    * @returns Promise containing the Topic object
    */

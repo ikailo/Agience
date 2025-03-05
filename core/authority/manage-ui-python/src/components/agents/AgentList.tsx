@@ -1,554 +1,87 @@
-import { useState, useEffect } from 'react';
-import { Agent, AgentFormData } from '../../types/Agent';
-import { agentService } from '../../services/api/agentService';
-import { hostService } from '../../services/api/hostService';
-import { Host } from '../../types/Host';
-import { Button } from '../common/Button';
-import { AgentModal } from './AgentModal';
+import React from 'react';
+import { Agent } from '../../types/Agent';
+import AgentCard from './AgentCard';
 
 interface AgentListProps {
+  agents: Agent[];
+  selectedAgentId: string | null;
+  isLoading: boolean;
   onSelectAgent: (id: string) => void;
-  onDeleteSuccess?: () => void;
+  onCreateAgent: () => void;
 }
 
-export const AgentList: React.FC<AgentListProps> = ({ 
+/**
+ * AgentList component that displays a list of agents
+ */
+const AgentList: React.FC<AgentListProps> = ({
+  agents,
+  selectedAgentId,
+  isLoading,
   onSelectAgent,
-  onDeleteSuccess 
+  onCreateAgent
 }) => {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [hosts, setHosts] = useState<Record<string, Host>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Edit modal state
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [agentToEdit, setAgentToEdit] = useState<Agent | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Fetch agents and hosts when component mounts
-  useEffect(() => {
-    fetchAgents();
-    fetchHosts();
-  }, []);
-
-  // Function to fetch all agents
-  const fetchAgents = async () => {
-    try {
-      setIsLoading(true);
-      const agentsData = await agentService.getAllAgents();
-      console.log('Agents data:', agentsData);
-      setAgents(agentsData);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching agents:', err);
-      setError('Failed to load agents. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Function to fetch all hosts and create a lookup map
-  const fetchHosts = async () => {
-    try {
-      const hostsData = await hostService.getAllHosts();
-      
-      // Create a map of host ID to host object for easy lookup
-      const hostsMap: Record<string, Host> = {};
-      hostsData.forEach(host => {
-        hostsMap[host.id] = host;
-      });
-      
-      setHosts(hostsMap);
-    } catch (err) {
-      console.error('Error fetching hosts:', err);
-    }
-  };
-
-
-  // Function to display host information
-  const displayHostInfo = (hostId: string | null): string => {
-    if (!hostId) return 'No host';
-    return hosts[hostId]?.name || 'Unknown host';
-  };
-
-  // Function to open delete confirmation
-  const handleDeleteClick = (agent: Agent, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the row click
-    setAgentToDelete(agent);
-    setIsDeleteConfirmOpen(true);
-  };
-
-  // Function to handle deleting an agent
-  const handleDeleteAgent = async () => {
-    if (!agentToDelete) return;
-    
-    try {
-      setIsDeleting(true);
-      setError(null);
-      
-      await agentService.deleteAgent(agentToDelete.id);
-      
-      // Show success message
-      setSuccessMessage('Agent deleted successfully!');
-      
-      // Refresh the agents list
-      fetchAgents();
-      
-      // Call the onDeleteSuccess callback if provided
-      if (onDeleteSuccess) {
-        onDeleteSuccess();
-      }
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      
-    } catch (err) {
-      console.error('Error deleting agent:', err);
-      setError('Failed to delete agent. Please try again.');
-    } finally {
-      setIsDeleting(false);
-      setIsDeleteConfirmOpen(false);
-      setAgentToDelete(null);
-    }
-  };
-
-  // Function to open edit modal
-  const handleEditClick = (agent: Agent, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent triggering the row click
-    setAgentToEdit(agent);
-    setIsEditModalOpen(true);
-  };
-
-  // Function to handle updating an agent
-  const handleUpdateAgent = async (formData: AgentFormData): Promise<void> => {
-    if (!agentToEdit) return;
-    
-    try {
-      // Make sure we're sending the correct data format with proper naming convention
-      await agentService.updateAgent(agentToEdit.id, {
-        name: formData.name,
-        description: formData.description,
-        persona: formData.persona || null,
-        hostId: formData.hostId || null,
-        executiveFunctionId: formData.executiveFunctionId || null,
-        is_enabled: formData.is_enabled
-      });
-      
-      // Show success message
-      setSuccessMessage('Agent updated successfully!');
-      
-      // Refresh the agents list
-      fetchAgents();
-      
-      // Close the modal
-      setIsEditModalOpen(false);
-      setAgentToEdit(null);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      
-      // Reload the page to see the updates
-      window.location.reload();
-      
-    } catch (err) {
-      console.error('Error updating agent:', err);
-      setError('Failed to update agent. Please try again.');
-    }
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Success message */}
-      {successMessage && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-4 animate-fadeIn">
-          <p className="text-green-600 dark:text-green-400">{successMessage}</p>
-        </div>
-      )}
-
-      {/* Error message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {isEditModalOpen && agentToEdit && (
-        <AgentModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={handleUpdateAgent}
-          initialData={{
-            name: agentToEdit.name,
-            description: agentToEdit.description,
-            persona: agentToEdit.persona,
-            hostId: agentToEdit.hostId,
-            executiveFunctionId: agentToEdit.executiveFunctionId,
-            is_enabled: agentToEdit.is_enabled
-          }}
-          isEditing={true}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteConfirmOpen && agentToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Confirm Delete
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                Are you sure you want to delete the agent "{agentToDelete.name}"? This action cannot be undone.
-              </p>
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setIsDeleteConfirmOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  onClick={handleDeleteAgent}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg h-full">
+      <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Agent List</h2>
+        <button
+          onClick={onCreateAgent}
+          className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span>New Agent</span>
+        </button>
+      </div>
       
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 dark:border-purple-400"></div>
+      {/* Search box - Uncomment if needed */}
+      {/* <div className="relative mb-4">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
-      ) : agents.length > 0 ? (
-        <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-          {/* Desktop view */}
-          <div className="hidden sm:block">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Agent
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Host
-                  </th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {agents.map((agent) => (
-                  <tr 
-                    key={agent.id} 
-                    onClick={() => onSelectAgent(agent.id)}
-                    className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <img 
-                            className="h-10 w-10 rounded-full object-cover border border-gray-200 dark:border-gray-700" 
-                            src={agent.imageUrl || '/astra-avatar.png'} 
-                            alt={agent.name} 
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {agent.name}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                            <svg 
-                              className="mr-1 h-3 w-3 text-gray-400 dark:text-gray-500" 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              fill="none" 
-                              viewBox="0 0 24 24" 
-                              stroke="currentColor"
-                            >
-                              <path 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round" 
-                                strokeWidth={2} 
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                              />
-                            </svg>
-                            {new Date(agent.created_date).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {agent.description ? (
-                          agent.description.length > 100 
-                            ? `${agent.description.substring(0, 100)}...` 
-                            : agent.description
-                        ) : (
-                          <span className="text-gray-500 dark:text-gray-400 italic">No description provided</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-2">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          agent.is_enabled 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                        }`}>
-                          {agent.is_enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                        {agent.is_connected && (
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            Connected
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="flex items-center">
-                        <svg 
-                          className="mr-1.5 h-4 w-4 text-gray-400 dark:text-gray-500" 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
-                            d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" 
-                          />
-                        </svg>
-                        {displayHostInfo(agent.hostId)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        onClick={(e) => handleEditClick(agent, e)}
-                        className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors mr-4"
-                      >
-                        <span className="flex items-center">
-                          <svg 
-                            className="mr-1 h-4 w-4" 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
-                            />
-                          </svg>
-                          Edit
-                        </span>
-                      </button>
-                      <button 
-                        onClick={(e) => handleDeleteClick(agent, e)}
-                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                      >
-                        <span className="flex items-center">
-                          <svg 
-                            className="mr-1 h-4 w-4" 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                          >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                            />
-                          </svg>
-                          Delete
-                        </span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile view */}
-          <div className="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
-            {agents.map((agent) => (
-              <div 
-                key={agent.id} 
-                className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                onClick={() => onSelectAgent(agent.id)}
-              >
-                <div className="flex items-center mb-3">
-                  <img 
-                    className="h-12 w-12 rounded-full object-cover border border-gray-200 dark:border-gray-700 mr-4" 
-                    src={agent.imageUrl || '/astra-avatar.png'} 
-                    alt={agent.name} 
-                  />
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">{agent.name}</h3>
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      <svg 
-                        className="mr-1 h-3 w-3 text-gray-400 dark:text-gray-500" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-                        />
-                      </svg>
-                      Created: {new Date(agent.created_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-                
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                  {agent.description ? (
-                    agent.description.length > 120 
-                      ? `${agent.description.substring(0, 120)}...` 
-                      : agent.description
-                  ) : (
-                    <span className="italic">No description provided</span>
-                  )}
-                </p>
-                
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        agent.is_enabled 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                      }`}>
-                        {agent.is_enabled ? 'Enabled' : 'Disabled'}
-                      </span>
-                      {agent.is_connected && (
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          Connected
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                      <svg 
-                        className="mr-1 h-3 w-3 text-gray-400 dark:text-gray-500" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" 
-                        />
-                      </svg>
-                      Host: {displayHostInfo(agent.hostId)}
-                    </div>
-                  </div>
-                  <div className="flex flex-col space-y-2">
-                    <button 
-                      onClick={(e) => handleEditClick(agent, e)}
-                      className="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors text-sm flex items-center justify-end"
-                    >
-                      <svg 
-                        className="mr-1 h-4 w-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" 
-                        />
-                      </svg>
-                      Edit
-                    </button>
-                    <button 
-                      onClick={(e) => handleDeleteClick(agent, e)}
-                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors text-sm flex items-center justify-end"
-                    >
-                      <svg 
-                        className="mr-1 h-4 w-4" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
-                        />
-                      </svg>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <input
+          type="text"
+          placeholder="Search agents..."
+          className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div> */}
+      
+      {isLoading && agents.length === 0 ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center border border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col items-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={1.5} 
-                d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" 
+        <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-1 sm:max-h-[500px]">
+          {agents.length === 0 ? (
+            <div className="text-center py-8 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v5.8a2.25 2.25 0 01-2.25 2.25H6.75a2.25 2.25 0 01-2.25-2.25V8.25a2.25 2.25 0 011.5-2.25m7.5 0a15.645 15.645 0 013-1.3m-3 1.3a15.65 15.65 0 00-3 1.3m0 0h3" />
+              </svg>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">No agents found</p>
+              <button
+                onClick={onCreateAgent}
+                className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                Create your first agent
+              </button>
+            </div>
+          ) : (
+            agents.map(agent => (
+              <AgentCard
+                key={agent.id}
+                agent={agent}
+                isSelected={agent.id === selectedAgentId}
+                onSelect={onSelectAgent}
               />
-            </svg>
-            <p className="text-gray-600 dark:text-gray-300 text-lg">
-              No agents configured yet
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
-              Create your first agent using the form
-            </p>
-          </div>
+            ))
+          )}
         </div>
       )}
     </div>
   );
-}; 
+};
+
+export default AgentList; 

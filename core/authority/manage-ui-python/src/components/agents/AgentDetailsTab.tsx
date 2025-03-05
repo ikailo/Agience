@@ -1,147 +1,222 @@
-import { useState, useEffect } from 'react';
-import { AgentDetailsForm, AgentFormData } from './AgentDetailsForm';
-import { AgentList } from './AgentList';
-import { Agent } from '../../types/Agent';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { agentService } from '../../services/api/agentService';
+import { hostService } from '../../services/api/hostService';
+import { Agent, AgentFormData } from '../../types/Agent';
+import { Host } from '../../types/Host';
+import AgentList from './AgentList';
+import AgentForm from './AgentForm';
 
-interface AgentDetailsTabProps {
-  selectedAgent: Agent | null;
-  onSelectAgent: (id: string) => void;
-  onSave: (data: AgentFormData) => void;
-  onDelete: () => void;
-}
+/**
+ * AgentDetailsTab component that orchestrates the agent management UI
+ */
+function AgentDetailsTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [formData, setFormData] = useState<AgentFormData>({
+    name: '',
+    description: '',
+    persona: null,
+    hostId: null,
+    executiveFunctionId: null,
+    is_enabled: false
+  });
 
-export const AgentDetailsTab: React.FC<AgentDetailsTabProps> = ({
-  selectedAgent,
-  onSelectAgent,
-  onSave,
-  onDelete,
-}) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [currentAgent, setCurrentAgent] = useState<Agent | null>(null);
+  // Get agent ID from URL if available
+  const agentId = searchParams.get('id');
 
-  // Update current agent when selectedAgent changes
-  useEffect(() => {
-    setCurrentAgent(selectedAgent);
-  }, [selectedAgent]);
-
-  // Convert API agent data to form data format if an agent is selected
-  const getInitialFormData = (): AgentFormData | undefined => {
-    if (!currentAgent) return undefined;
-    
-    return {
-      name: currentAgent.name,
-      description: currentAgent.description,
-      persona: currentAgent.persona,
-      hostId: currentAgent.hostId,
-      executiveFunctionId: currentAgent.executiveFunctionId,
-      is_enabled: currentAgent.is_enabled,
-      imagePreview: currentAgent.imageUrl,
-    };
-  };
-
-  // Handle form submission
-  const handleSaveAgent = async (formData: AgentFormData) => {
+  /**
+   * Fetches all available agents from the API
+   */
+  const fetchAgents = async () => {
     try {
       setIsLoading(true);
-      setError(null);
+      const agentList = await agentService.getAllAgents();
+      setAgents(agentList);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Fetches all available hosts from the API
+   */
+  const fetchHosts = async () => {
+    try {
+      const hostList = await hostService.getAllHosts();
+      setHosts(hostList);
+    } catch (error) {
+      console.error('Error fetching hosts:', error);
+    }
+  };
+
+  /**
+   * Fetches a specific agent's details by ID
+   */
+  const fetchAgentDetails = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const agent = await agentService.getAgentById(id);
+      setSelectedAgent(agent);
       
-      if (currentAgent) {
+      // Update form data with agent details
+      setFormData({
+        name: agent.name,
+        description: agent.description,
+        persona: agent.persona,
+        hostId: agent.hostId,
+        executiveFunctionId: agent.executiveFunctionId,
+        is_enabled: agent.is_enabled
+      });
+    } catch (error) {
+      console.error('Error fetching agent details:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch all agents and hosts on component mount
+  useEffect(() => {
+    fetchAgents();
+    fetchHosts();
+  }, []);
+
+  // Fetch agent details when ID changes in URL
+  useEffect(() => {
+    if (agentId) {
+      fetchAgentDetails(agentId);
+    } else {
+      setSelectedAgent(null);
+      // Reset form data when no agent is selected
+      setFormData({
+        name: '',
+        description: '',
+        persona: null,
+        hostId: null,
+        executiveFunctionId: null,
+        is_enabled: false
+      });
+    }
+  }, [agentId]);
+
+  /**
+   * Handles selecting an agent from the list
+   */
+  const handleSelectAgent = (id: string) => {
+    // Update URL with selected agent ID
+    setSearchParams({ id });
+  };
+
+  /**
+   * Handles creating a new agent
+   */
+  const handleCreateAgent = () => {
+    // Clear form data and selected agent
+    setFormData({
+      name: '',
+      description: '',
+      persona: null,
+      hostId: null,
+      executiveFunctionId: null,
+      is_enabled: false
+    });
+    setSelectedAgent(null);
+    setSearchParams({});
+  };
+
+  /**
+   * Handles form input changes
+   */
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
+    }
+  };
+
+  /**
+   * Handles saving agent data
+   */
+  const handleSave = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (selectedAgent) {
         // Update existing agent
-        await agentService.updateAgent(currentAgent.id, formData);
-        setSuccessMessage('Agent updated successfully!');
+        await agentService.updateAgent(selectedAgent.id, formData);
       } else {
         // Create new agent
-        await agentService.createAgent(formData);
-        setSuccessMessage('Agent created successfully!');
+        const newAgent = await agentService.createAgent(formData);
+        setSearchParams({ id: newAgent.id });
       }
       
-      // Call the parent's onSave handler
-      onSave(formData);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      
-    } catch (err) {
-      console.error('Error saving agent:', err);
-      setError(`Failed to ${currentAgent ? 'update' : 'create'} agent. Please try again.`);
+      // Refresh agent list
+      fetchAgents();
+    } catch (error) {
+      console.error('Error saving agent:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle deleting the current agent
-  const handleDeleteAgent = async () => {
-    if (!currentAgent) return;
+  /**
+   * Handles deleting an agent
+   */
+  const handleDelete = async () => {
+    if (!selectedAgent) return;
     
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      await agentService.deleteAgent(currentAgent.id);
-      
-      setSuccessMessage('Agent deleted successfully!');
-      setCurrentAgent(null);
-      
-      // Call the parent's onDelete handler
-      onDelete();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
-      
-    } catch (err) {
-      console.error('Error deleting agent:', err);
-      setError('Failed to delete agent. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle successful deletion from the list
-  const handleDeleteSuccess = () => {
-    // If the deleted agent was the currently selected one, clear it
-    if (currentAgent && !agentService.getAgentById(currentAgent.id).then) {
-      setCurrentAgent(null);
-      onDelete();
+    if (window.confirm(`Are you sure you want to delete agent "${selectedAgent.name}"?`)) {
+      try {
+        setIsLoading(true);
+        await agentService.deleteAgent(selectedAgent.id);
+        
+        // Clear selection and refresh list
+        setSelectedAgent(null);
+        setSearchParams({});
+        fetchAgents();
+      } catch (error) {
+        console.error('Error deleting agent:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div>
-        {/* Success message */}
-        {successMessage && (
-          <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-4">
-            <p className="text-green-600 dark:text-green-400">{successMessage}</p>
-          </div>
-        )}
-
-        {/* Error message */}
-        {error && (
-          <div className="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
-
-        <AgentDetailsForm
-          initialData={getInitialFormData()}
-          onSave={handleSaveAgent}
-          onDelete={handleDeleteAgent}
-          isEditing={!!currentAgent}
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="lg:col-span-1">
+        <AgentList
+          agents={agents}
+          selectedAgentId={selectedAgent?.id || null}
+          isLoading={isLoading}
+          onSelectAgent={handleSelectAgent}
+          onCreateAgent={handleCreateAgent}
         />
       </div>
-      <div className="mt-8 lg:mt-0">
-        <AgentList 
-          onSelectAgent={onSelectAgent} 
-          onDeleteSuccess={handleDeleteSuccess}
+      
+      <div className="lg:col-span-3">
+        <AgentForm
+          formData={formData}
+          selectedAgent={selectedAgent}
+          isLoading={isLoading}
+          hosts={hosts}
+          onChange={handleInputChange}
+          onSave={handleSave}
+          onDelete={handleDelete}
         />
       </div>
     </div>
   );
-}; 
+}
+
+export default AgentDetailsTab;
