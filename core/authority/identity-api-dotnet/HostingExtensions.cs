@@ -261,7 +261,7 @@ internal static class HostingExtensions
                    {
                        Console.WriteLine("Authentication failed: " + context.Exception.Message);
                        return Task.CompletedTask;
-                   },
+                   }/*,
                    OnChallenge = context =>
                    {
                        if (!context.Response.HasStarted)
@@ -277,7 +277,7 @@ internal static class HostingExtensions
                            return context.Response.WriteAsJsonAsync(errorResponse);
                        }
                        return Task.CompletedTask;
-                   }
+                   }*/
                };
            });
 

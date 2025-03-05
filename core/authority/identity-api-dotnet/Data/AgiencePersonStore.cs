@@ -1,5 +1,4 @@
-﻿using Agience.Authority.Identity.Data.Adapters;
-using Agience.Authority.Identity.Data.Repositories;
+﻿using Agience.Authority.Identity.Data.Repositories;
 using Agience.Authority.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 

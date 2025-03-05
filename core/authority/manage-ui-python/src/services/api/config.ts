@@ -1,29 +1,28 @@
+import { UserManager } from 'oidc-client-ts';
+import { AuthConfig } from '../../auth/AuthConfig';
 import axios from 'axios';
 
-// Create axios instance with default config
+const userManager = new UserManager(AuthConfig);
+
+// Create axios instance
 export const apiClient = axios.create({
-baseURL: import.meta.env.VITE_MANAGE_UI_ORIGIN_URI || 'https://localhost:5002',
+  baseURL: import.meta.env.VITE_AUTHORITY_PUBLIC_URI || 'https://localhost:5001',
   headers: {
     'Content-Type': 'application/json',
   },
 });
-// Add request interceptor for auth headers
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+
+// Add an async request interceptor to retrieve the token from OIDC client
+apiClient.interceptors.request.use(async (config) => {
+  try {
+    const user = await userManager.getUser();
+    if (user && user.access_token) {
+      config.headers.Authorization = `Bearer ${user.access_token}`;
+    }
+  } catch (error) {
+    console.error('Error retrieving user from OIDC client', error);
   }
   return config;
 });
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-); 
+
+export default apiClient;

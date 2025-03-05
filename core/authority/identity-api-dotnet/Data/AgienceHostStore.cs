@@ -38,6 +38,12 @@ namespace Agience.Authority.Identity.Data
                     AccessTokenLifetime = 3600, // Token valid for 1 hour
                     AlwaysIncludeUserClaimsInIdToken = true,
                     EnableLocalLogin = false,
+                    Claims = new List<ClientClaim> {
+                    new ClientClaim(JwtClaimTypes.Role, "host"),
+                    new ClientClaim("authority_id", _appConfig.AuthorityPublicUri ?? throw new ArgumentNullException(nameof(_appConfig.AuthorityPublicUri))),
+                    new ClientClaim("host_id", _appConfig.ManageClientId)
+                }
+                    
                 };
             }
 

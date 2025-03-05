@@ -10,15 +10,15 @@ export interface Agent {
   description: string;
   persona: string | null;
   is_enabled: boolean;
-  executive_function_id: string | null;
-  auto_start_function_id: string | null;
-  on_auto_start_function_complete: number | null;
-  host_id: string | null;
+  executiveFunctionId: string | null;
+  autoStartFunctionId: string | null;
+  onAutoStartFunctionComplete: number | null;
+  hostId: string | null;
   owner_id: string;
   owner: Owner;
   created_date: string;
-  executive_function: any | null;
-  auto_start_function: any | null;
+  executiveFunction: any | null;
+  autoStartFunction: any | null;
   host: any | null;
   is_connected: boolean;
   topics: any[];
@@ -30,8 +30,8 @@ export interface AgentFormData {
   name: string;
   description: string;
   persona: string | null;
-  host_id: string | null;
-  executive_function_id: string | null;
+  hostId: string | null;
+  executiveFunctionId: string | null;
   is_enabled: boolean;
   image?: File;
 } 
