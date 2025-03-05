@@ -1,8 +1,15 @@
 {
     "version": "0.2.0",
     "configurations": [        
+      {
+        "name": "Launch Chrome",
+        "request": "launch",
+        "type": "chrome",
+        "url": "http://localhost:8080",
+        "webRoot": "${workspaceFolder}"
+      },
         {
-            "name": "Identity",
+            "name": "Identity (External)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-identity",
@@ -13,15 +20,24 @@
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Debug",
                 "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
-                "ENV_FILE_NAME": ".env"
+                "ENV_FILE_NAME": ".env",
+                "LAN_EXTERNAL_AUTHORITY": "true"
             }
-        }        
+        },
+        {
+          "name": "Manage",
+          "type": "chrome",
+          "request": "launch",
+          "url": "https://localhost:5002",
+          "webRoot": "${workspaceFolder}/core/authority/manage-ui-python",
+          "preLaunchTask": "npm-start"
+        }           
     ],
     "compounds": [
       {
-        "name": "Launch All",
+        "name": "Identity",
         "configurations": [          
-          "Identity",
+          "Identity (External)",
         ]
       }
     ]
