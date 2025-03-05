@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build-identity",
+        "command": "dotnet",
+        "type": "process",
+        "args": [
+          "build",
+          "${workspaceFolder}/core/authority/identity-api-dotnet/Agience.Authority.Identity.csproj"
+        ],
+        "problemMatcher": "$msCompile",
+        "group": "build"
+      },
+      {
+        "label": "Initialize Agience",
+        "type": "shell",
+        "command": "dotnet dev-certs https --trust; docker compose up --build -d database-sql; cd identity-api-dotnet; dotnet ef database update",
+        "options": {
+          "cwd": "${workspaceFolder}/core/authority",
+          "env": {
+            "EF_MIGRATION": "TRUE",
+            "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env"
+          }
+        },
+        "problemMatcher": []
+      },    
+      {
+        "label": "Create Agience Migration - Initial",
+        "type": "shell",
+        "command": "dotnet ef migrations add Initial",
+        "options": {
+          "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet",
+          "env": {
+            "EF_MIGRATION": "TRUE",
+            "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env"
+          }
+        },
+        "problemMatcher": []
+      }
+    ]
+  }

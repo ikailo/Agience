@@ -10,7 +10,16 @@ export const useAuth = () => {
       setIsLoading(true);
       setError(null);
       const response = await authService.login(credentials);
-      localStorage.setItem('token', response.token);
+      
+      console.log('Login response:', response); // Check what you get here
+
+      if (response.token) {
+        localStorage.setItem('token', response.token);
+        //console.log('Token set in localStorage:', response.token);
+      } else {
+        console.error('No token returned in response');
+      }
+
       return response;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
