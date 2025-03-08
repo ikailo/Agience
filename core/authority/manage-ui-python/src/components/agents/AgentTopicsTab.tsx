@@ -13,7 +13,6 @@ interface AgentTopicsTabProps {
 
 /**
  * AgentTopicsTab component that displays and manages topics for an agent
- * Supports both light and dark modes
  */
 function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
   const [agent, setAgent] = useState<Agent | null>(null);

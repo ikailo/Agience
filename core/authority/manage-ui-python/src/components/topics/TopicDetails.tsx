@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../common/Button';
-import { TopicTable } from './TopicTable';
+import Button from '../common/Button';
 import { TopicModal } from './TopicModal';
 import { topicService } from '../../services/api/topicService';
 import { Topic, TopicFormData } from '../../types/Topic';
+import TopicTable from './TopicTable';
 
 export const TopicDetails = () => {
   const [topics, setTopics] = useState<Topic[]>([]);

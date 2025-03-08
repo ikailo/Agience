@@ -9,7 +9,6 @@ interface PluginCardProps {
 
 /**
  * PluginCard component that displays an individual plugin with toggle functionality
- * Supports both light and dark modes and is mobile responsive
  */
 const PluginCard: React.FC<PluginCardProps> = ({ plugin, isAssigned, onToggle }) => {
   const getProviderBadgeColor = (provider: string) => {

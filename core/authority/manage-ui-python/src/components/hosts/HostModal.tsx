@@ -102,7 +102,7 @@ export const HostModal: React.FC<HostModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error saving host:', error);
-      // You could add error handling here, e.g., display an error message
+      //TODO: include error handling here, e.g., display an error message
     } finally {
       setIsSaving(false);
     }
@@ -163,7 +163,6 @@ export const HostModal: React.FC<HostModalProps> = ({
                 )}
               </div>
               
-              {/* Note: operatorId field is removed from the UI but still included in the form data */}
             </div>
             
             {/* Action Buttons */}

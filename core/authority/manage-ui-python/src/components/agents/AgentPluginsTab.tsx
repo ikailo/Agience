@@ -61,9 +61,22 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId }) => 
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchAgentDetails();
-    fetchAssignedPlugins();
-    fetchAvailablePlugins();
+    let isMounted = true; // Track if the component is mounted
+
+    const fetchData = async () => {
+      if (isMounted) {
+        await fetchAgentDetails();
+        await fetchAssignedPlugins();
+        await fetchAvailablePlugins();
+      }
+    };
+
+    fetchData();
+
+    // Cleanup function to set isMounted to false when the component unmounts
+    return () => {
+      isMounted = false;
+    };
   }, [agentId]);
 
   /**
@@ -123,7 +136,8 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId }) => 
     <div className="space-y-6">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {agent ? `Plugins for ${agent.name}` : 'Agent Plugins'}
+          {agent ? `Plugins for ` : 'Agent Plugins'}
+          {agent && <span className="dark:text-indigo-500 font-bold text-xl text-indigo-700">{agent.name}</span>}
         </h2>
       </div>
 
