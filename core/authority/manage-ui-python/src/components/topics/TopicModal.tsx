@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../common/Button';
+import Button  from '../common/Button';
 import { TopicFormData } from '../../types/Topic';
 
 interface TopicModalProps {

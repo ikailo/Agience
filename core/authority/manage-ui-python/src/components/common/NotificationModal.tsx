@@ -78,7 +78,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
-      <div className={`max-w-md w-full rounded-lg shadow-xl overflow-hidden transform transition-all duration-300 ${styles.bgColor} border ${styles.borderColor}`}>
+      <div className={`max-w-md w-full rounded-lg shadow-xl overflow-hidden transform transition-all duration-300 ${styles.bgColor} border bg-opacity-0 ${styles.borderColor}`}>
         <div className="p-6">
           <div className="flex items-start mb-4">
             <div className="flex-shrink-0">
