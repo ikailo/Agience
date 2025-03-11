@@ -24,7 +24,8 @@ export const HostModal: React.FC<HostModalProps> = ({
   const [formData, setFormData] = useState<HostFormData>({
     name: '',
     description: '',
-    operatorId: user?.profile?.sub || '', // Set operatorId from the authenticated user
+    operatorId: user?.profile?.sub || '',
+    scopes: ["connect"], // Set operatorId from the authenticated user
   });
   
   // Form validation state
@@ -47,6 +48,7 @@ export const HostModal: React.FC<HostModalProps> = ({
         name: '',
         description: '',
         operatorId: user?.profile?.sub || '',
+        scopes: [""]
       });
     }
   }, [initialData, user]);
@@ -98,6 +100,7 @@ export const HostModal: React.FC<HostModalProps> = ({
       await onSave({
         ...formData,
         operatorId: formData.operatorId || user?.profile?.sub || '',
+        scopes: ["connect"]
       });
       onClose();
     } catch (error) {

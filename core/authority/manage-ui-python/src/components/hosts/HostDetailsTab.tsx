@@ -161,7 +161,8 @@ export const HostDetailsTab: React.FC = () => {
         initialData={selectedHost ? {
           name: selectedHost.name,
           description: selectedHost.description,
-          operatorId: selectedHost.operatorId
+          operatorId: selectedHost.operatorId,
+          scopes: selectedHost.scopes
         } : undefined}
         isEditing={isEditing}
       />

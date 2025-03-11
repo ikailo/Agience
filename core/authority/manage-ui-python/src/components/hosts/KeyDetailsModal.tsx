@@ -54,15 +54,15 @@ const KeyDetailsModal: React.FC<KeyDetailsModalProps> = ({
             <div className="flex">
               <input
                 type="text"
-                value={keyData.id}
+                value={keyData.hostId}
                 readOnly
                 className="flex-grow px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md text-gray-900 dark:text-white focus:outline-none"
               />
               <button
-                onClick={() => copyToClipboard(keyData.id, 'id')}
+                onClick={() => copyToClipboard(keyData.hostId, 'hostId')}
                 className="px-3 py-2 bg-indigo-600 text-white rounded-r-md hover:bg-indigo-700 transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none"
               >
-                {copiedField === 'id' ? (
+                {copiedField === 'hostId' ? (
                   <span className="flex items-center">
                     <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -115,7 +115,7 @@ const KeyDetailsModal: React.FC<KeyDetailsModalProps> = ({
                 </button>
               </div>
               <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-                Important: This is the only time you will see the Id and Secret. Please copy it now.
+                Important: This is the only time you will see the Host ID and Secret. Please copy them now.
               </p>
             </div>
           )}

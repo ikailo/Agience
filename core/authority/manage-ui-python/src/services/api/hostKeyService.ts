@@ -78,8 +78,8 @@ export const hostKeyService = {
       console.log(`Using API endpoint: ${endpoint}`);
       
       const response = await apiClient.get<ApiKey[]>(endpoint);
-      console.log('API Response status:', response.status);
-      console.log('API Response data type:', typeof response.data);
+      // console.log('API Response status:', response.status);
+      // console.log('API Response data type:', typeof response.data);
       
       const keys = Array.isArray(response.data) ? response.data : [];
       console.log('Raw keys data:', keys);

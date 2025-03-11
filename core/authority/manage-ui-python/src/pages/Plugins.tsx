@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TabNavigation } from '../components/common/TabNavigation';
 import PluginDetailsTab from '../components/plugins/PluginDetailsTab';
