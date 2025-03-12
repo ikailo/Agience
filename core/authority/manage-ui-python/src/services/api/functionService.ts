@@ -53,7 +53,6 @@ export const functionService = {
    */
   getExecutiveFunctions: async (): Promise<Function[]> => {
     try {
-      // This endpoint might need to be adjusted based on your API
       const response = await apiClient.get<Function[]>('/manage/functions/executive');
       
       // Check if response.data is an array

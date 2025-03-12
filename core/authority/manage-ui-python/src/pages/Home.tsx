@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Button } from '../components/common/Button';
-
+ import Button  from '../components/common/Button';
+ 
 export default function Home() {
   return (
     <div className="h-[calc(100vh-4rem)] flex items-center justify-center px-4">
@@ -31,6 +31,7 @@ export default function Home() {
             >
               Get Started
             </Button>
+            {/* <button className="text-lg px-8 py-3 font-semibold">Get Started</button> */}
           </Link>
         </div>
       </div>

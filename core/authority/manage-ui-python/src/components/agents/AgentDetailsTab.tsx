@@ -16,6 +16,7 @@ function AgentDetailsTab() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [tempAgentId, setTempAgentId] = useState<string | null>(null);
   const [formData, setFormData] = useState<AgentFormData>({
     name: '',
     description: '',
@@ -56,11 +57,10 @@ function AgentDetailsTab() {
   };
 
   /**
-   * Fetches a specific agent's details by ID
+   * Fetches details for a specific agent by ID
    */
   const fetchAgentDetails = async (id: string) => {
     try {
-      setIsLoading(true);
       const agent = await agentService.getAgentById(id);
       setSelectedAgent(agent);
       
@@ -73,34 +73,24 @@ function AgentDetailsTab() {
         executiveFunctionId: agent.executiveFunctionId,
         is_enabled: agent.is_enabled
       });
+      
+      // Update URL with agent ID
+      setSearchParams({ id: agent.id });
     } catch (error) {
       console.error('Error fetching agent details:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Fetch all agents and hosts on component mount
+  // Initial data fetch
   useEffect(() => {
     fetchAgents();
     fetchHosts();
   }, []);
 
-  // Fetch agent details when ID changes in URL
+  // Fetch agent details when ID is available in URL
   useEffect(() => {
-    if (agentId) {
+    if (agentId && !tempAgentId) {
       fetchAgentDetails(agentId);
-    } else {
-      setSelectedAgent(null);
-      // Reset form data when no agent is selected
-      setFormData({
-        name: '',
-        description: '',
-        persona: null,
-        hostId: null,
-        executiveFunctionId: null,
-        is_enabled: false
-      });
     }
   }, [agentId]);
 
@@ -108,15 +98,52 @@ function AgentDetailsTab() {
    * Handles selecting an agent from the list
    */
   const handleSelectAgent = (id: string) => {
-    // Update URL with selected agent ID
-    setSearchParams({ id });
+    // Clear temp agent if exists
+    if (tempAgentId) {
+      setTempAgentId(null);
+    }
+    
+    fetchAgentDetails(id);
   };
 
   /**
-   * Handles creating a new agent
+   * Creates a temporary agent for the form
    */
   const handleCreateAgent = () => {
-    // Clear form data and selected agent
+    // Generate a temporary ID
+    const tempId = `temp-${Date.now()}`;
+    setTempAgentId(tempId);
+    
+    // Create a temporary agent object with required fields
+    const tempAgent: Agent = {
+      id: tempId,
+      name: 'New Agent',
+      description: '',
+      persona: null,
+      hostId: null,
+      executiveFunctionId: null,
+      is_enabled: false,
+      created_date: new Date().toISOString(),
+      autoStartFunctionId: null,
+      onAutoStartFunctionComplete: null,
+      owner_id: '',
+      owner: {
+        id: '',
+        name: '',
+        created_date: new Date().toISOString()
+      },
+      host: null,
+      executiveFunction: null,
+      autoStartFunction: null,
+      is_connected: false,
+      topics: [],
+      plugins: []
+    };
+    
+    // Set as selected agent
+    setSelectedAgent(tempAgent);
+    
+    // Reset form data
     setFormData({
       name: '',
       description: '',
@@ -125,7 +152,8 @@ function AgentDetailsTab() {
       executiveFunctionId: null,
       is_enabled: false
     });
-    setSelectedAgent(null);
+    
+    // Clear URL parameter
     setSearchParams({});
   };
 
@@ -137,31 +165,51 @@ function AgentDetailsTab() {
     
     // Handle checkbox inputs
     if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
+      const checkbox = e.target as HTMLInputElement;
+      setFormData(prev => ({
+        ...prev,
+        [name]: checkbox.checked
+      }));
+      
+      console.log(`Checkbox ${name} changed to:`, checkbox.checked);
     } else {
-      setFormData(prev => ({ ...prev, [name]: value === '' ? null : value }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      
+      console.log(`Field ${name} changed to:`, value);
     }
   };
 
   /**
-   * Handles saving agent data
+   * Handles saving the agent (create or update)
    */
   const handleSave = async () => {
     try {
       setIsLoading(true);
       
-      if (selectedAgent) {
+      let savedAgent;
+      
+      if (selectedAgent && !tempAgentId) {
         // Update existing agent
-        await agentService.updateAgent(selectedAgent.id, formData);
+        savedAgent = await agentService.updateAgent(selectedAgent.id, formData);
       } else {
         // Create new agent
-        const newAgent = await agentService.createAgent(formData);
-        setSearchParams({ id: newAgent.id });
+        savedAgent = await agentService.createAgent(formData);
+      }
+      
+      // Clear temp agent ID if exists
+      if (tempAgentId) {
+        setTempAgentId(null);
       }
       
       // Refresh agent list
-      fetchAgents();
+      await fetchAgents();
+      
+      // Select the saved agent
+      await fetchAgentDetails(savedAgent.id);
+      
     } catch (error) {
       console.error('Error saving agent:', error);
     } finally {
@@ -173,17 +221,29 @@ function AgentDetailsTab() {
    * Handles deleting an agent
    */
   const handleDelete = async () => {
-    if (!selectedAgent) return;
+    if (!selectedAgent || tempAgentId) return;
     
-    if (window.confirm(`Are you sure you want to delete agent "${selectedAgent.name}"?`)) {
+    if (window.confirm('Are you sure you want to delete this agent?')) {
       try {
         setIsLoading(true);
         await agentService.deleteAgent(selectedAgent.id);
         
-        // Clear selection and refresh list
+        // Clear selected agent
         setSelectedAgent(null);
+        setFormData({
+          name: '',
+          description: '',
+          persona: null,
+          hostId: null,
+          executiveFunctionId: null,
+          is_enabled: false
+        });
+        
+        // Clear URL parameter
         setSearchParams({});
-        fetchAgents();
+        
+        // Refresh agent list
+        await fetchAgents();
       } catch (error) {
         console.error('Error deleting agent:', error);
       } finally {
@@ -196,11 +256,12 @@ function AgentDetailsTab() {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <div className="lg:col-span-1">
         <AgentList
-          agents={agents}
+          agents={tempAgentId ? [...agents, selectedAgent as Agent] : agents}
           selectedAgentId={selectedAgent?.id || null}
           isLoading={isLoading}
           onSelectAgent={handleSelectAgent}
           onCreateAgent={handleCreateAgent}
+          hasTempAgent={!!tempAgentId}
         />
       </div>
       
@@ -213,6 +274,7 @@ function AgentDetailsTab() {
           onChange={handleInputChange}
           onSave={handleSave}
           onDelete={handleDelete}
+          isTempAgent={!!tempAgentId}
         />
       </div>
     </div>

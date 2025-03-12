@@ -29,6 +29,7 @@ export const hostService = {
    */
   createHost: async (hostData: HostFormData): Promise<Host> => {
     try {
+      // const updateHostData = {...hostData, }
       const response = await apiClient.post<Host>('/manage/host', hostData);
       return response.data;
     } catch (error) {
