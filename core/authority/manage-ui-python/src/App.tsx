@@ -6,7 +6,7 @@ import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import Home from './pages/Home';
 import Agent from './pages/Agent';
-import Topics from './pages/Topics';
+import Topic from './pages/Topic';
 import Hosts from './pages/Hosts';
 import Plugins from './pages/Plugins';
 
@@ -25,7 +25,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/agent" element={<Agent />} />
-                    <Route path="/topics" element={<Topics />} />
+                    <Route path="/topics" element={<Topic />} />
                     <Route path="/hosts" element={<Hosts />} />
                     <Route path="/plugins" element={<Plugins />} />
                   </Routes>

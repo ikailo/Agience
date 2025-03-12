@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Host } from '../../types/Host';
 
 interface HostTableProps {
@@ -14,6 +15,29 @@ export const HostTable: React.FC<HostTableProps> = ({
   onDelete,
   isLoading = false
 }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedHostId = searchParams.get('id');
+
+  // Function to handle host selection
+  const handleSelectHost = (host: Host) => {
+    // console.log('Selecting host:', host.id);
+    setSearchParams({ id: host.id });
+  };
+
+  // Function to view host keys
+  const handleViewKeys = (host: Host, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    
+    // Set the host ID in the URL
+    setSearchParams({ id: host.id });
+    
+    // Switch to the Keys tab
+    const keysTabButton = document.querySelector('button[data-tab="keys"]');
+    if (keysTabButton) {
+      (keysTabButton as HTMLButtonElement).click();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -76,7 +100,10 @@ export const HostTable: React.FC<HostTableProps> = ({
             {hosts.map((host) => (
               <tr 
                 key={host.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                  selectedHostId === host.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
+                }`}
+                onClick={() => handleSelectHost(host)}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
@@ -98,7 +125,7 @@ export const HostTable: React.FC<HostTableProps> = ({
                     </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {host.name}
+                        {host.name} 
                       </div>
                       {/* <div className="text-xs text-gray-500 dark:text-gray-400">
                         ID: {host.id.substring(0, 8)}...
@@ -138,7 +165,32 @@ export const HostTable: React.FC<HostTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => onEdit(host)}
+                    onClick={(e) => handleViewKeys(host, e)}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors mr-4"
+                  >
+                    <span className="flex items-center">
+                      <svg 
+                        className="mr-1 h-4 w-4" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" 
+                        />
+                      </svg>
+                      Keys
+                    </span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(host);
+                    }}
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors mr-4"
                   >
                     <span className="flex items-center">
@@ -160,7 +212,10 @@ export const HostTable: React.FC<HostTableProps> = ({
                     </span>
                   </button>
                   <button
-                    onClick={() => onDelete(host)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(host);
+                    }}
                     className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
                   >
                     <span className="flex items-center">
@@ -194,7 +249,10 @@ export const HostTable: React.FC<HostTableProps> = ({
           {hosts.map((host) => (
             <div 
               key={host.id}
-              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                selectedHostId === host.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''
+              }`}
+              onClick={() => handleSelectHost(host)}
             >
               <div className="flex justify-between items-start">
                 <div className="flex items-start space-x-3">
@@ -249,7 +307,30 @@ export const HostTable: React.FC<HostTableProps> = ({
                 </div>
                 <div className="flex flex-col space-y-2">
                   <button
-                    onClick={() => onEdit(host)}
+                    onClick={(e) => handleViewKeys(host, e)}
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors text-sm flex items-center justify-end"
+                  >
+                    <svg 
+                      className="mr-1 h-4 w-4" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" 
+                      />
+                    </svg>
+                    Keys
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(host);
+                    }}
                     className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors text-sm flex items-center justify-end"
                   >
                     <svg 
@@ -269,7 +350,10 @@ export const HostTable: React.FC<HostTableProps> = ({
                     Edit
                   </button>
                   <button
-                    onClick={() => onDelete(host)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(host);
+                    }}
                     className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors text-sm flex items-center justify-end"
                   >
                     <svg 

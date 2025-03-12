@@ -1,96 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Topic, TopicFormData } from '../../types/Topic';
+import { Agent } from '../../types/Agent';
 import { agentService } from '../../services/api/agentService';
 import { agentTopicService } from '../../services/api/agentTopicService';
 import { topicService } from '../../services/api/topicService';
-import { Topic, TopicFormData } from '../../types/Topic';
-import { Agent } from '../../types/Agent';
+import AgentList from './AgentList';
 import TopicCard from './topics/TopicCard';
 import TopicForm from './topics/TopicForm';
 
 interface AgentTopicsTabProps {
-  agentId: string;
+  agentId?: string;
 }
 
 /**
  * AgentTopicsTab component that displays and manages topics for an agent
- * Supports both light and dark modes
  */
-function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
+function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlAgentId = searchParams.get('id');
+  
+  // Use the prop agentId if provided, otherwise use the URL parameter
+  const contextAgentId = propAgentId || urlAgentId;
+
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [assignedTopics, setAssignedTopics] = useState<Topic[]>([]);
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showTopicForm, setShowTopicForm] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showTopicForm, setShowTopicForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /**
-   * Fetches the agent details
-   */
-  const fetchAgentDetails = async () => {
+  // Fetch all agents
+  const fetchAgents = useCallback(async () => {
     try {
-      const agentData = await agentService.getAgentById(agentId);
+      const agentsData = await agentService.getAllAgents();
+      setAgents(agentsData);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  }, []);
+
+  // Fetch agent details
+  const fetchAgentDetails = useCallback(async () => {
+    if (!contextAgentId) return;
+
+    try {
+      const agentData = await agentService.getAgentById(contextAgentId);
       setAgent(agentData);
+      setSelectedAgent(agentData);
     } catch (error) {
       console.error('Error fetching agent details:', error);
     }
-  };
+  }, [contextAgentId]);
 
-  /**
-   * Fetches all topics assigned to the agent
-   */
-  const fetchAssignedTopics = async () => {
+  // Fetch assigned topics
+  const fetchAssignedTopics = useCallback(async () => {
+    if (!contextAgentId) return;
+
     try {
-      setIsLoading(true);
-      const topics = await agentTopicService.getAgentTopics(agentId);
+      const topics = await agentTopicService.getAgentTopics(contextAgentId);
       setAssignedTopics(topics);
     } catch (error) {
       console.error('Error fetching assigned topics:', error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [contextAgentId]);
 
-  /**
-   * Fetches all available topics
-   */
-  const fetchAvailableTopics = async () => {
+  // Fetch available topics
+  const fetchAvailableTopics = useCallback(async () => {
     try {
-      const topics = await topicService.getAllTopics();
+      const topics = await agentTopicService.getAvailableTopics();
       setAvailableTopics(topics);
     } catch (error) {
       console.error('Error fetching available topics:', error);
     }
-  };
+  }, []);
 
-  // Fetch data on component mount
+  // Initial data fetch
   useEffect(() => {
-    fetchAgentDetails();
-    fetchAssignedTopics();
-    fetchAvailableTopics();
-  }, [agentId]);
+    const fetchData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchAgents(),
+        fetchAgentDetails(),
+        fetchAssignedTopics(),
+        fetchAvailableTopics()
+      ]);
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, [fetchAgents, fetchAgentDetails, fetchAssignedTopics, fetchAvailableTopics]);
 
   /**
    * Toggles a topic's assignment to the agent
    * @param topicId - The ID of the topic to toggle
    */
   const handleToggleTopic = async (topicId: string) => {
+    if (!contextAgentId) return;
+
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
-      // Check if the topic is already assigned
-      const isAssigned = assignedTopics.some(topic => topic.id === topicId);
-      
+      const isAssigned = assignedTopics.some(t => t.id === topicId);
+
       if (isAssigned) {
-        // Remove the topic from the agent
-        await agentTopicService.removeTopicFromAgent(agentId, topicId);
+        await agentTopicService.removeTopicFromAgent(contextAgentId, topicId);
       } else {
-        // Add the topic to the agent
-        await agentTopicService.addTopicToAgent(agentId, topicId);
+        await agentTopicService.addTopicToAgent(contextAgentId, topicId);
       }
-      
-      // Refresh the assigned topics
-      fetchAssignedTopics();
+
+      // Refresh the topic lists
+      await fetchAssignedTopics();
     } catch (error) {
       console.error('Error toggling topic:', error);
     } finally {
@@ -106,9 +128,10 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
   const filterTopics = (topics: Topic[]) => {
     if (!searchTerm) return topics;
     
+    const term = searchTerm.toLowerCase();
     return topics.filter(topic => 
-      topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      topic.description.toLowerCase().includes(searchTerm.toLowerCase())
+      topic.name.toLowerCase().includes(term) ||
+      topic.description.toLowerCase().includes(term)
     );
   };
 
@@ -117,19 +140,13 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
    * @param topicData - The topic data to save
    */
   const handleSaveTopic = async (topicData: TopicFormData) => {
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      
-      // Create new topic
       await topicService.createTopic(topicData);
-      
-      // Refresh topics
-      fetchAvailableTopics();
-      
-      // Close form
-      handleCancelForm();
+      setShowTopicForm(false);
+      await fetchAvailableTopics();
     } catch (error) {
-      console.error('Error saving topic:', error);
+      console.error('Error creating topic:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -149,9 +166,24 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
     setShowTopicForm(false);
   };
 
-  // Get the IDs of assigned topics for easy lookup
-  const assignedTopicIds = assignedTopics.map(topic => topic.id);
-  
+  // Handle agent selection
+  const handleSelectAgent = (id: string) => {
+    // Update URL with selected agent ID
+    setSearchParams({ id });
+  };
+
+  // Handle create new agent
+  const handleCreateAgent = () => {
+    // Navigate to the Details tab for creating a new agent
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('id');
+    newParams.set('tab', 'Agents');
+    setSearchParams(newParams);
+  };
+
+  // Get assigned topic IDs for quick lookup
+  const assignedTopicIds = assignedTopics.map(t => t.id);
+
   // Filter available topics to exclude already assigned ones
   const unassignedTopics = availableTopics.filter(topic => !assignedTopicIds.includes(topic.id));
 
@@ -160,105 +192,110 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
   const filteredUnassignedTopics = filterTopics(unassignedTopics);
 
   return (
-    <div className="space-y-6">
-      {showTopicForm ? (
-        <TopicForm
-          onSubmit={handleSaveTopic}
-          onCancel={handleCancelForm}
-          isLoading={isSubmitting}
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="lg:col-span-1">
+        <AgentList
+          agents={agents}
+          selectedAgentId={contextAgentId || null}
+          isLoading={isLoading}
+          onSelectAgent={handleSelectAgent}
+          onCreateAgent={handleCreateAgent}
         />
-      ) : (
-        <>
-          <div className="flex flex-wrap justify-between items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {agent ? `Topics for ${agent.name}` : 'Agent Topics'}
-            </h2>
-            <button
-              onClick={handleCreateTopic}
-              className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>New Topic</span>
-            </button>
-          </div>
-
-          {/* Search box
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Search topics..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+      </div>
+      
+      <div className="lg:col-span-3">
+        <div className="space-y-6">
+          {showTopicForm ? (
+            <TopicForm
+              onSubmit={handleSaveTopic}
+              onCancel={handleCancelForm}
+              isLoading={isSubmitting}
             />
-          </div> */}
-
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
-            </div>
           ) : (
-            <div className="space-y-8">
-              {/* Assigned Topics Section */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                  Assigned Topics ({filteredAssignedTopics.length})
-                </h3>
-                {filteredAssignedTopics.length === 0 ? (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {searchTerm ? 'No matching assigned topics found.' : 'No topics assigned to this agent yet.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredAssignedTopics.map(topic => (
-                      <TopicCard
-                        key={topic.id}
-                        topic={topic}
-                        isAssigned={true}
-                        onToggle={handleToggleTopic}
-                      />
-                    ))}
-                  </div>
-                )}
+            <>
+              <div className="flex flex-wrap justify-between items-center gap-3">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  {agent ? `Topics for ` : 'Agent Topics'}
+                  {agent && <span className="dark:text-indigo-500 font-bold text-xl text-indigo-700">{agent.name}</span>}
+                </h2>
+                <button
+                  onClick={handleCreateTopic}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>New Topic</span>
+                </button>
               </div>
 
-              {/* Available Topics Section */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                  Available Topics ({filteredUnassignedTopics.length})
-                </h3>
-                {filteredUnassignedTopics.length === 0 ? (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {searchTerm ? 'No matching available topics found.' : 'All available topics are already assigned.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredUnassignedTopics.map(topic => (
-                      <TopicCard
-                        key={topic.id}
-                        topic={topic}
-                        isAssigned={false}
-                        onToggle={handleToggleTopic}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+              {!contextAgentId ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center shadow-lg">
+                  <p className="text-gray-600 dark:text-gray-300">Please select an agent from the list first.</p>
+                </div>
+              ) : (
+                <>
+                  {isLoading ? (
+                    <div className="flex justify-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      {/* Assigned Topics Section */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                          Assigned Topics ({filteredAssignedTopics.length})
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                          {filteredAssignedTopics.map(topic => (
+                            <TopicCard
+                              key={topic.id}
+                              topic={topic}
+                              isAssigned={true}
+                              onToggle={handleToggleTopic}
+                            />
+                          ))}
+                          {filteredAssignedTopics.length === 0 && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+                              <p className="text-gray-600 dark:text-gray-400">
+                                No topics assigned to this agent yet.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Available Topics Section */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                          Available Topics ({filteredUnassignedTopics.length})
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                          {filteredUnassignedTopics.map(topic => (
+                            <TopicCard
+                              key={topic.id}
+                              topic={topic}
+                              isAssigned={false}
+                              onToggle={handleToggleTopic}
+                            />
+                          ))}
+                          {filteredUnassignedTopics.length === 0 && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+                              <p className="text-gray-600 dark:text-gray-400">
+                                No additional topics available.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

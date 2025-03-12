@@ -1,36 +1,34 @@
 import React, { useState } from 'react';
-import { PluginFormData } from '../../types/Plugin';
+import { FunctionFormData } from '../../../services/api/pluginFunctionService';
 
-interface PluginFormProps {
-  onSubmit: (formData: PluginFormData) => Promise<void>;
+interface FunctionFormProps {
+  onSubmit: (formData: FunctionFormData) => Promise<void>;
   onCancel: () => void;
   isLoading: boolean;
 }
 
 /**
- * Form component for creating new plugins
+ * Form component for creating new functions
  */
-const PluginForm: React.FC<PluginFormProps> = ({
+const FunctionForm: React.FC<FunctionFormProps> = ({
   onSubmit,
   onCancel,
-  isLoading,
+  isLoading
 }) => {
-  const [formData, setFormData] = useState<PluginFormData>({
+  const [formData, setFormData] = useState<FunctionFormData>({
     name: '',
-    description: '',
-    provider: 'Collection'
+    description: ''
   });
 
   const [errors, setErrors] = useState<{
     name?: string;
     description?: string;
-    provider?: string;
   }>({});
 
   /**
    * Handles form input changes
    */
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
@@ -47,7 +45,6 @@ const PluginForm: React.FC<PluginFormProps> = ({
     const newErrors: {
       name?: string;
       description?: string;
-      provider?: string;
     } = {};
     
     if (!formData.name.trim()) {
@@ -56,10 +53,6 @@ const PluginForm: React.FC<PluginFormProps> = ({
     
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
-    }
-    
-    if (!formData.provider) {
-      newErrors.provider = 'Provider is required';
     }
     
     setErrors(newErrors);
@@ -77,14 +70,13 @@ const PluginForm: React.FC<PluginFormProps> = ({
     }
     
     await onSubmit(formData);
-    window.location.reload();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-900 rounded-lg p-6 w-full max-w-2xl">
         <h3 className="text-lg font-medium text-white mb-4">
-          Add New Plugin
+          Add New Function
         </h3>
 
         {Object.values(errors).some(error => error) && (
@@ -128,26 +120,6 @@ const PluginForm: React.FC<PluginFormProps> = ({
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Provider
-              {errors.provider && <span className="ml-2 text-red-400 text-xs">{errors.provider}</span>}
-            </label>
-            <select
-              id="provider"
-              name="provider"
-              value={formData.provider}
-              onChange={handleChange}
-              className="mt-1 block w-full rounded-md bg-gray-800 border-gray-700 text-white focus:border-indigo-500 focus:ring-indigo-500"
-              disabled={isLoading}
-              required
-            >
-              <option value="Collection">Collection</option>
-              <option value="Prompts">Prompts</option>
-              <option value="Semantic Kernel Plugin">Semantic Kernel Plugin</option>
-            </select>
-          </div>
-          
           <div className="flex justify-end space-x-3 mt-6">
             <button
               type="button"
@@ -171,7 +143,7 @@ const PluginForm: React.FC<PluginFormProps> = ({
                   Creating...
                 </span>
               ) : (
-                'Create Plugin'
+                'Create Function'
               )}
             </button>
           </div>
@@ -181,4 +153,4 @@ const PluginForm: React.FC<PluginFormProps> = ({
   );
 };
 
-export default PluginForm; 
+export default FunctionForm; 

@@ -8,6 +8,7 @@ interface AgentListProps {
   isLoading: boolean;
   onSelectAgent: (id: string) => void;
   onCreateAgent: () => void;
+  hasTempAgent?: boolean;
 }
 
 /**
@@ -18,15 +19,18 @@ const AgentList: React.FC<AgentListProps> = ({
   selectedAgentId,
   isLoading,
   onSelectAgent,
-  onCreateAgent
+  onCreateAgent,
+  hasTempAgent = false
 }) => {
   return (
     <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg h-full">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Agent List</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">My Agents</h2>
         <button
           onClick={onCreateAgent}
-          className="px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm"
+          className={`px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm ${hasTempAgent ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={hasTempAgent}
+          title={hasTempAgent ? "Save or cancel the current new agent first" : "Create a new agent"}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -63,7 +67,8 @@ const AgentList: React.FC<AgentListProps> = ({
               <p className="mt-2 text-gray-600 dark:text-gray-400">No agents found</p>
               <button
                 onClick={onCreateAgent}
-                className="mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                className={`mt-3 px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors ${hasTempAgent ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={hasTempAgent}
               >
                 Create your first agent
               </button>
@@ -75,6 +80,7 @@ const AgentList: React.FC<AgentListProps> = ({
                 agent={agent}
                 isSelected={agent.id === selectedAgentId}
                 onSelect={onSelectAgent}
+                isTemp={agent.id.startsWith('temp-')}
               />
             ))
           )}

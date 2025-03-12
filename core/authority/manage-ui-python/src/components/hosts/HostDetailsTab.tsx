@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../common/Button';
+import Button from '../common/Button';
 import { HostModal } from './HostModal';
 import { HostTable } from './HostTable';
 import { hostService } from '../../services/api/hostService';
@@ -161,7 +161,8 @@ export const HostDetailsTab: React.FC = () => {
         initialData={selectedHost ? {
           name: selectedHost.name,
           description: selectedHost.description,
-          operatorId: selectedHost.operatorId
+          operatorId: selectedHost.operatorId,
+          scopes: selectedHost.scopes
         } : undefined}
         isEditing={isEditing}
       />
