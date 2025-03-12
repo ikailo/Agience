@@ -261,6 +261,25 @@ namespace Agience.Authority.Identity.Controllers.Manage
             });
         }
 
+        // *** UPDATE FUNCTION *** //
+        [HttpPut("plugin/{pluginId}/function/{functionId}")]
+            public async Task<IActionResult> UpdateFunctionForPlugin(string pluginId, string functionId, [FromBody] Function function)
+            {
+                return await HandlePut(async () =>
+                {
+
+                    if (function.Id == null)
+                        throw new ArgumentNullException("Function Id is required.");
+
+                    if (function.Id != null && !function.Id.Equals(functionId))
+                    {
+                        throw new InvalidDataException("ID in the body must match the ID in the current URL");
+                    }
+
+                    await _repository.UpdateRecordAsSystemAsync<Function>(function);
+                });
+            }
+
         [HttpDelete("plugin/{pluginId}/function/{functionId}")]
         public async Task<IActionResult> RemoveFunctionFromPlugin(string pluginId, string functionId)
         {

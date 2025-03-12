@@ -24,7 +24,8 @@ export const HostModal: React.FC<HostModalProps> = ({
   const [formData, setFormData] = useState<HostFormData>({
     name: '',
     description: '',
-    operatorId: user?.profile?.sub || '', // Set operatorId from the authenticated user
+    operatorId: user?.profile?.sub || '',
+    scopes: ["connect"], // Set operatorId from the authenticated user
   });
   
   // Form validation state
@@ -47,6 +48,7 @@ export const HostModal: React.FC<HostModalProps> = ({
         name: '',
         description: '',
         operatorId: user?.profile?.sub || '',
+        scopes: [""]
       });
     }
   }, [initialData, user]);
@@ -98,11 +100,12 @@ export const HostModal: React.FC<HostModalProps> = ({
       await onSave({
         ...formData,
         operatorId: formData.operatorId || user?.profile?.sub || '',
+        scopes: ["connect"]
       });
       onClose();
     } catch (error) {
       console.error('Error saving host:', error);
-      // You could add error handling here, e.g., display an error message
+      //TODO: include error handling here, e.g., display an error message
     } finally {
       setIsSaving(false);
     }
@@ -163,7 +166,6 @@ export const HostModal: React.FC<HostModalProps> = ({
                 )}
               </div>
               
-              {/* Note: operatorId field is removed from the UI but still included in the form data */}
             </div>
             
             {/* Action Buttons */}
@@ -189,7 +191,7 @@ export const HostModal: React.FC<HostModalProps> = ({
                     Saving...
                   </span>
                 ) : (
-                  'Save Host'
+                  'Save'
                 )}
               </button>
             </div>

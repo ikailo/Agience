@@ -72,6 +72,10 @@ export const agentService = {
    */
   updateAgent: async (id: string, agentData: AgentFormData): Promise<Agent> => {
     try {
+      console.log('Original agent data for update:', agentData);
+      console.log('is_enabled type:', typeof agentData.is_enabled);
+      console.log('is_enabled value:', agentData.is_enabled);
+      
       // Convert camelCase to snake_case for API
       const apiData = {
         id: id,
@@ -86,6 +90,7 @@ export const agentService = {
       console.log('Sending update data:', apiData);
       
       const response = await apiClient.put<Agent>(`/manage/agent/${id}`, apiData);
+      console.log('Update response:', response.data);
       return response.data;
     } catch (error) {
       console.error(`Error updating agent with ID ${id}:`, error);
