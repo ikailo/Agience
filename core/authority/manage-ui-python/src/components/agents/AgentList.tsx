@@ -25,7 +25,7 @@ const AgentList: React.FC<AgentListProps> = ({
   return (
     <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow-lg h-full">
       <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Agent List</h2>
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white">My Agents</h2>
         <button
           onClick={onCreateAgent}
           className={`px-3 py-1.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center space-x-1 text-sm font-medium shadow-sm ${hasTempAgent ? 'opacity-50 cursor-not-allowed' : ''}`}

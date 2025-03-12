@@ -7,7 +7,7 @@ import AgentTopicsTab from '../components/agents/AgentTopicsTab';
 import AgentCredentialsTab from '../components/agents/AgentCredentialsTab';
 
 const tabs = [
-  { id: 'details', label: 'Details' },
+  { id: 'Agents', label: 'Agents' },
   { id: 'plugins', label: 'Plugins' },
   { id: 'topics', label: 'Topics' },
   { id: 'credentials', label: 'Credentials' },
@@ -18,7 +18,7 @@ const tabs = [
  * Supports both light and dark modes
  */
 export default function Agent() {
-  const [activeTab, setActiveTab] = useState('details');
+  const [activeTab, setActiveTab] = useState('Agents');
   const [searchParams] = useSearchParams();
   
   // Get agent ID from URL if available
@@ -26,9 +26,9 @@ export default function Agent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+      {/* <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
         Agent Configuration
-      </h1>
+      </h1> */}
       
       <TabNavigation
         tabs={tabs}
@@ -37,14 +37,14 @@ export default function Agent() {
       />
 
       <div className="mt-6">
-        {activeTab === 'details' && <AgentDetailsTab />}
+        {activeTab === 'Agents' && <AgentDetailsTab />}
         {activeTab === 'plugins' && agentId && <AgentPluginsTab agentId={agentId} />}
         {activeTab === 'topics' && agentId && <AgentTopicsTab agentId={agentId} />}
         {activeTab === 'credentials' && agentId && <AgentCredentialsTab agentId={agentId} />}
         
-        {activeTab !== 'details' && !agentId && (
+        {activeTab !== 'Agents' && !agentId && (
           <div className="p-6 bg-white dark:bg-gray-800 rounded-lg text-center shadow-lg">
-            <p className="text-gray-600 dark:text-gray-300">Please select an agent from the Details tab first.</p>
+            <p className="text-gray-600 dark:text-gray-300">Please select an agent from the Agents tab first.</p>
           </div>
         )}
       </div>

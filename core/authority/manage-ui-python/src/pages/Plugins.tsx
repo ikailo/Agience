@@ -74,9 +74,9 @@ const Plugins = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <h1 className="text-2xl font-semibold text-white mb-6">
+      {/* <h1 className="text-2xl font-semibold text-white mb-6">
         Plugin Configuration
-      </h1>
+      </h1> */}
       
       <div className="flex flex-col h-full">
         <div className="mb-6">

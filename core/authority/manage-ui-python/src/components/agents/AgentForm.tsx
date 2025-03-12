@@ -30,15 +30,20 @@ const AgentForm: React.FC<AgentFormProps> = ({
     <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          {isTempAgent ? 'Create New Agent' : selectedAgent ? 'Edit Agent' : 'Agent Details'}
+          {isTempAgent ? (
+            'Create New Agent'
+          ) : selectedAgent ? (
+            <>
+              Edit <span className="dark:text-indigo-500 font-bold text-xl text-indigo-700">{selectedAgent.name}</span>'s Details
+            </>
+          ) : (
+            'Agent Details'
+          )}
         </h2>
-        {isTempAgent && (
-          <span className="px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200 text-xs rounded-full">
-            Unsaved
-          </span>
-        )}
+
+
       </div>
-      
+
       {!selectedAgent && !isTempAgent ? (
         <div className="text-center py-8">
           <p className="text-gray-600 dark:text-gray-400">
@@ -120,7 +125,7 @@ const AgentForm: React.FC<AgentFormProps> = ({
                       checked: e.target.checked
                     }
                   } as React.ChangeEvent<HTMLInputElement>;
-                  
+
                   onChange(customEvent);
                 }}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"

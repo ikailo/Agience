@@ -39,7 +39,7 @@ const Hosts = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Host Configuration</h1>
+      {/* <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Host Configuration</h1> */}
 
       {/* Tab Navigation */}
       <div className="mb-4 border-b border-gray-200 dark:border-gray-700">

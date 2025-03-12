@@ -191,7 +191,7 @@ export const HostModal: React.FC<HostModalProps> = ({
                     Saving...
                   </span>
                 ) : (
-                  'Save Host'
+                  'Save'
                 )}
               </button>
             </div>

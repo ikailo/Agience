@@ -13,11 +13,11 @@ interface AgentCardProps {
  */
 const AgentCard: React.FC<AgentCardProps> = ({ agent, isSelected, onSelect, isTemp = false }) => {
   return (
-    <div 
+    <div
       className={`
         p-3 rounded-lg cursor-pointer transition-colors
-        ${isSelected 
-          ? 'bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500' 
+        ${isSelected
+          ? 'bg-indigo-50 dark:bg-indigo-900 border-l-4 border-indigo-500'
           : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-l-4 border-transparent'
         }
         ${isTemp ? 'border border-dashed border-indigo-500 dark:border-indigo-400' : ''}

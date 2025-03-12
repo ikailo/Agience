@@ -76,10 +76,10 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
   const handleToggleTopic = async (topicId: string) => {
     try {
       setIsLoading(true);
-      
+
       // Check if the topic is already assigned
       const isAssigned = assignedTopics.some(topic => topic.id === topicId);
-      
+
       if (isAssigned) {
         // Remove the topic from the agent
         await agentTopicService.removeTopicFromAgent(agentId, topicId);
@@ -87,7 +87,7 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
         // Add the topic to the agent
         await agentTopicService.addTopicToAgent(agentId, topicId);
       }
-      
+
       // Refresh the assigned topics
       fetchAssignedTopics();
     } catch (error) {
@@ -104,8 +104,8 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
    */
   const filterTopics = (topics: Topic[]) => {
     if (!searchTerm) return topics;
-    
-    return topics.filter(topic => 
+
+    return topics.filter(topic =>
       topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       topic.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -118,13 +118,13 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
   const handleSaveTopic = async (topicData: TopicFormData) => {
     try {
       setIsSubmitting(true);
-      
+
       // Create new topic
       await topicService.createTopic(topicData);
-      
+
       // Refresh topics
       fetchAvailableTopics();
-      
+
       // Close form
       handleCancelForm();
     } catch (error) {
@@ -150,7 +150,7 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
 
   // Get the IDs of assigned topics for easy lookup
   const assignedTopicIds = assignedTopics.map(topic => topic.id);
-  
+
   // Filter available topics to exclude already assigned ones
   const unassignedTopics = availableTopics.filter(topic => !assignedTopicIds.includes(topic.id));
 
@@ -170,7 +170,8 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
         <>
           <div className="flex flex-wrap justify-between items-center gap-3">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {agent ? `Topics for ${agent.name}` : 'Agent Topics'}
+            {agent ? `Topics for ` : 'Agent Topics'}
+            {agent && <span className="dark:text-indigo-500 font-bold text-xl text-indigo-700">{agent.name}</span>}
             </h2>
             <button
               onClick={handleCreateTopic}
@@ -206,29 +207,29 @@ function AgentTopicsTab({ agentId }: AgentTopicsTabProps) {
           ) : (
             <div className="space-y-8">
               {/* Assigned Topics Section */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
-                  Assigned Topics ({filteredAssignedTopics.length})
-                </h3>
-                {filteredAssignedTopics.length === 0 ? (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-600 dark:text-gray-400">
-                      {searchTerm ? 'No matching assigned topics found.' : 'No topics assigned to this agent yet.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredAssignedTopics.map(topic => (
-                      <TopicCard
-                        key={topic.id}
-                        topic={topic}
-                        isAssigned={true}
-                        onToggle={handleToggleTopic}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+                Assigned Topics ({filteredAssignedTopics.length})
+              </h3>
+              {filteredAssignedTopics.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {searchTerm ? 'No matching assigned topics found.' : 'No topics assigned to this agent yet.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAssignedTopics.map(topic => (
+                    <TopicCard
+                      key={topic.id}
+                      topic={topic}
+                      isAssigned={true}
+                      onToggle={handleToggleTopic}
+                    />
+                  ))}
+                </div>
+              )}
+
 
               {/* Available Topics Section */}
               <div>
