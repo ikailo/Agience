@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Button } from '../common/Button';
-import { PluginForm } from './PluginForm';
+import Button  from '../common/Button';
+import  PluginForm  from './PluginForm';
 import { PluginTable } from './PluginTable';
 import { pluginService } from '../../services/api/pluginService';
 import { Plugin } from '../../types/Plugin';
@@ -36,7 +36,7 @@ export const PluginDetails: React.FC = () => {
   };
 
   // Function to handle adding/editing a plugin
-  const handleSavePlugin = async (plugin: Plugin) => {
+  const handleSavePlugin = async () => {
     try {
       // Show success message
       setSuccessMessage(selectedPlugin ? 'Plugin updated successfully!' : 'Plugin created successfully!');
@@ -137,9 +137,9 @@ export const PluginDetails: React.FC = () => {
       {/* Plugin Form */}
       {isFormOpen && (
         <PluginForm
-          plugin={selectedPlugin}
-          onSave={handleSavePlugin}
+          onSubmit={handleSavePlugin}
           onCancel={() => setIsFormOpen(false)}
+          isLoading={isLoading}
         />
       )}
 

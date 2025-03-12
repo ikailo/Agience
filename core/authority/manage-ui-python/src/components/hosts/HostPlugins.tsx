@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 interface Plugin {
   id: string;
   name: string;
