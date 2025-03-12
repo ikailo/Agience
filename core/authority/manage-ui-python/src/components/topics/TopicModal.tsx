@@ -86,7 +86,6 @@ export const TopicModal: React.FC<TopicModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Error saving topic:', error);
-      // You could add error handling here, e.g., display an error message
     } finally {
       setIsSaving(false);
     }
