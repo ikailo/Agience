@@ -36,7 +36,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, isSelected, onSelect, isTe
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
             {agent.description || 'No description'}
-          </p>
+          </p> 
         </div>
         <div className={`h-3 w-3 rounded-full ${agent.is_enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
       </div>

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Topic, TopicFormData } from '../../types/Topic';
 import { topicService } from '../../services/api/topicService';
-import TopicTable from './TopicTable';
 import TopicForm from './TopicForm';
 import ConfirmationModal from '../common/ConfirmationModal';
 import NotificationModal from '../common/NotificationModal';

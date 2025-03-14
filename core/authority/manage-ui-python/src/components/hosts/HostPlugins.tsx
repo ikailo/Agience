@@ -1,95 +1,273 @@
-interface Plugin {
-  id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive';
-  type: 'communication' | 'utility' | 'ai';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Plugin } from '../../types/Plugin';
+import { Host } from '../../types/Host';
+import { hostPluginService } from '../../services/api/hostPluginService';
+import { hostService } from '../../services/api/hostService';
+import { pluginService } from '../../services/api/pluginService';
+import NotificationModal from '../common/NotificationModal';
+import ConfirmationModal from '../common/ConfirmationModal';
+import Card from '../common/Card';
+import Button from '../common/Button';
+
+interface HostPluginsProps {
+  hostId?: string;
 }
 
-export const HostPlugins = () => {
-  const samplePlugins: Plugin[] = [
-    {
-      id: '1',
-      name: 'Gmail Integration',
-      description: 'Enables email communication and inbox management through Gmail',
-      status: 'active',
-      type: 'communication',
-    },
-    {
-      id: '2',
-      name: 'Speech-to-Text',
-      description: 'Converts spoken language to written text using advanced AI',
-      status: 'active',
-      type: 'ai',
-    },
-    {
-      id: '3',
-      name: 'Calendar Sync',
-      description: 'Synchronizes events and schedules across platforms',
-      status: 'inactive',
-      type: 'utility',
-    },
-  ];
+export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
+  const [searchParams] = useSearchParams();
+  const urlHostId = searchParams.get('id');
+  const hostId = propHostId || urlHostId;
 
-  const getTypeStyles = (type: Plugin['type']) => {
-    switch (type) {
-      case 'communication':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'ai':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  const [host, setHost] = useState<Host | null>(null);
+  const [assignedPlugins, setAssignedPlugins] = useState<Plugin[]>([]);
+  const [availablePlugins, setAvailablePlugins] = useState<Plugin[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+  const [confirmation, setConfirmation] = useState<{ isOpen: boolean; pluginId: string; pluginName: string }>({
+    isOpen: false,
+    pluginId: '',
+    pluginName: ''
+  });
+
+  // Fetch host details
+  const fetchHostDetails = useCallback(async () => {
+    if (!hostId) return;
+    try {
+      const hostData = await hostService.getHostById(hostId);
+      setHost(hostData);
+    } catch (error) {
+      console.error('Error fetching host details:', error);
+      showNotification('Error', 'Failed to load host details', 'error');
+    }
+  }, [hostId]);
+
+  // Fetch assigned plugins
+  const fetchAssignedPlugins = useCallback(async () => {
+    if (!hostId) return;
+    try {
+      const plugins = await hostPluginService.getPluginsForHost(hostId);
+      setAssignedPlugins(plugins);
+    } catch (error) {
+      console.error('Error fetching assigned plugins:', error);
+      showNotification('Error', 'Failed to load assigned plugins', 'error');
+    }
+  }, [hostId]);
+
+  // Fetch available plugins
+  const fetchAvailablePlugins = useCallback(async () => {
+    try {
+      const plugins = await pluginService.getAllPlugins();
+      setAvailablePlugins(plugins);
+    } catch (error) {
+      console.error('Error fetching available plugins:', error);
+      showNotification('Error', 'Failed to load available plugins', 'error');
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!hostId) return;
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchHostDetails(),
+          fetchAssignedPlugins(),
+          fetchAvailablePlugins()
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [hostId, fetchHostDetails, fetchAssignedPlugins, fetchAvailablePlugins]);
+
+  const showNotification = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning') => {
+    setNotification({ isOpen: true, title, message, type });
+  };
+
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const showRemoveConfirmation = (pluginId: string, pluginName: string) => {
+    setConfirmation({ isOpen: true, pluginId, pluginName });
+  };
+
+  const closeConfirmation = () => {
+    setConfirmation(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleAddPlugin = async (pluginId: string) => {
+    if (!hostId) return;
+    setIsLoading(true);
+    try {
+      await hostPluginService.addPluginToHost(hostId, pluginId);
+      await fetchAssignedPlugins();
+      const plugin = availablePlugins.find(p => p.id === pluginId);
+      showNotification('Success', `Plugin "${plugin?.name}" added successfully`, 'success');
+    } catch (error) {
+      console.error('Error adding plugin:', error);
+      showNotification('Error', 'Failed to add plugin', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleRemovePlugin = async () => {
+    if (!hostId || !confirmation.pluginId) return;
+    setIsLoading(true);
+    try {
+      await hostPluginService.removePluginFromHost(hostId, confirmation.pluginId);
+      await fetchAssignedPlugins();
+      showNotification('Success', `Plugin "${confirmation.pluginName}" removed successfully`, 'success');
+    } catch (error) {
+      console.error('Error removing plugin:', error);
+      showNotification('Error', 'Failed to remove plugin', 'error');
+    } finally {
+      setIsLoading(false);
+      closeConfirmation();
+    }
+  };
+
+  if (!hostId) {
+    return (
+      <Card>
+        <div className="text-center">
+          <p className="text-gray-600 dark:text-gray-300">
+            Please select a host from the Details tab first.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  const assignedPluginIds = assignedPlugins.map(p => p.id);
+  const unassignedPlugins = availablePlugins.filter(plugin => !assignedPluginIds.includes(plugin.id));
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Installed Plugins
+          {host ? `Plugins for ${host.name}` : 'Host Plugins'}
         </h2>
-        <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-          Add Plugin
-        </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {samplePlugins.map(plugin => (
-          <div 
-            key={plugin.id} 
-            className="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3 shadow-sm border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-gray-900 dark:text-white font-medium">{plugin.name}</h3>
-                <span className={`inline-block px-2 py-1 text-xs rounded-full mt-2 ${getTypeStyles(plugin.type)}`}>
-                  {plugin.type}
-                </span>
-              </div>
-              <span className={`px-2 py-1 rounded-full text-xs capitalize ${
-                plugin.status === 'active' 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-              }`}>
-                {plugin.status}
-              </span>
-            </div>
-            
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              {plugin.description}
-            </p>
-
-            <div className="flex justify-end pt-2 space-x-3">
-              <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                Configure
-              </button>
-              <button className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                Remove
-              </button>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {/* Assigned Plugins */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+              Assigned Plugins ({assignedPlugins.length})
+            </h3>
+            <div className="grid gap-4">
+              {assignedPlugins.map(plugin => (
+                <div
+                  key={plugin.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                        {plugin.name}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {plugin.description}
+                      </p>
+                    </div>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => showRemoveConfirmation(plugin.id, plugin.name)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {assignedPlugins.length === 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No plugins assigned to this host yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Available Plugins */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
+              Available Plugins ({unassignedPlugins.length})
+            </h3>
+            <div className="grid gap-4">
+              {unassignedPlugins.map(plugin => (
+                <div
+                  key={plugin.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                        {plugin.name}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {plugin.description}
+                      </p>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleAddPlugin(plugin.id)}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {unassignedPlugins.length === 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center border border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No additional plugins available.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmation.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={handleRemovePlugin}
+        title="Remove Plugin"
+        message={`Are you sure you want to remove the plugin "${confirmation.pluginName}" from this host?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        type="danger"
+        isLoading={isLoading}
+      />
     </div>
   );
 }; 

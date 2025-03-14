@@ -8,6 +8,9 @@ import PluginForm from './PluginForm';
 interface PluginDetailsTabProps {
   selectedPluginId: string | null;
   onSelectPlugin: (id: string, switchToFunctions: boolean) => void;
+  onPluginChange?: () => Promise<void>;
+  isCreatingNew?: boolean;
+  onCancelCreate?: () => void;
 }
 
 /**
@@ -15,13 +18,14 @@ interface PluginDetailsTabProps {
  */
 const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   selectedPluginId,
-  onSelectPlugin
+  onSelectPlugin,
+  onPluginChange,
+  isCreatingNew = false,
+  onCancelCreate
 }) => {
-  const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-  const [editingPluginId, setEditingPluginId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<PluginFormData>({
     name: '',
     description: '',
@@ -55,22 +59,6 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   });
 
   /**
-   * Fetches all plugins
-   */
-  const fetchPlugins = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const data = await pluginService.getAllPlugins();
-      setPlugins(data);
-    } catch (error) {
-      console.error('Error fetching plugins:', error);
-      showNotification('Error', 'Failed to load plugins', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  /**
    * Fetches a specific plugin by ID
    */
   const fetchPluginDetails = useCallback(async (id: string) => {
@@ -86,11 +74,6 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
     }
   }, []);
 
-  // Fetch plugins when component mounts
-  useEffect(() => {
-    fetchPlugins();
-  }, [fetchPlugins]);
-
   // Fetch selected plugin details when selectedPluginId changes
   useEffect(() => {
     if (selectedPluginId) {
@@ -99,6 +82,13 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
       setSelectedPlugin(null);
     }
   }, [selectedPluginId, fetchPluginDetails]);
+
+  // Open form when isCreatingNew changes to true
+  useEffect(() => {
+    if (isCreatingNew) {
+      handleAddPlugin();
+    }
+  }, [isCreatingNew]);
 
   /**
    * Shows a notification modal
@@ -140,11 +130,17 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   };
 
   /**
-   * Handles plugin selection
+   * Opens the form for editing the selected plugin
    */
-  const handleSelectPlugin = (plugin: Plugin) => {
-    // When a plugin row is clicked, select it and switch to functions tab
-    onSelectPlugin(plugin.id, true);
+  const handleEditPlugin = () => {
+    if (!selectedPlugin) return;
+    
+    setEditFormData({
+      name: selectedPlugin.name,
+      description: selectedPlugin.description,
+      provider: selectedPlugin.provider
+    });
+    setIsFormOpen(true);
   };
 
   /**
@@ -160,89 +156,42 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   };
 
   /**
-   * Starts in-cell editing for a plugin
-   */
-  const handleEditPlugin = (plugin: Plugin) => {
-    setEditingPluginId(plugin.id);
-    setEditFormData({
-      name: plugin.name,
-      description: plugin.description,
-      provider: plugin.provider
-    });
-  };
-
-  /**
-   * Cancels in-cell editing
-   */
-  const handleCancelEdit = () => {
-    setEditingPluginId(null);
-  };
-
-  /**
-   * Handles input changes during in-cell editing
-   */
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setEditFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  /**
-   * Saves changes from in-cell editing
-   */
-  const handleSaveEdit = async (pluginId: string) => {
-    try {
-      setIsLoading(true);
-      const updatedPlugin = await pluginService.updatePlugin(pluginId, editFormData);
-      showNotification('Success', 'Plugin updated successfully', 'success');
-      
-      // Update plugins list
-      await fetchPlugins();
-      
-      // If this was the selected plugin, update it
-      if (selectedPluginId === pluginId) {
-        setSelectedPlugin(updatedPlugin);
-      }
-      
-      // Exit edit mode
-      setEditingPluginId(null);
-    } catch (error) {
-      console.error('Error updating plugin:', error);
-      showNotification('Error', 'Failed to update plugin', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
    * Closes the plugin form
    */
   const handleCloseForm = () => {
     setIsFormOpen(false);
+    if (isCreatingNew && onCancelCreate) {
+      onCancelCreate();
+    }
   };
 
   /**
-   * Handles saving a new plugin
+   * Handles saving a plugin (create or update)
    */
   const handleSavePlugin = async (formData: PluginFormData) => {
     try {
       setIsLoading(true);
       
-      // Create new plugin
-      const newPlugin = await pluginService.createPlugin(formData);
-      showNotification('Success', 'Plugin created successfully', 'success');
-      
-      // Select the new plugin but stay on details tab
-      setSelectedPlugin(newPlugin);
-      onSelectPlugin(newPlugin.id, false);
-      
-      // Refresh plugins list
-      await fetchPlugins();
+      if (selectedPlugin) {
+        // Update existing plugin
+        const updatedPlugin = await pluginService.updatePlugin(selectedPlugin.id, formData);
+        setSelectedPlugin(updatedPlugin);
+        showNotification('Success', 'Plugin updated successfully', 'success');
+      } else {
+        // Create new plugin
+        const newPlugin = await pluginService.createPlugin(formData);
+        setSelectedPlugin(newPlugin);
+        onSelectPlugin(newPlugin.id, false);
+        showNotification('Success', 'Plugin created successfully', 'success');
+      }
       
       // Close form
       handleCloseForm();
+      
+      // Notify parent component about the change
+      if (onPluginChange) {
+        await onPluginChange();
+      }
     } catch (error) {
       console.error('Error saving plugin:', error);
       showNotification('Error', 'Failed to save plugin', 'error');
@@ -263,13 +212,14 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
       
       showNotification('Success', 'Plugin deleted successfully', 'success');
       
-      // If the deleted plugin was selected, clear selection
-      if (selectedPluginId === confirmation.pluginId) {
-        onSelectPlugin('', false);
-      }
+      // Clear selection
+      onSelectPlugin('', false);
+      setSelectedPlugin(null);
       
-      // Refresh plugins list
-      await fetchPlugins();
+      // Notify parent component about the change
+      if (onPluginChange) {
+        await onPluginChange();
+      }
     } catch (error) {
       console.error('Error deleting plugin:', error);
       showNotification('Error', 'Failed to delete plugin', 'error');
@@ -295,19 +245,55 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
     }
   };
 
+  // If no plugin is selected and not creating a new one, show a message
+  if (!selectedPluginId && !isFormOpen && !isCreatingNew) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <svg className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Select a plugin from the list or create a new one</p>
+        <button
+          onClick={handleAddPlugin}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+        >
+          Create New Plugin
+        </button>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading && !isFormOpen) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-white">
-          Plugin Configuration
+          {selectedPlugin ? 'Plugin Details' : 'Create New Plugin'}
         </h2>
-        <button
-          onClick={handleAddPlugin}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-          disabled={isLoading}
-        >
-          Add Plugin
-        </button>
+        {selectedPlugin && (
+          <div className="flex space-x-3">
+            <button
+              onClick={handleEditPlugin}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+            >
+              Edit Plugin
+            </button>
+            <button
+              onClick={() => showDeleteConfirmation(selectedPlugin)}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Delete Plugin
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Plugin Form Modal */}
@@ -316,161 +302,45 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
           onSubmit={handleSavePlugin}
           onCancel={handleCloseForm}
           isLoading={isLoading}
+          initialData={selectedPlugin ? {
+            name: selectedPlugin.name,
+            description: selectedPlugin.description,
+            provider: selectedPlugin.provider
+          } : undefined}
         />
       )}
 
-      {/* Plugins Table */}
-      {isLoading && plugins.length === 0 ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead>
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Name
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Description
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Provider
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Created Date
-                </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {plugins.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-300">
-                    No plugins found. Add a plugin to get started.
-                  </td>
-                </tr>
-              ) : (
-                plugins.map((plugin) => (
-                  <tr 
-                    key={plugin.id} 
-                    className={`hover:bg-gray-800 ${editingPluginId === plugin.id ? 'bg-gray-800' : ''}`}
-                    onClick={() => editingPluginId !== plugin.id && handleSelectPlugin(plugin)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingPluginId === plugin.id ? (
-                        <input
-                          type="text"
-                          name="name"
-                          value={editFormData.name}
-                          onChange={handleEditInputChange}
-                          className="w-full bg-gray-700 border-gray-600 text-white rounded px-2 py-1"
-                          autoFocus
-                        />
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-800 rounded-full">
-                            <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-white">
-                              {plugin.name}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingPluginId === plugin.id ? (
-                        <input
-                          type="text"
-                          name="description"
-                          value={editFormData.description}
-                          onChange={handleEditInputChange}
-                          className="w-full bg-gray-700 border-gray-600 text-white rounded px-2 py-1"
-                        />
-                      ) : (
-                        <div className="text-sm text-gray-300">
-                          {plugin.description}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingPluginId === plugin.id ? (
-                        <select
-                          name="provider"
-                          value={editFormData.provider}
-                          onChange={handleEditInputChange}
-                          className="bg-gray-700 border-gray-600 text-white rounded px-2 py-1"
-                        >
-                          <option value="Collection">Collection</option>
-                          <option value="Prompts">Prompts</option>
-                          <option value="Semantic Kernel Plugin">Semantic Kernel Plugin</option>
-                        </select>
-                      ) : (
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getProviderBadgeColor(plugin.provider)}`}>
-                          {plugin.provider}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {plugin.created_date ? new Date(plugin.created_date).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {editingPluginId === plugin.id ? (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveEdit(plugin.id);
-                            }}
-                            className="text-green-400 hover:text-green-300 mr-4"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelEdit();
-                            }}
-                            className="text-gray-400 hover:text-gray-300"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditPlugin(plugin);
-                            }}
-                            className="text-indigo-400 hover:text-indigo-300 mr-4"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              showDeleteConfirmation(plugin);
-                            }}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Plugin Details */}
+      {selectedPlugin && !isFormOpen && (
+        <div className="bg-gray-800 rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-1">Name</h3>
+              <p className="text-white text-lg">{selectedPlugin.name}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-1">Provider</h3>
+              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getProviderBadgeColor(selectedPlugin.provider)}`}>
+                {selectedPlugin.provider}
+              </span>
+            </div>
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
+              <p className="text-white">{selectedPlugin.description || 'No description provided'}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-1">Created Date</h3>
+              <p className="text-white">
+                {selectedPlugin.created_date 
+                  ? new Date(selectedPlugin.created_date).toLocaleDateString() 
+                  : 'Not available'}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-1">ID</h3>
+              <p className="text-white text-sm font-mono bg-gray-700 p-2 rounded">{selectedPlugin.id}</p>
+            </div>
+          </div>
         </div>
       )}
 
