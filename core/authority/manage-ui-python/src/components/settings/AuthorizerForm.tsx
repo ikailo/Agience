@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuthorizerFormData, AuthorizerType } from '../../types/Authorizer';
+import { AuthorizerFormData } from '../../types/Authorizer';
 
 interface AuthorizerFormProps {
   onSubmit: (formData: AuthorizerFormData) => Promise<void>;

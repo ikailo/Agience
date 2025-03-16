@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import HostKeys from '../components/hosts/HostKeys';
-import { HostPlugins } from '../components/hosts/HostPlugins';
-import { HostDetailsTab } from '../components/hosts/HostDetailsTab';
 import { TabNavigation } from '../components/common/TabNavigation';
-import Card from '../components/common/Card';
+import { HostDetailsTab } from '../components/hosts/HostDetailsTab';
 import HostList from '../components/hosts/HostList';
 import { Host } from '../types/Host';
 import { hostService } from '../services/api/hostService';
+
+// Lazy load components to improve performance
+const HostKeys = lazy(() => import('../components/hosts/HostKeys'));
+const HostPlugins = lazy(() => import('../components/hosts/HostPlugins'));
 
 const tabs = [
   { id: 'details', label: 'Details' },
@@ -17,7 +18,6 @@ const tabs = [
 
 /**
  * Hosts page component that provides tab navigation for host configuration
- * Supports both light and dark modes
  */
 const Hosts = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,6 +28,14 @@ const Hosts = () => {
   const [hasTempHost, setHasTempHost] = useState(false);
 
   const hostId = searchParams.get('id');
+  const tabParam = searchParams.get('tab') || 'details';
+
+  // Initialize active tab from URL
+  useEffect(() => {
+    if (tabParam && tabs.some(tab => tab.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     const fetchHosts = async () => {
@@ -96,6 +104,20 @@ const Hosts = () => {
     setSearchParams(newParams);
   };
 
+  // Loading fallback component
+  const LoadingFallback = () => (
+    <div className="flex justify-center py-12">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+    </div>
+  );
+
+  // Empty state component when no host is selected
+  const NoHostSelected = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 text-center shadow-lg">
+      <p className="text-gray-600 dark:text-gray-300">Please select a host from the list first.</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <TabNavigation
@@ -119,16 +141,27 @@ const Hosts = () => {
 
         {/* Tab Content - Right Side */}
         <div className="lg:col-span-3">
-          {activeTab === 'details' && (
-            <HostDetailsTab />
-          )}
-          {activeTab === 'keys' && selectedHost && (
-            <HostKeys hostId={selectedHost.id} />
-          )}
-          {activeTab === 'plugins' && selectedHost && (
-            <HostPlugins hostId={selectedHost.id} />
-          )}
-        
+          <Suspense fallback={<LoadingFallback />}>
+            {activeTab === 'details' && (
+              <HostDetailsTab />
+            )}
+            
+            {activeTab === 'keys' && (
+              selectedHost ? (
+                <HostKeys hostId={selectedHost.id} />
+              ) : (
+                <NoHostSelected />
+              )
+            )}
+            
+            {activeTab === 'plugins' && (
+              selectedHost ? (
+                <HostPlugins hostId={selectedHost.id} />
+              ) : (
+                <NoHostSelected />
+              )
+            )}
+          </Suspense>
         </div>
       </div>
     </div>

@@ -229,26 +229,10 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
     }
   };
 
-  /**
-   * Gets badge color based on provider type
-   */
-  const getProviderBadgeColor = (provider: string) => {
-    switch (provider) {
-      case 'Collection':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'Prompts':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'Semantic Kernel Plugin':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    }
-  };
-
   // If no plugin is selected and not creating a new one, show a message
   if (!selectedPluginId && !isFormOpen && !isCreatingNew) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <div className="flex flex-col items-center justify-center p-5 md:p-0 lg:p-0 h-64 bg-white dark:bg-gray-800 rounded-lg">
         <svg className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
@@ -274,21 +258,21 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-white">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           {selectedPlugin ? 'Plugin Details' : 'Create New Plugin'}
         </h2>
         {selectedPlugin && (
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={handleEditPlugin}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm sm:text-base"
             >
               Edit Plugin
             </button>
             <button
               onClick={() => showDeleteConfirmation(selectedPlugin)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm sm:text-base"
             >
               Delete Plugin
             </button>
@@ -312,33 +296,37 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
 
       {/* Plugin Details */}
       {selectedPlugin && !isFormOpen && (
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-lg">
+          {/* Header with name */}
+          <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+            <div className="flex flex-col">
+              <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white">{selectedPlugin.name}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Plugin ID: <span className="font-mono">{selectedPlugin.id}</span></p>
+            </div>
+          </div>
+          
+          {/* Main content */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Name</h3>
-              <p className="text-white text-lg">{selectedPlugin.name}</p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Provider</h3>
-              <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getProviderBadgeColor(selectedPlugin.provider)}`}>
-                {selectedPlugin.provider}
-              </span>
-            </div>
+            {/* Description section - full width */}
             <div className="md:col-span-2">
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Description</h3>
-              <p className="text-white">{selectedPlugin.description || 'No description provided'}</p>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Description</h3>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <p className="text-gray-800 dark:text-white text-sm sm:text-base">
+                  {selectedPlugin.description || 'No description provided'}
+                </p>
+              </div>
             </div>
+            
+            {/* Created date */}
             <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">Created Date</h3>
-              <p className="text-white">
-                {selectedPlugin.created_date 
-                  ? new Date(selectedPlugin.created_date).toLocaleDateString() 
-                  : 'Not available'}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-1">ID</h3>
-              <p className="text-white text-sm font-mono bg-gray-700 p-2 rounded">{selectedPlugin.id}</p>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Created Date</h3>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                <p className="text-gray-800 dark:text-white">
+                  {selectedPlugin.created_date 
+                    ? new Date(selectedPlugin.created_date).toLocaleDateString() 
+                    : 'Not available'}
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -78,10 +78,10 @@ function HostKeys({ hostId: propHostId }: HostKeysProps) {
     if (!hostId) return;
     
     try {
-      const hostData = await hostService.getHostById(hostId);
-      setHost(hostData);
-    } catch (err) {
-      console.error('Error fetching host details:', err);
+      const host = await hostService.getHostById(hostId);
+      setHost(host);
+    } catch (error) {
+      console.error('Error fetching host details:', error);
       showNotification('Error', 'Failed to load host details', 'error');
     }
   }, [hostId]);
@@ -90,68 +90,37 @@ function HostKeys({ hostId: propHostId }: HostKeysProps) {
    * Fetches keys for the host
    */
   const fetchKeys = useCallback(async () => {
-    if (!hostId) {
-      // console.log('No hostId provided, skipping key fetch');
-     //TODO: display a message to the user that no host is selected
-      return;
-    }
-    
-    console.log(`Attempting to fetch keys for host ID: ${hostId}`);
+    if (!hostId) return;
     
     try {
       setIsLoading(true);
-      
-      const keysData = await hostKeyService.getKeysForHost(hostId);
-      // console.log('Fetched keys:', keysData);
-      
-      if (keysData.length === 0) {
-        console.log('No keys found for this host');
-      }
-      
-      // Log each key's properties for debugging
-      keysData.forEach((key, index) => {
-        console.log(`Key ${index}:`, {
-          id: key.id,
-          name: key.name,
-          isActive: key.isActive,
-          type: typeof key.isActive
-        });
-      });
-      
-      setKeys(keysData);
-    } catch (err: any) {
-      console.error('Error fetching keys:', err);
-      
-      // More detailed error logging
-      if (err.response) {
-          // console.error('Error response data:', err.response.data);
-          // console.error('Error response status:', err.response.status);
-          // console.error('Error response headers:', err.response.headers);
-        showNotification('Error', `Failed to load keys: ${err.response.status} ${err.response.statusText}`, 'error');
-      } else if (err.request) {
-        // console.error('Error request:', err.request);
-        showNotification('Error', 'Failed to load keys: No response received from server', 'error');
-      } else {
-        // console.error('Error message:', err.message);
-        showNotification('Error', `Failed to load keys: ${err.message}`, 'error');
-      }
-      
-      setKeys([]);
+      const data = await hostKeyService.getKeysForHost(hostId);
+      setKeys(data);
+    } catch (error) {
+      console.error('Error fetching keys:', error);
+      showNotification('Error', 'Failed to load keys', 'error');
     } finally {
       setIsLoading(false);
     }
   }, [hostId]);
 
-  // Fetch host details and keys when component mounts or hostId changes
+  // Fetch data when component mounts or hostId changes
   useEffect(() => {
     if (hostId) {
       fetchHostDetails();
       fetchKeys();
-    } else {
-      // Reset state when no host is selected
-      setHost(null);
-      setKeys([]);
     }
+    
+    // Cleanup function for when component unmounts or hostId changes
+    return () => {
+      // Reset state when component unmounts or hostId changes
+      setKeys([]);
+      setHost(null);
+      setIsFormOpen(false);
+      setEditingKey(null);
+      setSelectedKey(null);
+      setIsKeyDetailsModalOpen(false);
+    };
   }, [hostId, fetchHostDetails, fetchKeys]);
 
   /**
@@ -326,9 +295,6 @@ function HostKeys({ hostId: propHostId }: HostKeysProps) {
           <div className="text-sm font-medium text-gray-900 dark:text-white">
             {key.name}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            ID: {key.id}
-          </div>
         </div>
       )
     },
@@ -394,19 +360,6 @@ function HostKeys({ hostId: propHostId }: HostKeysProps) {
       className: 'text-right'
     }
   ];
-
-  // If no host ID is provided, show a message
-  if (!hostId) {
-    return (
-      <Card>
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Please select a host from the Details tab first.
-          </p>
-        </div>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -486,7 +439,7 @@ function HostKeys({ hostId: propHostId }: HostKeysProps) {
               >
                 {editingKey ? 'Update Key' : 'Generate Key'}
               </Button>
-      </div>
+            </div>
           </form>
         </Card>
       )}

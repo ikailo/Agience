@@ -7,14 +7,13 @@ import { hostService } from '../../services/api/hostService';
 import { pluginService } from '../../services/api/pluginService';
 import NotificationModal from '../common/NotificationModal';
 import ConfirmationModal from '../common/ConfirmationModal';
-import Card from '../common/Card';
 import Button from '../common/Button';
 
 interface HostPluginsProps {
   hostId?: string;
 }
 
-export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
+const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
   const [searchParams] = useSearchParams();
   const urlHostId = searchParams.get('id');
   const hostId = propHostId || urlHostId;
@@ -74,6 +73,7 @@ export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
   useEffect(() => {
     const fetchData = async () => {
       if (!hostId) return;
+      
       setIsLoading(true);
       try {
         await Promise.all([
@@ -85,7 +85,16 @@ export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
         setIsLoading(false);
       }
     };
+    
     fetchData();
+    
+    // Cleanup function for when component unmounts or hostId changes
+    return () => {
+      // Reset state on component unmount
+      setHost(null);
+      setAssignedPlugins([]);
+      setAvailablePlugins([]);
+    };
   }, [hostId, fetchHostDetails, fetchAssignedPlugins, fetchAvailablePlugins]);
 
   const showNotification = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning') => {
@@ -135,18 +144,6 @@ export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
       closeConfirmation();
     }
   };
-
-  if (!hostId) {
-    return (
-      <Card>
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-300">
-            Please select a host from the Details tab first.
-          </p>
-        </div>
-      </Card>
-    );
-  }
 
   const assignedPluginIds = assignedPlugins.map(p => p.id);
   const unassignedPlugins = availablePlugins.filter(plugin => !assignedPluginIds.includes(plugin.id));
@@ -270,4 +267,6 @@ export const HostPlugins = ({ hostId: propHostId }: HostPluginsProps) => {
       />
     </div>
   );
-}; 
+};
+
+export default HostPlugins; 
