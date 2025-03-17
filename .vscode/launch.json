@@ -1,18 +1,11 @@
 {
     "version": "0.2.0",
-    "configurations": [        
-      {
-        "name": "Launch Chrome",
-        "request": "launch",
-        "type": "chrome",
-        "url": "http://localhost:8080",
-        "webRoot": "${workspaceFolder}"
-      },
+    "configurations": [
         {
-            "name": "Identity (External)",
+            "name": "Identity",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build-identity",
+            "preLaunchTask": "start-identity-external",
             "program": "${workspaceFolder}/core/authority/identity-api-dotnet/bin/Debug/net8.0/Agience.Authority.Identity.dll",
             "args": [],
             "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet/",
@@ -25,7 +18,23 @@
             }
         },
         {
-          "name": "Manage",
+          "name": "Identity Internal",
+          "type": "coreclr",
+          "request": "launch",
+          "preLaunchTask": "start-identity-internal",
+          "program": "${workspaceFolder}/core/authority/identity-api-dotnet/bin/Debug/net8.0/Agience.Authority.Identity.dll",
+          "args": [],
+          "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet/",
+          "stopAtEntry": false,
+          "env": {
+              "ASPNETCORE_ENVIRONMENT": "Debug",
+              "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
+              "ENV_FILE_NAME": ".env",
+              "LAN_EXTERNAL_AUTHORITY": "false"
+          }
+      },
+        {
+          "name": "Manage External",
           "type": "chrome",
           "request": "launch",
           "url": "https://localhost:5002",

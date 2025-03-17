@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "build-identity",
+        "label": "run-identity",
         "command": "dotnet",
         "type": "process",
         "args": [
@@ -11,69 +11,6 @@
         ],
         "problemMatcher": "$msCompile",
         "group": "build"
-      },      
-      {
-        "label": "Agience: Deploy to Docker",
-        "command": "docker-compose",
-        "type": "shell",
-        "args": [
-          "up",
-          "-d"
-        ],
-        "options": {
-          "cwd": "${workspaceFolder}/core/authority"
-        }    
-      },
-      {
-        "label": "npm-start",
-        "type": "shell",
-        "isBackground": true,
-        "command": "npm run dev", 
-        "problemMatcher": {
-          "owner": "custom",
-          "pattern": {
-            "regexp": ".",
-            "file": 1,
-            "location": 2,
-            "message": 3
-          },
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": "> vite",
-            "endsPattern": "ready in"
-          }
-        },       
-        "options": {
-          "cwd": "${workspaceFolder}/core/authority/manage-ui-python"
-        },
-        "args": [],        
-        "group": "build"
-      },
-      {
-        "label": "Agience: Initialize Database",
-        "type": "shell",
-        "command": "docker compose up --build -d database-sql; cd identity-api-dotnet; dotnet ef database update",
-        "options": {
-          "cwd": "${workspaceFolder}/core/authority",
-          "env": {
-            "EF_MIGRATION": "TRUE",
-            "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env"
-          }
-        },
-        "problemMatcher": []
-      },    
-      {
-        "label": "Agience: Create Initial Migration",
-        "type": "shell",
-        "command": "dotnet ef migrations add Initial",
-        "options": {
-          "cwd": "${workspaceFolder}/core/authority/identity-api-dotnet",
-          "env": {
-            "EF_MIGRATION": "TRUE",
-            "ENV_FILE_PATH": "${workspaceFolder}/core/authority/.env"
-          }
-        },
-        "problemMatcher": []
       }
     ]
   }
