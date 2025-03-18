@@ -1,16 +1,55 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "run-identity",
-        "command": "dotnet",
-        "type": "process",
-        "args": [
-          "build",
-          "${workspaceFolder}/core/authority/identity-api-dotnet/Agience.Authority.Identity.csproj"
-        ],
-        "problemMatcher": "$msCompile",
-        "group": "build"
-      }
-    ]
-  }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-identity",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/core/authority/identity-api-dotnet/Agience.Authority.Identity.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "docker-compose-down",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "down"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up-no-identity",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "--build",
+        "-d",
+        "database-sql", "broker-mqtt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority",
+        "env": {
+          "LAN_EXTERNAL_AUTHORITY": "true"
+        }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "debug-identity",
+      "dependsOn": [
+        "build-identity",
+        "docker-compose-down",
+        "docker-compose-up-no-identity"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    }
+  ]
+}

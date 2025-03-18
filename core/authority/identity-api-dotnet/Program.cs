@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using DotNetEnv.Configuration;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
+using System.Configuration;
 
 namespace Agience.Authority.Identity;
 internal class Program
@@ -37,13 +38,12 @@ internal class Program
             builder.Configuration.AddJsonFile($"appsettings.json", optional: false, reloadOnChange: true);
 
             // Load .env file if ENV_FILE_PATH is set
-            var buildContextPath = Environment.GetEnvironmentVariable("BUILD_CONTEXT_PATH") ?? string.Empty;      
-            var envFileName = Environment.GetEnvironmentVariable("ENV_FILE_NAME") ?? string.Empty;
-            var envFile = Path.Combine(buildContextPath, envFileName);
+            var buildContextPath = Environment.GetEnvironmentVariable("BUILD_CONTEXT_PATH") ?? string.Empty;                  
+            var envFile = Path.Combine(buildContextPath, ".env");
 
             if (!string.IsNullOrWhiteSpace(envFile) && File.Exists(envFile))
             {
-                DotNetEnv.Env.Load(envFile);
+                DotNetEnv.Env.Load(envFile, new DotNetEnv.LoadOptions().NoClobber());
             }
 
             // Add environment variables

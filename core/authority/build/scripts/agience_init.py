@@ -8,7 +8,8 @@ from pathlib import Path
 
 # Get the directory of this script and project root
 script_dir = Path(__file__).parent.absolute()
-authority_dir = script_dir.parent
+build_dir = script_dir.parent
+authority_dir = build_dir.parent
 core_dir = authority_dir.parent
 root_dir = core_dir.parent
 
@@ -35,7 +36,7 @@ def check_dependencies():
     print("Checking dependencies...")
     dependencies = {
         "dotnet": "dotnet --version",
-        "docker": "docker --version",
+        "docker": "docker info",
         "openssl": "openssl version",
         "npm": "npm -version"
     }
@@ -44,21 +45,21 @@ def check_dependencies():
     for dep, cmd in dependencies.items():
         try:
             subprocess.run(cmd.split(), shell=True, check=True, capture_output=True)
-            print(f"✓ {dep} is installed")
+            print(f"✓ {dep} is available")
         except (subprocess.CalledProcessError, FileNotFoundError):
             missing.append(dep)
             print(f"✗ {dep} not found")
     
     if missing:
         print(f"\nMissing dependencies: {', '.join(missing)}")
-        print("Please install them before continuing.")
+        print("Please install or start them before continuing.")
         return False
     return True
 
 def generate_certificates():
     """Generate certificates"""
     print("\nGenerating certificates...")
-    cert_script = script_dir / "generate-certs.py"
+    cert_script = script_dir / "generate_certs.py"
     run_command([sys.executable, str(cert_script)], "certificate generation")
 
 def generate_strong_password(length=16):
@@ -82,10 +83,23 @@ def prompt_for_value(prompt_text, default=None):
             return default   
             
         return value
-    
+
 def replace_env_value(env_content, key, new_value):
-    pattern = rf"({key}=).*"
-    return re.sub(pattern, rf"\1{new_value}", env_content)
+    pattern = rf"^(?P<key>{re.escape(key)}=).*"
+    return re.sub(pattern, rf"\g<key>{new_value}", env_content, flags=re.MULTILINE)
+
+def get_env_value(key):
+    """Get a value from the .env file for the given key."""
+    env_file = authority_dir / ".env"
+    if env_file.exists():
+        with open(env_file, "r", encoding='utf-8-sig') as file:
+            for line in file:
+                if line.startswith(f"{key}="):
+                    # Remove key and split on '='
+                    parts = line.strip().split("=", 1)
+                    if len(parts) == 2:
+                        return parts[1]
+    return None
 
 def create_env_file():
     """Create a .env file with development settings if it doesn't exist."""
@@ -103,7 +117,7 @@ def create_env_file():
         return
 
     # Read the .env.example file    
-    with open(env_example_path, 'r') as f:
+    with open(env_example_path, 'r', encoding='utf-8-sig') as f:
         env_content = f.read()
 
     print("\nCreating development .env file...")
@@ -112,16 +126,16 @@ def create_env_file():
     env_content = replace_env_value(env_content, 'DATABASE_PASSWORD', generate_strong_password())
 
     # Ask for Google OAuth credentials
-    google_client_id = prompt_for_value("Google OAuth Client ID")
+    google_client_id = prompt_for_value("Enter your Google OAuth Client ID")
     if google_client_id:
         env_content = replace_env_value(env_content, 'GOOGLE_OAUTH_CLIENT_ID', google_client_id)
 
-    google_client_secret = prompt_for_value("Google OAuth Client Secret")
+    google_client_secret = prompt_for_value("Enter your Google OAuth Client Secret")
     if google_client_secret:
         env_content = replace_env_value(env_content, 'GOOGLE_OAUTH_CLIENT_SECRET', google_client_secret)
     
     # Write the updated content to .env file
-    with open(env_file, 'w') as f:
+    with open(env_file, 'w',  encoding='utf-8-sig') as f:
         f.write(env_content)
         
     print(f"Created {env_file} with generated database password and your settings.")
@@ -131,10 +145,10 @@ def update_env_file(key, value):
     env_file = authority_dir / ".env"
 
     if env_file.exists():
-        with open(env_file, "r") as file:
+        with open(env_file, "r", encoding='utf-8-sig') as file:
             lines = file.readlines()
 
-        with open(env_file, "w") as file:
+        with open(env_file, "w", encoding='utf-8-sig') as file:
             key_found = False
             for line in lines:
                 if line.startswith(f"{key}="):
@@ -147,14 +161,17 @@ def update_env_file(key, value):
                 file.write(f"{key}={value}\n")
 
     else:
-        with open(env_file, "w") as file:
+        with open(env_file, "w", encoding='utf-8-sig') as file:
             file.write(f"{key}={value}\n")
 
 def initialize_database():
     """Initialize the database using Entity Framework migrations."""
     print("\nInitializing database...")
 
-    # Ensure LAN_EXTERNAL_AUTHORITY is set to TRUE in .env
+    # Save the original value of LAN_EXTERNAL_AUTHORITY from the .env file
+    lan_external_authority_original = get_env_value("LAN_EXTERNAL_AUTHORITY")
+    
+    # Ensure LAN_EXTERNAL_AUTHORITY is set to true in .env for database initialization
     update_env_file("LAN_EXTERNAL_AUTHORITY", "true")
 
     # First, start the database container
@@ -170,10 +187,9 @@ def initialize_database():
     os.chdir(identity_api_dir)
 
     # Load environment variables
-    
     env = os.environ.copy()
-    env["LAN_EXTERNAL_AUTHORITY"] = "true"
     env["EF_MIGRATION"] = "TRUE"
+    env["LAN_EXTERNAL_AUTHORITY"] = "true"
     env["ENV_FILE_PATH"] = str(authority_dir / ".env") #TODO: load .env file instead of passing ENV_FILE_PATH
 
     try:
@@ -195,8 +211,15 @@ def initialize_database():
         if e.stderr:
             print(e.stderr)
         print("Database initialization failed.")
+    finally:
+        # Restore the original value of LAN_EXTERNAL_AUTHORITY from the .env file
+        if lan_external_authority_original is not None:
+            update_env_file("LAN_EXTERNAL_AUTHORITY", lan_external_authority_original)
+            print("Restored LAN_EXTERNAL_AUTHORITY to its original value.")
+        else:
+            print("No original value for LAN_EXTERNAL_AUTHORITY was found to restore.")
 
-def main():
+def initialize():
     print("=== Agience Development Environment Initialization ===")
     
     if not check_dependencies():
@@ -213,4 +236,4 @@ def main():
     print("\n=== Development Environment Setup Complete ===")
 
 if __name__ == "__main__":
-    main()
+    initialize()

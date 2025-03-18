@@ -103,8 +103,8 @@ def process_localhost_cert(output_dir):
 def main():
     # Define the directories.
     # Output directory for generated certs: ../build-certs
-    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../build-certs"))
-    # Directory containing the configuration files: ../build-certs/conf
+    output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../certs"))
+    # Directory containing the configuration files: ../certs/conf
     conf_dir = os.path.join(output_dir, "conf")
     
     # Process certificates for domains defined in .conf files.
