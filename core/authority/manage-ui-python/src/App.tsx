@@ -9,6 +9,7 @@ import Agent from './pages/Agent';
 import Topic from './pages/Topic';
 import Hosts from './pages/Hosts';
 import Plugins from './pages/Plugins';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
                     <Route path="/topics" element={<Topic />} />
                     <Route path="/hosts" element={<Hosts />} />
                     <Route path="/plugins" element={<Plugins />} />
+                    <Route path="/settings" element={<Settings />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { path: '/topics', label: 'Topics', icon: '📝' },
   { path: '/hosts', label: 'Hosts', icon: '💻' },
   { path: '/plugins', label: 'Plugins', icon: '🔌' },
+  { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 interface SidebarProps {
