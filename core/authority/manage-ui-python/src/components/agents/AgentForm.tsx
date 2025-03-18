@@ -85,10 +85,15 @@ const AgentForm: React.FC<AgentFormProps> = ({
               <option value="">Select a host</option>
               {hosts.map(host => (
                 <option key={host.id} value={host.id}>
-                  {host.name}
+                  {host.name} {selectedAgent?.hostId === host.id ? '(Current)' : ''}
                 </option>
               ))}
             </select>
+            {selectedAgent?.host && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Current host: {selectedAgent.host.name}
+              </p>
+            )}
           </div>
 
           {/* Description Field - Full Width */}

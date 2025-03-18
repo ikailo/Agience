@@ -1,5 +1,7 @@
 import { apiClient } from './config';
 import { Agent, AgentFormData } from '../../types/Agent';
+import { agentPluginService } from './agentPluginService';
+import { agentTopicService } from './agentTopicService';
 
 /**
  * Service for handling agent-related API operations
@@ -105,6 +107,24 @@ export const agentService = {
    */
   deleteAgent: async (id: string): Promise<void> => {
     try {
+      // Get agent details to find related records
+      const agent = await agentService.getAgentById(id);
+      
+      // Clean up plugins
+      if (agent.plugins && agent.plugins.length > 0) {
+        for (const plugin of agent.plugins) {
+          await agentPluginService.removePluginFromAgent(id, plugin.id);
+        }
+      }
+      
+      // Clean up topics
+      if (agent.topics && agent.topics.length > 0) {
+        for (const topic of agent.topics) {
+          await agentTopicService.removeTopicFromAgent(id, topic.id);
+        }
+      }
+      
+      // Delete the agent
       await apiClient.delete(`/manage/agent/${id}`);
     } catch (error) {
       console.error(`Error deleting agent with ID ${id}:`, error);

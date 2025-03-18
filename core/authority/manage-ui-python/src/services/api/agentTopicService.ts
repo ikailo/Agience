@@ -55,7 +55,7 @@ export const agentTopicService = {
    */
   addTopicToAgent: async (agentId: string, topicId: string): Promise<AgentTopic> => {
     try {
-      const response = await apiClient.post<AgentTopic>(`/manage/agent/${agentId}/topics`, { topicId });
+      const response = await apiClient.post<AgentTopic>(`/manage/agent/${agentId}/topic/${topicId}`);
       return response.data;
     } catch (error) {
       console.error('Error adding topic to agent:', error);
@@ -71,7 +71,7 @@ export const agentTopicService = {
    */
   removeTopicFromAgent: async (agentId: string, topicId: string): Promise<AgentTopic> => {
     try {
-      const response = await apiClient.delete<AgentTopic>(`/manage/agent/${agentId}/topics/${topicId}`);
+      const response = await apiClient.delete<AgentTopic>(`/manage/agent/${agentId}/topic/${topicId}`);
       return response.data;
     } catch (error) {
       console.error('Error removing topic from agent:', error);
@@ -89,6 +89,22 @@ export const agentTopicService = {
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       console.error('Error fetching available topics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Creates a new topic for an agent
+   * @param agentId - The ID of the agent
+   * @param topicData - The topic data to create
+   * @returns Promise containing the created Topic object
+   */
+  createTopicForAgent: async (agentId: string, topicData: { name: string; description: string }): Promise<Topic> => {
+    try {
+      const response = await apiClient.post<Topic>(`/manage/agent/${agentId}/topic`, topicData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating topic for agent:', error);
       throw error;
     }
   }

@@ -26,7 +26,7 @@ const KeyDetailsModal: React.FC<KeyDetailsModalProps> = ({
         setTimeout(() => setCopiedField(null), 2000);
       })
       .catch(err => {
-        //console.error('Failed to copy:', err);
+        console.error('Failed to copy:', err);
       });
   };
 
