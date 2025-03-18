@@ -1,16 +1,81 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "run-identity",
-        "command": "dotnet",
-        "type": "process",
-        "args": [
-          "build",
-          "${workspaceFolder}/core/authority/identity-api-dotnet/Agience.Authority.Identity.csproj"
-        ],
-        "problemMatcher": "$msCompile",
-        "group": "build"
-      }
-    ]
-  }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build-identity",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "${workspaceFolder}/core/authority/identity-api-dotnet/Agience.Authority.Identity.csproj"
+      ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "switch-identity",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "../build-scripts/environment-manager.py",
+        "switch",
+        "identity_internal"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "build-manage",
+      "command": "python",
+      "type": "process",
+      "args": [
+        "-m",
+        "http.server",
+        "5002"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "debug-manage",
+      "command": "npm",
+      "type": "process",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up-no-identity",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "-d",
+        "manage", "serviceA", "serviceB"
+      ],
+      "problemMatcher": []
+    },    
+    {
+      "label": "docker-compose-up-no-identity",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "-d",
+        "manage", "serviceA", "serviceB"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up-no-identity",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "-d",
+        "manage", "serviceA", "serviceB"
+      ],
+      "problemMatcher": []
+    }
+
+  ]
+}
