@@ -85,8 +85,9 @@ def prompt_for_value(prompt_text, default=None):
         return value
     
 def replace_env_value(env_content, key, new_value):
-    pattern = rf"({key}=).*"
-    return re.sub(pattern, rf"\1{new_value}", env_content)
+    pattern = rf"^(?P<key>{re.escape(key)}=).*"
+    return re.sub(pattern, rf"\g<key>{new_value}", env_content, flags=re.MULTILINE)
+
 
 def create_env_file():
     """Create a .env file with development settings if it doesn't exist."""
@@ -104,7 +105,7 @@ def create_env_file():
         return
 
     # Read the .env.example file    
-    with open(env_example_path, 'r') as f:
+    with open(env_example_path, 'r', encoding='utf-8-sig') as f:
         env_content = f.read()
 
     print("\nCreating development .env file...")
@@ -122,7 +123,7 @@ def create_env_file():
         env_content = replace_env_value(env_content, 'GOOGLE_OAUTH_CLIENT_SECRET', google_client_secret)
     
     # Write the updated content to .env file
-    with open(env_file, 'w') as f:
+    with open(env_file, 'w',  encoding='utf-8-sig') as f:
         f.write(env_content)
         
     print(f"Created {env_file} with generated database password and your settings.")
@@ -132,10 +133,10 @@ def update_env_file(key, value):
     env_file = authority_dir / ".env"
 
     if env_file.exists():
-        with open(env_file, "r") as file:
+        with open(env_file, "r", encoding='utf-8-sig') as file:
             lines = file.readlines()
 
-        with open(env_file, "w") as file:
+        with open(env_file, "w", encoding='utf-8-sig') as file:
             key_found = False
             for line in lines:
                 if line.startswith(f"{key}="):
@@ -148,7 +149,7 @@ def update_env_file(key, value):
                 file.write(f"{key}={value}\n")
 
     else:
-        with open(env_file, "w") as file:
+        with open(env_file, "w", encoding='utf-8-sig') as file:
             file.write(f"{key}={value}\n")
 
 def initialize_database():
