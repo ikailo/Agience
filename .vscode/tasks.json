@@ -29,7 +29,7 @@
       "command": "docker-compose",
       "args": [
         "up",
-        "--build",
+        "--build", // TODO: Speed up launch time by only building if required
         "-d",
         "database-sql", "broker-mqtt"
       ],
