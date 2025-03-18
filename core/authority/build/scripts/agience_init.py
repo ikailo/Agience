@@ -8,7 +8,8 @@ from pathlib import Path
 
 # Get the directory of this script and project root
 script_dir = Path(__file__).parent.absolute()
-authority_dir = script_dir.parent
+build_dir = script_dir.parent
+authority_dir = build_dir.parent
 core_dir = authority_dir.parent
 root_dir = core_dir.parent
 
@@ -35,7 +36,7 @@ def check_dependencies():
     print("Checking dependencies...")
     dependencies = {
         "dotnet": "dotnet --version",
-        "docker": "docker --version",
+        "docker": "docker info",
         "openssl": "openssl version",
         "npm": "npm -version"
     }
@@ -44,21 +45,21 @@ def check_dependencies():
     for dep, cmd in dependencies.items():
         try:
             subprocess.run(cmd.split(), shell=True, check=True, capture_output=True)
-            print(f"✓ {dep} is installed")
+            print(f"✓ {dep} is available")
         except (subprocess.CalledProcessError, FileNotFoundError):
             missing.append(dep)
             print(f"✗ {dep} not found")
     
     if missing:
         print(f"\nMissing dependencies: {', '.join(missing)}")
-        print("Please install them before continuing.")
+        print("Please install or start them before continuing.")
         return False
     return True
 
 def generate_certificates():
     """Generate certificates"""
     print("\nGenerating certificates...")
-    cert_script = script_dir / "generate-certs.py"
+    cert_script = script_dir / "generate_certs.py"
     run_command([sys.executable, str(cert_script)], "certificate generation")
 
 def generate_strong_password(length=16):
@@ -112,11 +113,11 @@ def create_env_file():
     env_content = replace_env_value(env_content, 'DATABASE_PASSWORD', generate_strong_password())
 
     # Ask for Google OAuth credentials
-    google_client_id = prompt_for_value("Google OAuth Client ID")
+    google_client_id = prompt_for_value("Enter your Google OAuth Client ID")
     if google_client_id:
         env_content = replace_env_value(env_content, 'GOOGLE_OAUTH_CLIENT_ID', google_client_id)
 
-    google_client_secret = prompt_for_value("Google OAuth Client Secret")
+    google_client_secret = prompt_for_value("Enter your Google OAuth Client Secret")
     if google_client_secret:
         env_content = replace_env_value(env_content, 'GOOGLE_OAUTH_CLIENT_SECRET', google_client_secret)
     
@@ -196,7 +197,7 @@ def initialize_database():
             print(e.stderr)
         print("Database initialization failed.")
 
-def main():
+def initialize():
     print("=== Agience Development Environment Initialization ===")
     
     if not check_dependencies():
@@ -213,4 +214,4 @@ def main():
     print("\n=== Development Environment Setup Complete ===")
 
 if __name__ == "__main__":
-    main()
+    initialize()
