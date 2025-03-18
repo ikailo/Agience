@@ -32,13 +32,31 @@
         "--build", // TODO: Speed up launch time by only building if required
         "-d",
         "database-sql",
-        "broker-mqtt"
+        "broker-mqtt",
+        //"manage-ui"
       ],
       "options": {
         "cwd": "${workspaceFolder}/core/authority",
         "env": {
           "LAN_EXTERNAL_AUTHORITY": "true"
         }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up-no-manage",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "--build", // TODO: Speed up launch time by only building if required
+        "-d",
+        "identity-api",
+        "database-sql",
+        "broker-mqtt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority"
       },
       "problemMatcher": []
     },
@@ -54,6 +72,16 @@
     },
     {
       "label": "debug-manage",
+      "dependsOn": [        
+        "docker-compose-down",
+        "docker-compose-up-no-manage",
+        "run-manage"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "run-manage",
       "type": "npm",
       "script": "dev",
       "isBackground": true,
