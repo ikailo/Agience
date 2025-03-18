@@ -14,8 +14,7 @@ ENVIRONMENTS = {
     },
     "identity_external": {
         "description": "Identity API and Manage UI running externally (outside Docker)",
-        "lan_external_authority": "true",
-        "cert_config": "WAN certificates"
+        "lan_external_authority": "true"
     }
 }
 
