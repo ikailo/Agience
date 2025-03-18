@@ -31,7 +31,8 @@
         "up",
         "--build", // TODO: Speed up launch time by only building if required
         "-d",
-        "database-sql", "broker-mqtt"
+        "database-sql",
+        "broker-mqtt"
       ],
       "options": {
         "cwd": "${workspaceFolder}/core/authority",
@@ -50,6 +51,32 @@
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    },
+    {
+      "label": "debug-manage",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority/manage-ui"
+      },
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": ".+",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Starting Vite on port",
+          "endsPattern": "^(Started Vite on port|Vite is already running on port)"
+        }
+      }
     }
   ]
 }

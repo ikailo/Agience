@@ -21,7 +21,7 @@
       "request": "launch",
       "preLaunchTask": "debug-manage",
       "url": "https://localhost:5002",
-      "webRoot": "${workspaceFolder}/core/authority/manage-ui-python",
+      "webRoot": "${workspaceFolder}/core/authority/manage-ui",
     }
   ],
   "compounds": [
