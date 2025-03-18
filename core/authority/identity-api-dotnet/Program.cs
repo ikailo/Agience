@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using DotNetEnv.Configuration;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Options;
+using System.Configuration;
 
 namespace Agience.Authority.Identity;
 internal class Program
@@ -42,7 +43,7 @@ internal class Program
 
             if (!string.IsNullOrWhiteSpace(envFile) && File.Exists(envFile))
             {
-                DotNetEnv.Env.Load(envFile);
+                DotNetEnv.Env.Load(envFile, new DotNetEnv.LoadOptions().NoClobber());
             }
 
             // Add environment variables

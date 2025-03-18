@@ -12,35 +12,15 @@
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "switch-identity",
-      "type": "process",
-      "command": "python",
+      "label": "docker-compose-down",
+      "type": "shell",
+      "command": "docker-compose",
       "args": [
-        "../build-scripts/environment-manager.py",
-        "switch",
-        "identity_internal"
+        "down"
       ],
-      "problemMatcher": []
-    },
-    {
-      "label": "build-manage",
-      "command": "python",
-      "type": "process",
-      "args": [
-        "-m",
-        "http.server",
-        "5002"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "debug-manage",
-      "command": "npm",
-      "type": "process",
-      "args": [
-        "run",
-        "dev"
-      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority"
+      },
       "problemMatcher": []
     },
     {
@@ -49,33 +29,27 @@
       "command": "docker-compose",
       "args": [
         "up",
+        "--build",
         "-d",
-        "manage", "serviceA", "serviceB"
+        "database-sql", "broker-mqtt"
       ],
-      "problemMatcher": []
-    },    
-    {
-      "label": "docker-compose-up-no-identity",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "up",
-        "-d",
-        "manage", "serviceA", "serviceB"
-      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority",
+        "env": {
+          "LAN_EXTERNAL_AUTHORITY": "true"
+        }
+      },
       "problemMatcher": []
     },
     {
-      "label": "docker-compose-up-no-identity",
-      "type": "shell",
-      "command": "docker-compose",
-      "args": [
-        "up",
-        "-d",
-        "manage", "serviceA", "serviceB"
+      "label": "debug-identity",
+      "dependsOn": [
+        "build-identity",
+        "docker-compose-down",
+        "docker-compose-up-no-identity"
       ],
+      "dependsOrder": "sequence",
       "problemMatcher": []
     }
-
   ]
 }

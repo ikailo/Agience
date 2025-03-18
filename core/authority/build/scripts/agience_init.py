@@ -83,11 +83,23 @@ def prompt_for_value(prompt_text, default=None):
             return default   
             
         return value
-    
+
 def replace_env_value(env_content, key, new_value):
     pattern = rf"^(?P<key>{re.escape(key)}=).*"
     return re.sub(pattern, rf"\g<key>{new_value}", env_content, flags=re.MULTILINE)
 
+def get_env_value(key):
+    """Get a value from the .env file for the given key."""
+    env_file = authority_dir / ".env"
+    if env_file.exists():
+        with open(env_file, "r", encoding='utf-8-sig') as file:
+            for line in file:
+                if line.startswith(f"{key}="):
+                    # Remove key and split on '='
+                    parts = line.strip().split("=", 1)
+                    if len(parts) == 2:
+                        return parts[1]
+    return None
 
 def create_env_file():
     """Create a .env file with development settings if it doesn't exist."""
@@ -156,7 +168,10 @@ def initialize_database():
     """Initialize the database using Entity Framework migrations."""
     print("\nInitializing database...")
 
-    # Ensure LAN_EXTERNAL_AUTHORITY is set to TRUE in .env
+    # Save the original value of LAN_EXTERNAL_AUTHORITY from the .env file
+    lan_external_authority_original = get_env_value("LAN_EXTERNAL_AUTHORITY")
+    
+    # Ensure LAN_EXTERNAL_AUTHORITY is set to true in .env for database initialization
     update_env_file("LAN_EXTERNAL_AUTHORITY", "true")
 
     # First, start the database container
@@ -172,10 +187,9 @@ def initialize_database():
     os.chdir(identity_api_dir)
 
     # Load environment variables
-    
     env = os.environ.copy()
-    env["LAN_EXTERNAL_AUTHORITY"] = "true"
     env["EF_MIGRATION"] = "TRUE"
+    env["LAN_EXTERNAL_AUTHORITY"] = "true"
     env["ENV_FILE_PATH"] = str(authority_dir / ".env") #TODO: load .env file instead of passing ENV_FILE_PATH
 
     try:
@@ -197,6 +211,13 @@ def initialize_database():
         if e.stderr:
             print(e.stderr)
         print("Database initialization failed.")
+    finally:
+        # Restore the original value of LAN_EXTERNAL_AUTHORITY from the .env file
+        if lan_external_authority_original is not None:
+            update_env_file("LAN_EXTERNAL_AUTHORITY", lan_external_authority_original)
+            print("Restored LAN_EXTERNAL_AUTHORITY to its original value.")
+        else:
+            print("No original value for LAN_EXTERNAL_AUTHORITY was found to restore.")
 
 def initialize():
     print("=== Agience Development Environment Initialization ===")

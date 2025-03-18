@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Identity API",
+      "name": "Identity API",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "debug-identity",
@@ -12,11 +12,11 @@
       "env": {        
         "BUILD_CONTEXT_PATH": "${workspaceFolder}/core/authority/",
         "ASPNETCORE_ENVIRONMENT": "Debug",
-        "LAN_EXTERNAL_AUTHORITY": "true"
+        "LAN_EXTERNAL_AUTHORITY": "TRUE"
       }
     },    
     {
-      "name": "Debug Manage UI",
+      "name": "Manage UI",
       "type": "chrome",
       "request": "launch",
       "preLaunchTask": "debug-manage",
@@ -26,8 +26,8 @@
   ],
   "compounds": [
     {
-      "name": "Debug Identity & Manage",
-      "configurations": ["Debug Identity API", "Debug Manage UI"]
+      "name": "Identity API & Manage UI",
+      "configurations": ["Identity API", "Manage UI"]
     }
   ]
 }
