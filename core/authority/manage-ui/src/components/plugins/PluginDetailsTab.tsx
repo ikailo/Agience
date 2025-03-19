@@ -26,7 +26,7 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-  const [editFormData, setEditFormData] = useState<PluginFormData>({
+  const [, setEditFormData] = useState<PluginFormData>({
     name: '',
     description: '',
     provider: 'Collection'

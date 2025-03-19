@@ -4,7 +4,7 @@ import { Topic, TopicFormData } from '../../types/Topic';
 import { Agent } from '../../types/Agent';
 import { agentService } from '../../services/api/agentService';
 import { agentTopicService } from '../../services/api/agentTopicService';
-import { topicService } from '../../services/api/topicService';
+//import { topicService } from '../../services/api/topicService';
 import AgentList from './AgentList';
 import TopicCard from './topics/TopicCard';
 import TopicForm from './topics/TopicForm';
@@ -55,7 +55,7 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
       console.error('Error fetching agents:', error);
     }
   }, []);
-
+/*
   // Fetch agent details
   const fetchAgentDetails = useCallback(async () => {
     if (!contextAgentId) return;
@@ -68,7 +68,7 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
       console.error('Error fetching agent details:', error);
     }
   }, [contextAgentId]);
-
+*/
   // Fetch assigned topics
   const fetchAssignedTopics = useCallback(async () => {
     if (!contextAgentId) return;
@@ -252,11 +252,11 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
   const handleSaveTopic = async (topicData: TopicFormData) => {
     setIsSubmitting(true);
     try {
-      let newTopic;
+      //let newTopic;
       
       if (contextAgentId) {
         // If an agent is selected, create the topic directly for the agent
-        newTopic = await agentTopicService.createTopicForAgent(contextAgentId, topicData);
+        //newTopic = await agentTopicService.createTopicForAgent(contextAgentId, topicData);
         showNotification(
           'Success',
           `Topic "${topicData.name}" created and assigned to agent successfully`,
@@ -264,7 +264,7 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
         );
       } else {
         // Otherwise, just create a regular topic
-        newTopic = await topicService.createTopic(topicData);
+        //newTopic = await topicService.createTopic(topicData);
         showNotification(
           'Success',
           `Topic "${topicData.name}" created successfully`,

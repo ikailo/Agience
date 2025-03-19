@@ -42,6 +42,7 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
     pluginName: ''
   });
 
+  /*
   // Fetch all agents
   const fetchAgents = useCallback(async () => {
     try {
@@ -51,6 +52,7 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
       console.error('Error fetching agents:', error);
     }
   }, []);
+*/
 
   // Fetch assigned plugins
   const fetchAssignedPlugins = useCallback(async () => {
