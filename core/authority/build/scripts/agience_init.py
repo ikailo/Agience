@@ -34,27 +34,36 @@ def run_command(cmd, description, check=True):
 def check_dependencies():
     """Check for required dependencies."""
     print("Checking dependencies...")
+
     dependencies = {
         "dotnet": "dotnet --version",
         "docker": "docker info",
         "openssl": "openssl version",
-        "npm": "npm -version"
+        "npm": "npm --version"  # corrected command flag
     }
     
     missing = []
     for dep, cmd in dependencies.items():
         try:
-            subprocess.run(cmd.split(), shell=True, check=True, capture_output=True)
-            print(f"✓ {dep} is available")
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Pass the command as a string (without splitting) if shell=True.
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            # Try to capture version info from stdout or stderr.
+            output = result.stdout.strip() or result.stderr.strip()
+            print(f"✓ {dep} is available: {output}")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
             missing.append(dep)
-            print(f"✗ {dep} not found")
+            print(f"✗ {dep} not found (error: {e})")
     
     if missing:
-        print(f"\nMissing dependencies: {', '.join(missing)}")
-        print("Please install or start them before continuing.")
-        return False
-    return True
+        print("Missing dependencies:", ", ".join(missing))
+    else:
+        print("All dependencies are present.")
 
 def generate_certificates():
     """Generate certificates"""
