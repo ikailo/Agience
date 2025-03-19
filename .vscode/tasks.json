@@ -31,13 +31,32 @@
         "up",
         "--build", // TODO: Speed up launch time by only building if required
         "-d",
-        "database-sql", "broker-mqtt"
+        "database-sql",
+        "broker-mqtt",
+        //"manage-ui"
       ],
       "options": {
         "cwd": "${workspaceFolder}/core/authority",
         "env": {
           "LAN_EXTERNAL_AUTHORITY": "true"
         }
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up-no-manage",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": [
+        "up",
+        "--build", // TODO: Speed up launch time by only building if required
+        "-d",
+        "identity-api",
+        "database-sql",
+        "broker-mqtt"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority"
       },
       "problemMatcher": []
     },
@@ -50,6 +69,51 @@
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
+    },
+    {
+      "label": "debug-manage",
+      "dependsOn": [        
+        "docker-compose-down",
+        "docker-compose-up-no-manage",
+        "run-manage"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "run-manage",
+      "type": "npm",
+      "script": "dev",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority/manage-ui"
+      },
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": ".+",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^Starting Vite on port",
+          "endsPattern": "^(Started Vite on port|Vite is already running on port)"
+        }
+      }
+    },
+    {
+      "label": "stop-manage",
+      "type": "shell",
+      "command": "npx kill-port 5002",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority/manage-ui"
+      },
     }
   ]
 }

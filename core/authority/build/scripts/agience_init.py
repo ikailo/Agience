@@ -219,6 +219,16 @@ def initialize_database():
         else:
             print("No original value for LAN_EXTERNAL_AUTHORITY was found to restore.")
 
+def run_npm_install():
+    """Run npm install in the manage-ui directory."""
+    # Adjust the path to your manage-ui directory if needed.
+    manage_ui_dir = authority_dir / "manage-ui"
+    print(f"\nRunning npm install in {manage_ui_dir} ...")
+    os.chdir(manage_ui_dir)
+    # On Windows, use "npm.cmd" instead of "npm"
+    npm_cmd = "npm.cmd" if sys.platform == "win32" else "npm"
+    run_command([npm_cmd, "install"], "npm install in manage-ui directory")
+
 def initialize():
     print("=== Agience Development Environment Initialization ===")
     
@@ -227,6 +237,7 @@ def initialize():
     
     create_env_file()
     generate_certificates()
+    run_npm_install() 
     
     # Ask if user wants to initialize the database
     should_init_db = prompt_for_value("\nInitialize database? (y/n)", default='y').lower()

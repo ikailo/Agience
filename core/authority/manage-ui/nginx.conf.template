@@ -1,0 +1,12 @@
+server {
+    listen ${MANAGE_UI_ORIGIN_PORT} ssl;
+    server_name ${MANAGE_UI_ORIGIN_HOST};
+
+    ssl_certificate ${WAN_CRT_PATH};
+    ssl_certificate_key ${WAN_KEY_PATH};
+
+    location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ /index.html;
+    }
+}

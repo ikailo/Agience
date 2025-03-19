@@ -125,17 +125,36 @@ services:
       - database-sql
       - broker-mqtt
 
-#  manage:
-#    container_name: manage-ui
-#    image: manage-ui
-#    restart: on-failure
-#    build:
-#      context: ../
-#      dockerfile: ./authority/manage-ui/Dockerfile
-#    ports:
-#      - "5002:5002"
-#    networks:
-#      - agience-net
+  manage-ui:
+    container_name: manage-ui
+    image: manage-ui
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./authority/manage-ui/Dockerfile
+      args:
+        VITE_AUTHORITY_PUBLIC_URI: ${VITE_AUTHORITY_PUBLIC_URI:-https://localhost:5001}
+        VITE_MANAGE_UI_ORIGIN_URI: ${VITE_MANAGE_UI_ORIGIN_URI}
+        VITE_MANAGE_UI_CLIENT_ID: ${VITE_MANAGE_UI_CLIENT_ID}
+        VITE_MANAGE_UI_REDIRECT_URI: ${VITE_MANAGE_UI_REDIRECT_URI}
+        VITE_MANAGE_UI_LOGOUT_REDIRECT_URI: ${VITE_MANAGE_UI_LOGOUT_REDIRECT_URI}
+        VITE_AUTHORITY_AUTHORIZATION_ENDPOINT: ${VITE_AUTHORITY_AUTHORIZATION_ENDPOINT}
+        VITE_AUTHORITY_TOKEN_ENDPOINT: ${VITE_AUTHORITY_TOKEN_ENDPOINT}
+        VITE_AUTHORITY_USERINFO_ENDPOINT: ${VITE_AUTHORITY_USERINFO_ENDPOINT}
+        VITE_AUTHORITY_REVOCATION_ENDPOINT: ${VITE_AUTHORITY_REVOCATION_ENDPOINT}
+    environment:
+      - VITE_MANAGE_UI_ORIGIN_URI=${VITE_MANAGE_UI_ORIGIN_URI}
+      - WAN_CRT_PATH=/app/https/wan.crt
+      - WAN_KEY_PATH=/app/https/wan.key
+    ports:
+      - "5002:5002"
+    volumes:
+      - ${WAN_CRT_PATH:-/dev/null}:/app/https/wan.crt:ro
+      - ${WAN_KEY_PATH:-/dev/null}:/app/https/wan.key:ro
+    networks:
+      - agience-net
+    depends_on:      
+      - identity-api
 
 #  stream:
 #    container_name: media-stream
