@@ -105,6 +105,15 @@
           "endsPattern": "^(Started Vite on port|Vite is already running on port)"
         }
       }
+    },
+    {
+      "label": "stop-manage",
+      "type": "shell",
+      "command": "npx kill-port 5002",
+      "problemMatcher": [],
+      "options": {
+        "cwd": "${workspaceFolder}/core/authority/manage-ui"
+      },
     }
   ]
 }

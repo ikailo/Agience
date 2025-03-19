@@ -15,7 +15,7 @@ interface TopicAgentsTabProps {
  * TopicAgentsTab component that displays and manages agents for a topic
  */
 const TopicAgentsTab: React.FC<TopicAgentsTabProps> = ({ topicId: propTopicId }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const urlTopicId = searchParams.get('id');
   
   // Use the prop topicId if provided, otherwise use the URL parameter
@@ -25,7 +25,7 @@ const TopicAgentsTab: React.FC<TopicAgentsTabProps> = ({ topicId: propTopicId })
   const [assignedAgents, setAssignedAgents] = useState<Agent[]>([]);
   const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
 
   // Fetch topic details
   const fetchTopicDetails = useCallback(async () => {

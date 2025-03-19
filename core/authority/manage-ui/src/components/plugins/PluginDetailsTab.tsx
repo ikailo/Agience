@@ -18,7 +18,7 @@ const PluginDetailsTab: React.FC<PluginDetailsTabProps> = ({
   onSelectPlugin
 }) => {
   const [plugins, setPlugins] = useState<Plugin[]>([]);
-  const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
+  const [, setSelectedPlugin] = useState<Plugin | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [editingPluginId, setEditingPluginId] = useState<string | null>(null);

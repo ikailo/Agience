@@ -24,12 +24,12 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
   const contextAgentId = propAgentId || urlAgentId;
 
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [, setSelectedAgent] = useState<Agent | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [assignedTopics, setAssignedTopics] = useState<Topic[]>([]);
   const [availableTopics, setAvailableTopics] = useState<Topic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   const [showTopicForm, setShowTopicForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

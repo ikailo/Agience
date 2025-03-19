@@ -22,12 +22,12 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
   const contextAgentId = propAgentId || urlAgentId;
 
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [, setSelectedAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [agent, setAgent] = useState<Agent | null>(null);
   const [assignedPlugins, setAssignedPlugins] = useState<Plugin[]>([]);
   const [availablePlugins, setAvailablePlugins] = useState<Plugin[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
 
   // Fetch all agents
   const fetchAgents = useCallback(async () => {

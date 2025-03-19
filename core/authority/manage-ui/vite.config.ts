@@ -9,21 +9,28 @@ const env = dotenv.config({ path: path.resolve(__dirname, '../.env') });
 dotenvExpand.expand(env);
 
   // Filter only public variables (those starting with VITE_)
-  const publicEnv = Object.keys(process.env).reduce((acc, key) => {
-    if (key.startsWith('VITE_')) {
-      acc[key] = process.env[key] as string;
-    }
-    return acc;
-  }, {} as Record<string, string>);
+const publicEnv = Object.keys(process.env).reduce((acc, key) => {
+  if (key.startsWith('VITE_')) {
+    acc[key] = process.env[key] as string;
+  }
+  return acc;
+}, {} as Record<string, string>);
+
+let httpsConfig;
+const keyPath = process.env.WAN_KEY_PATH;
+const certPath = process.env.WAN_CRT_PATH;
+if (keyPath && certPath) {
+  httpsConfig = {
+    key: fs.readFileSync(path.resolve(__dirname, "../", keyPath)),
+    cert: fs.readFileSync(path.resolve(__dirname, "../", certPath))
+  };
+}
 
 export default defineConfig({
   plugins: [react()],
   envDir: '../', // Explicitly set the env file directory
   server: {
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, "../", process.env.WAN_KEY_PATH || "")),
-      cert: fs.readFileSync(path.resolve(__dirname, "../", process.env.WAN_CRT_PATH || "")),
-    },
+    ...(httpsConfig ? { https: httpsConfig } : {}),
     host: "localhost",
     port: 5002
   },
