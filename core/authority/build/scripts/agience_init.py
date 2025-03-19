@@ -62,8 +62,10 @@ def check_dependencies():
     
     if missing:
         print("Missing dependencies:", ", ".join(missing))
+        return False
     else:
         print("All dependencies are present.")
+        return True
 
 def generate_certificates():
     """Generate certificates"""
