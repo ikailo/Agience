@@ -6,6 +6,8 @@ import { agentService } from '../../services/api/agentService';
 import { agentPluginService } from '../../services/api/agentPluginService';
 import AgentList from './AgentList';
 import PluginCard from './plugins/PluginCard';
+import NotificationModal from '../common/NotificationModal';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 interface AgentPluginsTabProps {
   agentId?: string;
@@ -27,7 +29,18 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
   const [agent, setAgent] = useState<Agent | null>(null);
   const [assignedPlugins, setAssignedPlugins] = useState<Plugin[]>([]);
   const [availablePlugins, setAvailablePlugins] = useState<Plugin[]>([]);
-  const [searchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+  const [confirmation, setConfirmation] = useState<{ isOpen: boolean; pluginId: string; pluginName: string }>({
+    isOpen: false,
+    pluginId: '',
+    pluginName: ''
+  });
 
   // Fetch all agents
   const fetchAgents = useCallback(async () => {
@@ -38,19 +51,6 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
       console.error('Error fetching agents:', error);
     }
   }, []);
-
-  // Fetch agent details
-  const fetchAgentDetails = useCallback(async () => {
-    if (!contextAgentId) return;
-
-    try {
-      const agentData = await agentService.getAgentById(contextAgentId);
-      setAgent(agentData);
-      setSelectedAgent(agentData);
-    } catch (error) {
-      console.error('Error fetching agent details:', error);
-    }
-  }, [contextAgentId]);
 
   // Fetch assigned plugins
   const fetchAssignedPlugins = useCallback(async () => {
@@ -64,52 +64,148 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
     }
   }, [contextAgentId]);
 
-  // Fetch available plugins
-  const fetchAvailablePlugins = useCallback(async () => {
-    try {
-      const plugins = await agentPluginService.getAvailablePlugins();
-      setAvailablePlugins(plugins);
-    } catch (error) {
-      console.error('Error fetching available plugins:', error);
-    }
-  }, []);
-
   // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
+      if (!contextAgentId) {
+        // If no agent is selected, just fetch the list of agents
+        setIsLoading(true);
+        try {
+          const agentsData = await agentService.getAllAgents();
+          setAgents(agentsData);
+        } catch (error) {
+          console.error('Error fetching agents:', error);
+          showNotification('Error', 'Failed to load agents', 'error');
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
+      
       setIsLoading(true);
-      await Promise.all([
-        fetchAgents(),
-        fetchAgentDetails(),
-        fetchAssignedPlugins(),
-        fetchAvailablePlugins()
-      ]);
-      setIsLoading(false);
+      try {
+        // Fetch data in parallel to reduce loading time
+        const [agentsData, agentData, assignedPluginsData, availablePluginsData] = await Promise.all([
+          agentService.getAllAgents(),
+          agentService.getAgentById(contextAgentId),
+          agentPluginService.getAgentPlugins(contextAgentId),
+          agentPluginService.getAvailablePlugins()
+        ]);
+        
+        setAgents(agentsData);
+        setAgent(agentData);
+        setSelectedAgent(agentData);
+        setAssignedPlugins(assignedPluginsData);
+        setAvailablePlugins(availablePluginsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        showNotification('Error', 'Failed to load data', 'error');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
-  }, [fetchAgents, fetchAgentDetails, fetchAssignedPlugins, fetchAvailablePlugins]);
+  }, [contextAgentId]);
 
-  // Handle plugin toggle
-  const handleTogglePlugin = async (pluginId: string) => {
+  /**
+   * Shows a notification modal
+   */
+  const showNotification = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning') => {
+    setNotification({ isOpen: true, title, message, type });
+  };
+
+  /**
+   * Closes the notification modal
+   */
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  };
+
+  /**
+   * Shows the confirmation modal for plugin removal
+   */
+  const showRemoveConfirmation = (pluginId: string, pluginName: string) => {
+    setConfirmation({ isOpen: true, pluginId, pluginName });
+  };
+
+  /**
+   * Closes the confirmation modal
+   */
+  const closeConfirmation = () => {
+    setConfirmation(prev => ({ ...prev, isOpen: false }));
+  };
+
+  /**
+   * Handles the actual removal of a plugin after confirmation
+   */
+  const handleRemovePlugin = async () => {
+    if (!contextAgentId || !confirmation.pluginId) return;
+
+    setIsLoading(true);
+    try {
+      await agentPluginService.removePluginFromAgent(contextAgentId, confirmation.pluginId);
+      await fetchAssignedPlugins();
+      showNotification(
+        'Plugin Removed',
+        `Successfully removed plugin "${confirmation.pluginName}" from the agent.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error removing plugin:', error);
+      showNotification(
+        'Error',
+        `Failed to remove plugin "${confirmation.pluginName}". Please try again.`,
+        'error'
+      );
+    } finally {
+      setIsLoading(false);
+      closeConfirmation();
+    }
+  };
+
+  /**
+   * Handles adding a plugin to the agent
+   */
+  const handleAddPlugin = async (pluginId: string) => {
     if (!contextAgentId) return;
 
     setIsLoading(true);
     try {
-      const isAssigned = assignedPlugins.some(p => p.id === pluginId);
-
-      if (isAssigned) {
-        await agentPluginService.removePluginFromAgent(contextAgentId, pluginId);
-      } else {
-        await agentPluginService.addPluginToAgent(contextAgentId, pluginId);
-      }
-
-      // Refresh the plugin lists
+      await agentPluginService.addPluginToAgent(contextAgentId, pluginId);
       await fetchAssignedPlugins();
+      const plugin = availablePlugins.find(p => p.id === pluginId);
+      showNotification(
+        'Plugin Added',
+        `Successfully added plugin "${plugin?.name}" to the agent.`,
+        'success'
+      );
     } catch (error) {
-      console.error('Error toggling plugin:', error);
+      console.error('Error adding plugin:', error);
+      const plugin = availablePlugins.find(p => p.id === pluginId);
+      showNotification(
+        'Error',
+        `Failed to add plugin "${plugin?.name}". Please try again.`,
+        'error'
+      );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Toggles a plugin's assignment to the agent
+   */
+  const handleTogglePlugin = (pluginId: string) => {
+    const isAssigned = assignedPlugins.some(p => p.id === pluginId);
+    
+    if (isAssigned) {
+      const plugin = assignedPlugins.find(p => p.id === pluginId);
+      if (plugin) {
+        showRemoveConfirmation(pluginId, plugin.name);
+      }
+    } else {
+      handleAddPlugin(pluginId);
     }
   };
 
@@ -182,6 +278,22 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
                 </div>
               ) : (
                 <div className="space-y-8">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search plugins..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
                   {/* Assigned Plugins Section */}
                   <div>
                     <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200 mb-4">
@@ -235,6 +347,28 @@ export const AgentPluginsTab: React.FC<AgentPluginsTabProps> = ({ agentId: propA
           )}
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmation.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={handleRemovePlugin}
+        title="Remove Plugin"
+        message={`Are you sure you want to remove the plugin "${confirmation.pluginName}" from this agent?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        type="danger"
+        isLoading={isLoading}
+      />
     </div>
   );
 };

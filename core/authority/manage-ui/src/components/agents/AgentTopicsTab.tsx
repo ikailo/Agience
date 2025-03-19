@@ -8,6 +8,8 @@ import { topicService } from '../../services/api/topicService';
 import AgentList from './AgentList';
 import TopicCard from './topics/TopicCard';
 import TopicForm from './topics/TopicForm';
+import NotificationModal from '../common/NotificationModal';
+import ConfirmationModal from '../common/ConfirmationModal';
 
 interface AgentTopicsTabProps {
   agentId?: string;
@@ -32,6 +34,17 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
   const [searchTerm] = useState('');
   const [showTopicForm, setShowTopicForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' | 'info' | 'warning' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+  const [confirmation, setConfirmation] = useState<{ isOpen: boolean; topicId: string; topicName: string }>({
+    isOpen: false,
+    topicId: '',
+    topicName: ''
+  });
 
   // Fetch all agents
   const fetchAgents = useCallback(async () => {
@@ -81,42 +94,139 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
   // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
+      if (!contextAgentId) {
+        // If no agent is selected, just fetch the list of agents
+        setIsLoading(true);
+        await fetchAgents();
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
-      await Promise.all([
-        fetchAgents(),
-        fetchAgentDetails(),
-        fetchAssignedTopics(),
-        fetchAvailableTopics()
-      ]);
-      setIsLoading(false);
+      try {
+        // Fetch data in parallel to reduce loading time
+        const [agentsData, agentData, assignedTopicsData, availableTopicsData] = await Promise.all([
+          agentService.getAllAgents(),
+          agentService.getAgentById(contextAgentId),
+          agentTopicService.getAgentTopics(contextAgentId),
+          agentTopicService.getAvailableTopics()
+        ]);
+        
+        setAgents(agentsData);
+        setAgent(agentData);
+        setSelectedAgent(agentData);
+        setAssignedTopics(assignedTopicsData);
+        setAvailableTopics(availableTopicsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        showNotification('Error', 'Failed to load data', 'error');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
-  }, [fetchAgents, fetchAgentDetails, fetchAssignedTopics, fetchAvailableTopics]);
+  }, [contextAgentId]);
+
+  /**
+   * Shows a notification modal
+   */
+  const showNotification = (title: string, message: string, type: 'success' | 'error' | 'info' | 'warning') => {
+    setNotification({ isOpen: true, title, message, type });
+  };
+
+  /**
+   * Closes the notification modal
+   */
+  const closeNotification = () => {
+    setNotification(prev => ({ ...prev, isOpen: false }));
+  };
+
+  /**
+   * Shows the confirmation modal for topic removal
+   */
+  const showRemoveConfirmation = (topicId: string, topicName: string) => {
+    setConfirmation({ isOpen: true, topicId, topicName });
+  };
+
+  /**
+   * Closes the confirmation modal
+   */
+  const closeConfirmation = () => {
+    setConfirmation(prev => ({ ...prev, isOpen: false }));
+  };
+
+  /**
+   * Handles the actual removal of a topic after confirmation
+   */
+  const handleRemoveTopic = async () => {
+    if (!contextAgentId || !confirmation.topicId) return;
+
+    setIsLoading(true);
+    try {
+      await agentTopicService.removeTopicFromAgent(contextAgentId, confirmation.topicId);
+      await fetchAssignedTopics();
+      showNotification(
+        'Topic Removed',
+        `Successfully removed topic "${confirmation.topicName}" from the agent.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error removing topic:', error);
+      showNotification(
+        'Error',
+        `Failed to remove topic "${confirmation.topicName}". Please try again.`,
+        'error'
+      );
+    } finally {
+      setIsLoading(false);
+      closeConfirmation();
+    }
+  };
+
+  /**
+   * Handles adding a topic to the agent
+   */
+  const handleAddTopic = async (topicId: string) => {
+    if (!contextAgentId) return;
+
+    setIsLoading(true);
+    try {
+      await agentTopicService.addTopicToAgent(contextAgentId, topicId);
+      await fetchAssignedTopics();
+      const topic = availableTopics.find(t => t.id === topicId);
+      showNotification(
+        'Topic Added',
+        `Successfully added topic "${topic?.name}" to the agent.`,
+        'success'
+      );
+    } catch (error) {
+      console.error('Error adding topic:', error);
+      const topic = availableTopics.find(t => t.id === topicId);
+      showNotification(
+        'Error',
+        `Failed to add topic "${topic?.name}". Please try again.`,
+        'error'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /**
    * Toggles a topic's assignment to the agent
    * @param topicId - The ID of the topic to toggle
    */
-  const handleToggleTopic = async (topicId: string) => {
-    if (!contextAgentId) return;
-
-    setIsLoading(true);
-    try {
-      const isAssigned = assignedTopics.some(t => t.id === topicId);
-
-      if (isAssigned) {
-        await agentTopicService.removeTopicFromAgent(contextAgentId, topicId);
-      } else {
-        await agentTopicService.addTopicToAgent(contextAgentId, topicId);
+  const handleToggleTopic = (topicId: string) => {
+    const isAssigned = assignedTopics.some(t => t.id === topicId);
+    
+    if (isAssigned) {
+      const topic = assignedTopics.find(t => t.id === topicId);
+      if (topic) {
+        showRemoveConfirmation(topicId, topic.name);
       }
-
-      // Refresh the topic lists
-      await fetchAssignedTopics();
-    } catch (error) {
-      console.error('Error toggling topic:', error);
-    } finally {
-      setIsLoading(false);
+    } else {
+      handleAddTopic(topicId);
     }
   };
 
@@ -142,11 +252,40 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
   const handleSaveTopic = async (topicData: TopicFormData) => {
     setIsSubmitting(true);
     try {
-      await topicService.createTopic(topicData);
+      let newTopic;
+      
+      if (contextAgentId) {
+        // If an agent is selected, create the topic directly for the agent
+        newTopic = await agentTopicService.createTopicForAgent(contextAgentId, topicData);
+        showNotification(
+          'Success',
+          `Topic "${topicData.name}" created and assigned to agent successfully`,
+          'success'
+        );
+      } else {
+        // Otherwise, just create a regular topic
+        newTopic = await topicService.createTopic(topicData);
+        showNotification(
+          'Success',
+          `Topic "${topicData.name}" created successfully`,
+          'success'
+        );
+      }
+      
       setShowTopicForm(false);
       await fetchAvailableTopics();
+      
+      // If an agent is selected, also refresh the assigned topics
+      if (contextAgentId) {
+        await fetchAssignedTopics();
+      }
     } catch (error) {
       console.error('Error creating topic:', error);
+      showNotification(
+        'Error',
+        `Failed to create topic "${topicData.name}". Please try again.`,
+        'error'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -296,6 +435,28 @@ function AgentTopicsTab({ agentId: propAgentId }: AgentTopicsTabProps) {
           )}
         </div>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        title={notification.title}
+        message={notification.message}
+        type={notification.type}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmation.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={handleRemoveTopic}
+        title="Remove Topic"
+        message={`Are you sure you want to remove the topic "${confirmation.topicName}" from this agent?`}
+        confirmText="Remove"
+        cancelText="Cancel"
+        type="danger"
+        isLoading={isLoading}
+      />
     </div>
   );
 }
