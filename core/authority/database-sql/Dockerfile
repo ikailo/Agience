@@ -1,4 +1,4 @@
-FROM postgres:16.3
+FROM postgres:16
 
 # Install envsubst (for config substitution)
 RUN apt-get update && \

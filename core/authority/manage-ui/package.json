@@ -38,6 +38,7 @@
     "vite": "^6.1.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.36.0"
+    "@rollup/rollup-win32-x64-msvc": "^4.36.0",
+    "@rollup/rollup-linux-x64-gnu": "4.39.0"
   }
 }
