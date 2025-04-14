@@ -73,43 +73,24 @@ namespace Agience.Authority.Identity
         [ConfigurationKeyName("WAN_AUTHORITY_PORT")]
         public int WanAuthorityPort { get; set; }
 
-        public Uri? WanAuthorityUri =>
-            !string.IsNullOrWhiteSpace(WanHost)
-                ? new Uri($"https://{WanHost}:{WanAuthorityPort}")
-                : null;
-
         [ConfigurationKeyName("WAN_BROKER_PORT")]
         public int WanBrokerPort { get; set; }
-
-        public Uri? WanBrokerUri =>
-            !string.IsNullOrWhiteSpace(WanHost)
-                ? new Uri($"https://{WanHost}:{WanBrokerPort}")
-                : null;
         
         [ConfigurationKeyName("MANAGE_UI_CLIENT_ID")]
         public string? ManageClientId { get; set; }
 
-        [ConfigurationKeyName("MANAGE_UI_CLIENT_SECRET")]
-        public string? ManageClientSecret { get; set; }
+        [ConfigurationKeyName("MANAGE_UI_ORIGIN_URI")]
+        public string? ManageOriginUri { get; set; }
 
         [ConfigurationKeyName("MANAGE_UI_REDIRECT_URI")]
         public string? ManageRedirectUri { get; set; }
 
         [ConfigurationKeyName("MANAGE_UI_LOGOUT_REDIRECT_URI")]
-        public string? ManageLogoutRedirectUri { get; set; }
-
-        [ConfigurationKeyName("MANAGE_UI_ORIGIN_URI")]
-        public string? ManageOriginUri { get; set; }
+        public string? ManageLogoutRedirectUri { get; set; }        
 
         // WAN Certificate Paths
         [ConfigurationKeyName("WAN_PFX_PATH")]
         public string? WanPfxPath { get; set; }
-
-        [ConfigurationKeyName("WAN_CRT_PATH")]
-        public string? WanCrtPath { get; set; }
-
-        [ConfigurationKeyName("WAN_KEY_PATH")]
-        public string? WanKeyPath { get; set; }
 
         // Database Settings
         public string? DatabaseHost =>
